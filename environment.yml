@@ -1,0 +1,9 @@
+name: mvgen
+dependencies:
+- python=2.7.12
+- pip
+- pip:
+  - ipython
+  - numpy
+  - matplotlib
+  - pyyaml
