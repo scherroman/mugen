@@ -1,6 +1,6 @@
 # mvgen
 
-A music video generator based on beat patterns.
+A music video generator based on beat patterns
 
 ## Start Guide
 
@@ -18,4 +18,4 @@ A music video generator based on beat patterns.
 
 5 - Make sure most recent version of Xcode is installed
 
-6 - Follow [Essentia MAC OS X Installation Instructions](http://essentia.upf.edu/documentation/installing.html)
+6 - [Install Essentia](http://essentia.upf.edu/documentation/installing.html) For OS X Via Homebrew 
