@@ -7,3 +7,5 @@ dependencies:
   - numpy
   - matplotlib
   - pyyaml
+  - argparse
+  - tqdm
