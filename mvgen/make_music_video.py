@@ -75,7 +75,7 @@ def create_music_video(video_segments, audio_src):
 	audio = AudioFileClip(audio_src)
 	music_video = concatenate_videoclips(video_segments)
 	music_video = music_video.set_audio(audio)
-	music_video.write_videofile("output/music_video.mp4")
+	music_video.write_videofile("output/music_video.mp4", fps=24)
 
 def listdir_nohidden(path):
     for file in os.listdir(path):
