@@ -9,6 +9,10 @@ from tqdm import tqdm
 import Tkinter as tk
 import tkFileDialog
 
+OUTPUT_PATH_BASE = "output/"
+OUTPUT_NAME = "music_video"
+OUTPUT_EXTENSION = '.mp4'
+
 # Extracts beat locations and intervals from an audio file
 def get_beat_stats(audio_file):
 	print "Processing audio beat patterns..."
@@ -69,13 +73,29 @@ def get_video_segments(video_files, beat_stats):
 	return video_segments
 
 # Compile music video from video segments and audio
-def create_music_video(video_segments, audio_src):
+def create_music_video(video_segments, audio_src, output_name):
 	print "Generating music video from video segments and audio..."
+
+	# Get output path for file
+	output_path = get_output_path(output_name)
 
 	audio = AudioFileClip(audio_src)
 	music_video = concatenate_videoclips(video_segments)
 	music_video = music_video.set_audio(audio)
-	music_video.write_videofile("output/music_video.mp4", fps=24)
+	music_video.write_videofile(output_path, fps=24, codec="libx264", audio_bitrate="320K")
+
+def get_output_path(output_name):
+	output_path = None
+
+	if output_name == None:
+		count = 0
+		while os.path.exists(OUTPUT_PATH_BASE + OUTPUT_NAME + "_%s" % count + OUTPUT_EXTENSION):
+			count += 1
+		output_path = OUTPUT_PATH_BASE + OUTPUT_NAME + "_%s" % count + OUTPUT_EXTENSION
+	else:
+		output_path = OUTPUT_PATH_BASE + output_name + OUTPUT_EXTENSION
+
+	return output_path
 
 def listdir_nohidden(path):
     for file in os.listdir(path):
@@ -86,6 +106,7 @@ def parse_args(args):
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-a', '--audio-source', dest='audio_src', help='The audio file for the music video. Supports any audio format supported by ffmpeg, such as wav, aiff, flac, ogg, mp3, etc...')
 	parser.add_argument('-v', '--video-source', dest='video_src', help='The video(s) for the music video. Either a singular video file or a folder containing multiple video files. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
+	parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output music_video_0' + OUTPUT_EXTENSION + ', music_video_1' + OUTPUT_EXTENSION + ', etc...')
 	parser.add_argument('-im', '--input-manually', dest='input_manually', action='store_true', default=False, help='Pass in this argument to skip the file selection dialog and manually input the audio and video sources via the -a and -v arguments.')
 	return parser.parse_args(args)
 
@@ -95,6 +116,7 @@ if __name__ == '__main__':
 	input_manually = args.input_manually
 	audio_src = args.audio_src
 	video_src = args.video_src
+	output_name = args.output_name if args.output_name else None
 
 	if input_manually and (audio_src is None or video_src is None):
 		print("Arguments -a/--audio-source and -v/--video-source are required when -im/--input-manually is specified.".format(audio_src))
@@ -151,4 +173,4 @@ if __name__ == '__main__':
 	video_segments = get_video_segments(video_files, beat_stats)
 
 	# Compile music video from video segments and audio
-	create_music_video(video_segments, audio_src)
+	create_music_video(video_segments, audio_src, output_name)
