@@ -1,17 +1,23 @@
 import os
 import sys
+import shutil
 import random
 import argparse
 import essentia
 import essentia.standard
 from moviepy.editor import *
+from moviepy.video.tools.cuts import detect_scenes
 from tqdm import tqdm
 import Tkinter as tk
 import tkFileDialog
 
+music_video_name = None
+
 OUTPUT_PATH_BASE = "output/"
 OUTPUT_NAME = "music_video"
 OUTPUT_EXTENSION = '.mp4'
+
+SEGMENTS_PATH_BASE = "segments/"
 
 # Extracts beat locations and intervals from an audio file
 def get_beat_stats(audio_file):
@@ -59,43 +65,74 @@ def get_video_segments(video_files, beat_stats):
 	# Extract video segments from videos
 	video_segments = []
 	for beat_interval in tqdm(beat_stats['beat_intervals']):
-		random_video_number = random.randint(0, len(videos) - 1)
-		random_video = videos[random_video_number]
-		start_time = round(random.uniform(0, random_video.duration - beat_interval), 8)
-		end_time = start_time + round(beat_interval, 8)
-		video_segments.append(random_video.subclip(start_time,end_time))
+		video_segment = None
+		while video_segment == None:
+			random_video_number = random.randint(0, len(videos) - 1)
+			random_video = videos[random_video_number]
+			start_time = round(random.uniform(0, random_video.duration - beat_interval), 8)
+			end_time = start_time + round(beat_interval, 8)
+			# print "start {}".format(start_time)
+			# print "end {} \n".format(end_time)
 
-		# print "start {}".format(start_time)
-		# print "end {} \n".format(end_time)
+			# Discard video segment if there is a scene change
+			video_segment = random_video.subclip(start_time,end_time)
+			cuts, luminosities = detect_scenes(video_segment, fps=24, progress_bar=False)
+			# print("segment {} num scenes: {}".format(len(video_segments),len(cuts)))
+			if len(cuts) > 1:
+				video_segment = None
+		video_segments.append(video_segment)
+
 	# for video_segment in video_segments:
 	# 	print video_segment.duration
 
 	return video_segments
 
 # Compile music video from video segments and audio
-def create_music_video(video_segments, audio_src, output_name):
+def create_music_video(video_segments, audio_src):
 	print "Generating music video from video segments and audio..."
 
+	# Make sure output dir exists
+	if not os.path.exists(OUTPUT_PATH_BASE):
+		os.makedirs(OUTPUT_PATH_BASE)
+
 	# Get output path for file
-	output_path = get_output_path(output_name)
+	output_path = get_output_path(music_video_name)
 
 	audio = AudioFileClip(audio_src)
 	music_video = concatenate_videoclips(video_segments)
 	music_video = music_video.set_audio(audio)
 	music_video.write_videofile(output_path, fps=24, codec="libx264", audio_bitrate="320K")
 
-def get_output_path(output_name):
-	output_path = None
+# Save the individual segments that compose the music video
+def save_video_segments(video_segments):
+	print "Saving video segments..."
 
+	# Create video's segments dir (overwrite if exists)
+	segments_dir = get_segments_dir(music_video_name)
+	if os.path.exists(segments_dir):
+		shutil.rmtree(segments_dir)
+	os.makedirs(segments_dir)
+
+	count = 0
+	for video_segment in video_segments:
+		segment_path = segments_dir + "%s" % count + OUTPUT_EXTENSION
+		video_segment.write_videofile(segment_path, fps=24, codec="libx264")
+		count += 1
+		
+def get_output_path(music_video_name):
+	return OUTPUT_PATH_BASE + music_video_name + OUTPUT_EXTENSION
+
+def get_segments_dir(music_video_name):
+	return SEGMENTS_PATH_BASE + music_video_name + '/'
+
+def get_music_video_name(output_name):
 	if output_name == None:
 		count = 0
 		while os.path.exists(OUTPUT_PATH_BASE + OUTPUT_NAME + "_%s" % count + OUTPUT_EXTENSION):
 			count += 1
-		output_path = OUTPUT_PATH_BASE + OUTPUT_NAME + "_%s" % count + OUTPUT_EXTENSION
+		return OUTPUT_NAME + "_%s" % count
 	else:
-		output_path = OUTPUT_PATH_BASE + output_name + OUTPUT_EXTENSION
-
-	return output_path
+		return output_name
 
 def listdir_nohidden(path):
     for file in os.listdir(path):
@@ -108,6 +145,7 @@ def parse_args(args):
 	parser.add_argument('-v', '--video-source', dest='video_src', help='The video(s) for the music video. Either a singular video file or a folder containing multiple video files. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
 	parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output music_video_0' + OUTPUT_EXTENSION + ', music_video_1' + OUTPUT_EXTENSION + ', etc...')
 	parser.add_argument('-im', '--input-manually', dest='input_manually', action='store_true', default=False, help='Pass in this argument to skip the file selection dialog and manually input the audio and video sources via the -a and -v arguments.')
+	parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')
 	return parser.parse_args(args)
 
 if __name__ == '__main__':
@@ -117,6 +155,10 @@ if __name__ == '__main__':
 	audio_src = args.audio_src
 	video_src = args.video_src
 	output_name = args.output_name if args.output_name else None
+	save_segments = args.save_segments
+
+	# Set global name for music video
+	music_video_name = get_music_video_name(output_name)
 
 	if input_manually and (audio_src is None or video_src is None):
 		print("Arguments -a/--audio-source and -v/--video-source are required when -im/--input-manually is specified.".format(audio_src))
@@ -173,4 +215,10 @@ if __name__ == '__main__':
 	video_segments = get_video_segments(video_files, beat_stats)
 
 	# Compile music video from video segments and audio
-	create_music_video(video_segments, audio_src, output_name)
+	create_music_video(video_segments, audio_src)
+
+	# Save the individual segments if asked to do so
+	if save_video_segments:
+		save_video_segments(video_segments)
+
+
