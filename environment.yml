@@ -9,3 +9,6 @@ dependencies:
   - pyyaml
   - argparse
   - tqdm
+  - Cython
+  - Pillow
+  - tesserocr
