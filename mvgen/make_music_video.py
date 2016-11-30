@@ -1,18 +1,21 @@
 import os
 import sys
+import json
 import shutil
 import random
 import logging
 import argparse
+import Tkinter as tk
+import tkFileDialog
+from tqdm import tqdm
+from collections import OrderedDict
+
 import tesserocr
 import essentia
 import essentia.standard
 from moviepy.editor import *
 from moviepy.video.tools.cuts import detect_scenes
-from tqdm import tqdm
 from PIL import Image
-import Tkinter as tk
-import tkFileDialog
 
 debug = False
 music_video_name = None
@@ -20,6 +23,7 @@ music_video_name = None
 OUTPUT_PATH_BASE = 'output/'
 OUTPUT_NAME = 'music_video'
 OUTPUT_EXTENSION = '.mp4'
+SPEC_EXTENSION = '.json'
 
 SEGMENTS_PATH_BASE = 'segments/'
 RS_PATH_BASE = 'rejected_segments/'
@@ -31,7 +35,7 @@ RS_SOLID_COLOR = RS_PATH_BASE + 'solid_color/'
 
 # Extracts beat locations and intervals from an audio file
 def get_beat_stats(audio_file):
-	print "Processing audio beat patterns..."
+	print("Processing audio beat patterns...")
 
 	# Load audio
 	loader = None
@@ -45,7 +49,10 @@ def get_beat_stats(audio_file):
 	# Get beat stats from audio
 	rhythm_loader = essentia.standard.RhythmExtractor2013()
 	rhythm = rhythm_loader(audio)
-	beat_stats = {'bpm':rhythm[0], 'beat_locations':rhythm[1], 'bpm_estimates':rhythm[3], 'beat_intervals':rhythm[4]}
+	beat_stats = {'bpm':rhythm[0], 
+				  'beat_locations':rhythm[1], 
+				  'bpm_estimates':rhythm[3], 
+				  'beat_intervals':rhythm[4]}
 
 	return beat_stats
 
@@ -55,15 +62,16 @@ def get_video_segments(video_files, beat_stats):
 	# Remove improper video files from video_files
 	videos = []
 	for video_file in video_files:
-		clip = None
+		video = None
 		try:
-			clip = VideoFileClip(video_file).without_audio()
-			videos.append(clip)
+			video = VideoFileClip(video_file).without_audio()
+			video.src_file = video_file
+			videos.append(video)
 		except Exception as e:
 			print("Error reading video file '{}'. Will be excluded from the music video.".format(video_file))
 			continue
 
-	print "Grabbing random video segments from {} videos according to beat patterns...".format(len(videos))
+	print("Grabbing random video segments from {} videos according to beat patterns...".format(len(videos)))
 
 	# If no video files to work with, exit
 	if len(videos) == 0:
@@ -78,10 +86,15 @@ def get_video_segments(video_files, beat_stats):
 		while video_segment == None:
 			random_video_number = random.randint(0, len(videos) - 1)
 			random_video = videos[random_video_number]
-			start_time = round(random.uniform(0, random_video.duration - beat_interval), 8)
-			end_time = start_time + round(beat_interval, 8)
+			start_time = round(random.uniform(0, random_video.duration - beat_interval), 17)
+			end_time = start_time + round(beat_interval, 17)
 
 			video_segment = random_video.subclip(start_time,end_time)
+			# Add extra metadata for music video spec
+			video_segment.sequence_number = len(video_segments)
+			video_segment.src_video_file = random_video.src_file
+			video_segment.src_start_time = start_time
+			video_segment.src_end_time = end_time
 
 			# Discard video segment if there is a scene change
 			if segment_contains_scene_change(video_segment):
@@ -102,7 +115,7 @@ def get_video_segments(video_files, beat_stats):
 
 # Compile music video from video segments and audio
 def create_music_video(video_segments, audio_src):
-	print "Generating music video from video segments and audio..."
+	print("Generating music video from video segments and audio...")
 
 	# Make sure output dir exists
 	if not os.path.exists(OUTPUT_PATH_BASE):
@@ -118,7 +131,7 @@ def create_music_video(video_segments, audio_src):
 
 # Save the individual segments that compose the music video
 def save_video_segments(video_segments):
-	print "Saving video segments..."
+	print("Saving video segments...")
 
 	# Create video's segments dir (overwrite if exists)
 	segments_dir = get_segments_dir(music_video_name)
@@ -133,7 +146,7 @@ def save_video_segments(video_segments):
 		count += 1
 
 def save_rejected_segments(rejected_segments):
-	print "Saving rejected segments..."
+	print("Saving rejected segments...")
 
 	if os.path.exists(RS_PATH_BASE):
 		shutil.rmtree(RS_PATH_BASE)
@@ -160,12 +173,37 @@ def save_rejected_segments(rejected_segments):
 		rejected_segment.write_videofile(segment_path, fps=24, codec="libx264")
 		count += 1
 
-def print_rejected_segment_stats(rejected_segments):
-	print "# rejected segments with scene changes: {}".format(len(rejected_segments['scene_change']))
-	print "# rejected segments with text detected: {}".format(len(rejected_segments['text_detected']))
-	print "# rejected segments with solid colors: {}".format(len(rejected_segments['solid_color']))
+# Save reusable spec for the music video
+def save_music_video_spec(audio_src, video_files, beat_stats, video_segments):
+	print("Saving music video spec...")
+
+	spec = OrderedDict([('audio_src', audio_src), 
+						('video_files', video_files),
+						('beats_per_minute', beat_stats['bpm']),
+						('beat_locations', beat_stats['beat_locations'].tolist()),
+						('beat_intervals', beat_stats['beat_intervals'].tolist()),
+						('bpm_estimates', beat_stats['bpm_estimates'].tolist()),
+						('video_segments', [])])
+
+	for video_segment in video_segments:
+		segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number), 
+									('duration', video_segment.duration), 
+									('src_video_file', video_segment.src_video_file),
+									('src_start_time', video_segment.src_start_time),
+									('src_end_time', video_segment.src_end_time)])
+
+		spec['video_segments'].append(segment_spec)
+
+	spec_path = get_spec_path(music_video_name)
+	with open(spec_path, 'w') as outfile:
+		json.dump(spec, outfile, indent=4, ensure_ascii=False)
 
 # HELPER METHODS
+
+def print_rejected_segment_stats(rejected_segments):
+	print("# rejected segments with scene changes: {}".format(len(rejected_segments['scene_change'])))
+	print("# rejected segments with text detected: {}".format(len(rejected_segments['text_detected'])))
+	print("# rejected segments with solid colors: {}".format(len(rejected_segments['solid_color'])))
 
 def segment_contains_scene_change(video_segment):
 	cuts, luminosities = detect_scenes(video_segment, fps=24, progress_bar=False)
@@ -215,6 +253,9 @@ def segment_has_solid_color(video_segment):
 		
 def get_output_path(music_video_name):
 	return OUTPUT_PATH_BASE + music_video_name + OUTPUT_EXTENSION
+
+def get_spec_path(music_video_name):
+	return OUTPUT_PATH_BASE + music_video_name + '_spec' + SPEC_EXTENSION
 
 def get_segments_dir(music_video_name):
 	return SEGMENTS_PATH_BASE + music_video_name + '/'
@@ -276,6 +317,8 @@ if __name__ == '__main__':
 	# Select audio via file selection dialog
 	else:
 		audio_src = tkFileDialog.askopenfilename(message="Select audio file")
+		# Properly encode file name
+		audio_src = audio_src.encode('utf-8')
 
 		if audio_src == "":
 			print("No audio file was selected.".format(audio_src))
@@ -301,16 +344,18 @@ if __name__ == '__main__':
 		video_src = tkFileDialog.askopenfilename(message="Select video file(s)", multiple=True)
 
 		if video_src == "":
-			print("No video file(s) were selected.".format(audio_src))
+			print("No video file(s) were selected.".format(video_src))
 			sys.exit(1)
 
-		video_files = list(video_src)
+		# Properly encode file name
+		video_files = [video_file.encode('utf-8') for video_file in video_src]
 
 	root.update()
 
 	logging.debug("audio_src {}".format(audio_src))
 	logging.debug("video_src {}".format(video_src))
-	logging.debug("video_files: {}".format(video_files))
+	for video_file in video_files:
+		logging.debug("video_file: {}".format(video_file))
 	
 	# Get beat locations and intervals from audio file
 	beat_stats = get_beat_stats(audio_src)
@@ -321,6 +366,9 @@ if __name__ == '__main__':
 
 	# Generate video segments according to beat intervals in audio file
 	video_segments, rejected_segments = get_video_segments(video_files, beat_stats)
+
+	# Save reusable spec for the music video
+	save_music_video_spec(audio_src, video_files, beat_stats, video_segments)
 
 	# Compile music video from video segments and audio
 	create_music_video(video_segments, audio_src)
