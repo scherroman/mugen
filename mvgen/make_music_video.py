@@ -9,6 +9,7 @@ import Tkinter as tk
 import tkFileDialog
 from tqdm import tqdm
 from collections import OrderedDict
+from fractions import Fraction
 
 import tesserocr
 import essentia
@@ -31,6 +32,8 @@ RS_SCENE_CHANGE = RS_PATH_BASE + 'scene_change/'
 RS_TEXT_DETECTED = RS_PATH_BASE + 'text_detected/'
 RS_SOLID_COLOR = RS_PATH_BASE + 'solid_color/'
 
+MIN_EXTREMA_RANGE = 30
+
 # PRIMARY METHODS
 
 # Extracts beat locations and intervals from an audio file
@@ -38,15 +41,14 @@ def get_beat_stats(audio_file):
 	print("Processing audio beat patterns...")
 
 	# Load audio
-	loader = None
 	try:
 		loader = essentia.standard.MonoLoader(filename = audio_file)
 	except Exception as e:
 		print(e)
 		sys.exit(1)
-	audio = loader()
 	
 	# Get beat stats from audio
+	audio = loader()
 	rhythm_loader = essentia.standard.RhythmExtractor2013()
 	rhythm = rhythm_loader(audio)
 	beat_stats = {'bpm':rhythm[0], 
@@ -54,30 +56,36 @@ def get_beat_stats(audio_file):
 				  'bpm_estimates':rhythm[3], 
 				  'beat_intervals':rhythm[4]}
 
+	logging.debug("Beats per minute: {}".format(beat_stats['bpm']))
+	logging.debug("Beat locations: {}".format(beat_stats['beat_locations']))
+	logging.debug("Beat intervals: {}".format(beat_stats['beat_intervals']))
+	logging.debug("BPM estimates: {}".format(beat_stats['bpm_estimates']))
+
 	return beat_stats
 
-# Generates random locations for which to segment video files 
-# with lengths corresponding to the lengths of beat intervals
-def get_video_segments(video_files, beat_stats):
+# Generates a set of random video segments from the video files
+# with durations corresponding to the durations of the beat intervals
+def get_video_segments(video_files, beat_stats, speed_multiplier):
 	# Remove improper video files from video_files
 	videos = []
 	for video_file in video_files:
 		video = None
 		try:
 			video = VideoFileClip(video_file).without_audio()
-			video.src_file = video_file
-			videos.append(video)
 		except Exception as e:
 			print("Error reading video file '{}'. Will be excluded from the music video.".format(video_file))
 			continue
-
-	print("Grabbing random video segments from {} videos according to beat patterns...".format(len(videos)))
+		else:
+			video.src_file = video_file
+			videos.append(video)
 
 	# If no video files to work with, exit
 	if len(videos) == 0:
 		print("No more video files left to work with. I can't continue :(")
 		sys.exit(1)
 
+	print("Grabbing random video segments from {} videos according to beat patterns...".format(len(videos)))
+	
 	# Extract video segments from videos
 	video_segments = []
 	rejected_segments = {'scene_change':[], 'text_detected':[], 'solid_color':[]}
@@ -114,17 +122,16 @@ def get_video_segments(video_files, beat_stats):
 	return video_segments, rejected_segments
 
 # Compile music video from video segments and audio
-def create_music_video(video_segments, audio_src):
+def create_music_video(video_segments, audio_file):
 	print("Generating music video from video segments and audio...")
 
-	# Make sure output dir exists
-	if not os.path.exists(OUTPUT_PATH_BASE):
-		os.makedirs(OUTPUT_PATH_BASE)
-
+	# Make sure output directory exists
+	ensure_dir(OUTPUT_PATH_BASE)
+	
 	# Get output path for file
 	output_path = get_output_path(music_video_name)
 
-	audio = AudioFileClip(audio_src)
+	audio = AudioFileClip(audio_file)
 	music_video = concatenate_videoclips(video_segments, method="compose")
 	music_video = music_video.set_audio(audio)
 	music_video.write_videofile(output_path, fps=24, codec="libx264", audio_bitrate="320K")
@@ -133,11 +140,9 @@ def create_music_video(video_segments, audio_src):
 def save_video_segments(video_segments):
 	print("Saving video segments...")
 
-	# Create video's segments dir (overwrite if exists)
+	# Create music video's segments directory (overwrite if exists)
 	segments_dir = get_segments_dir(music_video_name)
-	if os.path.exists(segments_dir):
-		shutil.rmtree(segments_dir)
-	os.makedirs(segments_dir)
+	recreate_dir(segments_dir)
 
 	count = 0
 	for video_segment in video_segments:
@@ -148,12 +153,8 @@ def save_video_segments(video_segments):
 def save_rejected_segments(rejected_segments):
 	print("Saving rejected segments...")
 
-	if os.path.exists(RS_PATH_BASE):
-		shutil.rmtree(RS_PATH_BASE)
-	os.makedirs(RS_PATH_BASE)
-	os.makedirs(RS_SCENE_CHANGE)
-	os.makedirs(RS_TEXT_DETECTED)
-	os.makedirs(RS_SOLID_COLOR)
+	# Create rejected segments directories (overwrite if exists)
+	recreate_dir(*[RS_PATH_BASE, RS_SCENE_CHANGE,RS_TEXT_DETECTED, RS_SOLID_COLOR])
 
 	count = 0
 	for rejected_segment in rejected_segments['scene_change']:
@@ -174,11 +175,12 @@ def save_rejected_segments(rejected_segments):
 		count += 1
 
 # Save reusable spec for the music video
-def save_music_video_spec(audio_src, video_files, beat_stats, video_segments):
+def save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, video_segments):
 	print("Saving music video spec...")
 
-	spec = OrderedDict([('audio_src', audio_src), 
+	spec = OrderedDict([('audio_file', audio_file), 
 						('video_files', video_files),
+						('speed_multiplier', speed_multiplier),
 						('beats_per_minute', beat_stats['bpm']),
 						('beat_locations', beat_stats['beat_locations'].tolist()),
 						('beat_intervals', beat_stats['beat_intervals'].tolist()),
@@ -207,50 +209,142 @@ def print_rejected_segment_stats(rejected_segments):
 
 def segment_contains_scene_change(video_segment):
 	cuts, luminosities = detect_scenes(video_segment, fps=24, progress_bar=False)
-	# print("segment {} num scenes: {}".format(len(video_segments),len(cuts)))
-	if len(cuts) > 1:
-		return True
-	else:
-		return False
 
+	return True if len(cuts) > 1 else False
+		
 def segment_contains_text(video_segment):
-	#Check first frame
-	frame = video_segment.get_frame(t='00:00:00')
-	frame_image = Image.fromarray(frame)
-	text = tesserocr.image_to_text(frame_image)
-	if (len(text.strip()) > 0):
-		return True
-	#Check last frame
-	frame = video_segment.get_frame(t=video_segment.duration)
-	frame_image = Image.fromarray(frame)
-	text = tesserocr.image_to_text(frame_image)
-	if (len(text.strip()) > 0):
-		return True
+	first_frame_contains_text = False
+	last_frame_contains_text = False
+	first_frame = video_segment.get_frame(t='00:00:00')
+	last_frame = video_segment.get_frame(t=video_segment.duration)
 
-	return False
+	#Check first frame
+	frame_image = Image.fromarray(first_frame)
+	text = tesserocr.image_to_text(frame_image)
+	if (len(text.strip()) > 0):
+		first_frame_contains_text = True
+
+	#Check last frame
+	frame_image = Image.fromarray(last_frame)
+	text = tesserocr.image_to_text(frame_image)
+	if (len(text.strip()) > 0):
+		last_frame_contains_text = True
+
+	return True if first_frame_contains_text or last_frame_contains_text else False
 
 def segment_has_solid_color(video_segment):
 	first_frame_is_solid_color = False
 	last_frame_is_solid_color = False
-
 	first_frame = video_segment.get_frame(t='00:00:00')
-	first_frame_image = Image.fromarray(first_frame)
-	extrema = first_frame_image.convert("L").getextrema()
-	if abs(extrema[0] - extrema[1]) <= 10:
+	last_frame = video_segment.get_frame(t=video_segment.duration)
+
+	#Check first frame
+	frame_image = Image.fromarray(first_frame)
+	extrema = frame_image.convert("L").getextrema()
+	if abs(extrema[1] - extrema[0]) <= MIN_EXTREMA_RANGE:
 		first_frame_is_solid_color = True
 
-	last_frame = video_segment.get_frame(t=video_segment.duration)
-	last_frame_image = Image.fromarray(last_frame)
-
-	extrema = last_frame_image.convert("L").getextrema()
-	if abs(extrema[0] - extrema[1]) <= 10:
+	#Check last frame
+	frame_image = Image.fromarray(last_frame)
+	extrema = frame_image.convert("L").getextrema()
+	if abs(extrema[1] - extrema[0]) <= MIN_EXTREMA_RANGE:
 		last_frame_is_solid_color = True
 
-	if first_frame_is_solid_color or last_frame_is_solid_color:
-		return True
+	return True if first_frame_is_solid_color or last_frame_is_solid_color else False
+
+# Returns an audio file path from an audio source, or after prompting user for selection
+def get_audio_file(audio_src):
+	audio_file = None
+
+	# Select audio via terminal input
+	if audio_src:
+		audio_src_exists = os.path.exists(audio_src)
+
+		# Check that audio file exists
+		if not audio_src_exists:
+			print("Audio source path '{}' does not exist.".format(audio_src))
+			sys.exit(1)
+
+		audio_file = audio_src
+	# Select audio via file selection dialog
 	else:
-		return False
-		
+		root = tk.Tk()
+		root.withdraw()
+		audio_src = tkFileDialog.askopenfilename(message="Select audio file")
+		root.update()
+
+		if audio_src == "":
+			print("No audio file was selected.".format(audio_src))
+			sys.exit(1)
+
+		# Properly encode file name
+		audio_file = audio_src.encode('utf-8')
+
+	logging.debug("audio_file {}".format(audio_file))
+	return audio_file
+
+# Returns list of video file paths from a video source, or after prompting user for selection
+def get_video_files(video_src):
+	video_files = []
+
+	# Select videos via terminal input
+	if video_src:
+		video_src_exists = os.path.exists(video_src)
+		video_src_is_dir = os.path.isdir(video_src)
+
+		# Check that video file/directory exists
+		if not video_src_exists:
+			print("Video source path {} does not exist.".format(video_src))
+			sys.exit(1)
+
+		# Check if video source is file or directory	
+		if video_src_is_dir:
+			video_files = [file for file in listdir_nohidden(video_src) if os.path.isfile(file)]
+		else:
+			video_files = [video_src]
+	# Select videos via file selection dialog
+	else:
+		root = tk.Tk()
+		root.withdraw()
+		video_src = tkFileDialog.askopenfilename(message="Select video file(s)", multiple=True)
+		root.update()
+
+		if video_src == "":
+			print("No video file(s) were selected.".format(video_src))
+			sys.exit(1)
+
+		# Properly encode file names
+		video_files = [video_file.encode('utf-8') for video_file in video_src]
+
+	logging.debug("video_src {}".format(video_src))
+	for video_file in video_files:
+		logging.debug("video_file: {}".format(video_file))
+	return video_files
+
+def validate_speed_multiplier(speed_multiplier):
+	try:
+		speed_multiplier = Fraction(speed_multiplier)
+	except (ValueError, ZeroDivisionError) as e:
+		print("Improper speed multiplier provided. Please check supported values on the help menu via --help")
+		sys.exit(1)
+	else:
+		if speed_multiplier == 0 or (speed_multiplier.numerator != 1 and speed_multiplier.denominator != 1):
+			print("Improper speed multiplier provided. Please check supported values on the help menu via --help")
+			sys.exit(1)
+
+	logging.debug('speed_multiplier: {}'.format(speed_multiplier))
+
+def ensure_dir(*directories):
+	for directory in directories:
+		if not os.path.exists(directory):
+			os.makedirs(directory)
+
+def recreate_dir(*directories):
+	for directory in directories:
+		if os.path.exists(directory):
+			shutil.rmtree(directory)
+		os.makedirs(directory)
+
 def get_output_path(music_video_name):
 	return OUTPUT_PATH_BASE + music_video_name + OUTPUT_EXTENSION
 
@@ -281,6 +375,7 @@ def parse_args(args):
 	parser.add_argument('-a', '--audio-source', dest='audio_src', help='The audio file for the music video. Supports any audio format supported by ffmpeg, such as wav, aiff, flac, ogg, mp3, etc...')
 	parser.add_argument('-v', '--video-source', dest='video_src', help='The video(s) for the music video. Either a singular video file or a folder containing multiple video files. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
 	parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output music_video_0' + OUTPUT_EXTENSION + ', music_video_1' + OUTPUT_EXTENSION + ', etc...')
+	parser.add_argument('-s', '--speed-multiplier', dest='speed_multiplier', default=1, help='Pass in this argument to speed up or slow down the scene changes in the music video. Should be of the form x or 1/x, where x is a natural number. e.g. 2 for double speed, or 1/2 for half speed.')
 	parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')
 	parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print debug statements and save all rejected segments.')
 	return parser.parse_args(args)
@@ -290,88 +385,31 @@ if __name__ == '__main__':
 
 	audio_src = args.audio_src
 	video_src = args.video_src
-	output_name = args.output_name if args.output_name else None
+	output_name = args.output_name
+	speed_multiplier = args.speed_multiplier
 	save_segments = args.save_segments
 	debug = args.debug
-
+	
 	# Setup debug logging
 	if debug:
 		logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-	# Set global name for music video
+	validate_speed_multiplier(speed_multiplier)
 	music_video_name = get_music_video_name(output_name)
-
-	video_files = []
-
-	root = tk.Tk()
-	root.withdraw()
-	# Select audio via terminal input
-	if audio_src:
-		# Read in via terminal input
-		audio_src_exists = os.path.exists(audio_src)
-
-		# Check that audio file exists
-		if not audio_src_exists:
-			print("Audio source path '{}' does not exist.".format(audio_src))
-			sys.exit(1)
-	# Select audio via file selection dialog
-	else:
-		audio_src = tkFileDialog.askopenfilename(message="Select audio file")
-		# Properly encode file name
-		audio_src = audio_src.encode('utf-8')
-
-		if audio_src == "":
-			print("No audio file was selected.".format(audio_src))
-			sys.exit(1)
-
-	# Select videos via terminal input
-	if video_src:
-		video_src_exists = os.path.exists(video_src)
-		video_src_is_dir = os.path.isdir(video_src)
-
-		# Check that video file/directory exists
-		if not video_src_exists:
-			print("Video source path {} does not exist.".format(video_src))
-			sys.exit(1)
-
-		# Check if video source is file or directory	
-		if video_src_is_dir:
-			video_files = [file for file in listdir_nohidden(video_src) if os.path.isfile(file)]
-		else:
-			video_files = [video_src]
-	# Select videos via file selection dialog
-	else:
-		video_src = tkFileDialog.askopenfilename(message="Select video file(s)", multiple=True)
-
-		if video_src == "":
-			print("No video file(s) were selected.".format(video_src))
-			sys.exit(1)
-
-		# Properly encode file name
-		video_files = [video_file.encode('utf-8') for video_file in video_src]
-
-	root.update()
-
-	logging.debug("audio_src {}".format(audio_src))
-	logging.debug("video_src {}".format(video_src))
-	for video_file in video_files:
-		logging.debug("video_file: {}".format(video_file))
+	audio_file = get_audio_file(audio_src)
+	video_files = get_video_files(video_src)
 	
 	# Get beat locations and intervals from audio file
-	beat_stats = get_beat_stats(audio_src)
-	logging.debug("Beats per minute: {}".format(beat_stats['bpm']))
-	logging.debug("Beat locations: {}".format(beat_stats['beat_locations']))
-	logging.debug("BPM estimates: {}".format(beat_stats['bpm_estimates']))
-	logging.debug("Beat intervals: {}".format(beat_stats['beat_intervals']))
-
-	# Generate video segments according to beat intervals in audio file
-	video_segments, rejected_segments = get_video_segments(video_files, beat_stats)
+	beat_stats = get_beat_stats(audio_file)
+	
+	# Generate random video segments according to beat intervals
+	video_segments, rejected_segments = get_video_segments(video_files, beat_stats, speed_multiplier)
 
 	# Save reusable spec for the music video
-	save_music_video_spec(audio_src, video_files, beat_stats, video_segments)
+	save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, video_segments)
 
 	# Compile music video from video segments and audio
-	create_music_video(video_segments, audio_src)
+	create_music_video(video_segments, audio_file)
 
 	# Print stats for rejected video segments
 	print_rejected_segment_stats(rejected_segments)

@@ -2,7 +2,15 @@
 
 A music video generator based on beat patterns
 
-Built with [essentia](https://github.com/MTG/essentia), [moviepy](https://github.com/Zulko/moviepy), and [tesseract](https://github.com/tesseract-ocr/tesseract)
+Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [tesseract](https://github.com/tesseract-ocr/tesseract) OCR
+
+## Strategy
+
+Extract beat intervals from the audio via Essentia. 
+
+Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace segments with scene changes, solid colors or very dark scenes, and detectable text (e.g. credits).
+
+Combine all the segments in order, overlay the audio, output the result.
 
 ## Installation (Mac OS X)
 
@@ -53,4 +61,12 @@ brew install essentia
 `(sudo) python setup.py install`
 
 ## Examples
+
+Run generator with file selection dialog
+
+`python make_music_video.py`
+
+Run generator with file inputs via terminal
+
+`python make_music_video.py -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv`
 
