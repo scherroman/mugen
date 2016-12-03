@@ -10,11 +10,11 @@ Extract beat intervals from the audio via Essentia.
 
 Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace segments with scene changes, solid colors or very dark scenes, and detectable text (e.g. credits).
 
-Combine all the segments in order, overlay the audio, output the result.
+Combine all the segments in order, overlay the audio, and output the resulting video.
 
 ## Installation (Mac OS X)
 
-1 - [Install Miniconda](http://conda.pydata.org/miniconda.html) (A Python package manager)
+1 - [Install Miniconda](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)
 
 2 - [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)
 
@@ -61,6 +61,10 @@ brew install essentia
 `(sudo) python setup.py install`
 
 ## Examples
+
+Get Help Menu
+
+`python make_music_video.py --help`
 
 Run generator with file selection dialog
 
