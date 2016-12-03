@@ -18,9 +18,23 @@ from moviepy.editor import *
 from moviepy.video.tools.cuts import detect_scenes
 from PIL import Image
 
+# Globals
 debug = False
 music_video_name = None
 
+# Utility constants
+MOVIEPY_FPS = 24
+MOVIEPY_CODEC = 'libx264'
+MOVIEPY_AUDIO_BITRATE = '320K'
+
+MIN_EXTREMA_RANGE = 30
+DURATION_PRECISION = 17
+
+RS_TYPE_SCENE_CHANGE = 'scene_change'
+RS_TYPE_TEXT_DETECTED = 'text_detected'
+RS_TYPE_SOLID_COLOR = 'solid_color'
+
+# Path constants
 OUTPUT_PATH_BASE = 'output/'
 OUTPUT_NAME = 'music_video'
 OUTPUT_EXTENSION = '.mp4'
@@ -28,11 +42,9 @@ SPEC_EXTENSION = '.json'
 
 SEGMENTS_PATH_BASE = 'segments/'
 RS_PATH_BASE = 'rejected_segments/'
-RS_SCENE_CHANGE = RS_PATH_BASE + 'scene_change/'
-RS_TEXT_DETECTED = RS_PATH_BASE + 'text_detected/'
-RS_SOLID_COLOR = RS_PATH_BASE + 'solid_color/'
-
-MIN_EXTREMA_RANGE = 30
+RS_PATH_SCENE_CHANGE = RS_PATH_BASE + RS_TYPE_SCENE_CHANGE + '/'
+RS_PATH_TEXT_DETECTED = RS_PATH_BASE + RS_TYPE_TEXT_DETECTED + '/'
+RS_PATH_SOLID_COLOR = RS_PATH_BASE + RS_TYPE_SOLID_COLOR +'/'
 
 # PRIMARY METHODS
 
@@ -56,16 +68,18 @@ def get_beat_stats(audio_file):
 				  'bpm_estimates':rhythm[3], 
 				  'beat_intervals':rhythm[4]}
 
+	logging.debug("\n")
 	logging.debug("Beats per minute: {}".format(beat_stats['bpm']))
-	logging.debug("Beat locations: {}".format(beat_stats['beat_locations']))
-	logging.debug("Beat intervals: {}".format(beat_stats['beat_intervals']))
-	logging.debug("BPM estimates: {}".format(beat_stats['bpm_estimates']))
+	logging.debug("Beat locations: {}".format(beat_stats['beat_locations'].tolist()))
+	logging.debug("Beat intervals: {}".format(beat_stats['beat_intervals'].tolist()))
+	logging.debug("BPM estimates: {}".format(beat_stats['bpm_estimates'].tolist()))
+	logging.debug("\n")
 
 	return beat_stats
 
 # Generates a set of random video segments from the video files
 # with durations corresponding to the durations of the beat intervals
-def get_video_segments(video_files, beat_stats, speed_multiplier):
+def get_video_segments(video_files, beat_interval_groups, speed_multiplier):
 	# Remove improper video files from video_files
 	videos = []
 	for video_file in video_files:
@@ -85,41 +99,96 @@ def get_video_segments(video_files, beat_stats, speed_multiplier):
 		sys.exit(1)
 
 	print("Grabbing random video segments from {} videos according to beat patterns...".format(len(videos)))
-	
+
 	# Extract video segments from videos
 	video_segments = []
-	rejected_segments = {'scene_change':[], 'text_detected':[], 'solid_color':[]}
-	for beat_interval in tqdm(beat_stats['beat_intervals']):
-		video_segment = None
-		while video_segment == None:
-			random_video_number = random.randint(0, len(videos) - 1)
-			random_video = videos[random_video_number]
-			start_time = round(random.uniform(0, random_video.duration - beat_interval), 17)
-			end_time = start_time + round(beat_interval, 17)
+	rejected_segments = [] 
+	for beat_interval_group in tqdm(beat_interval_groups):
+		for interval in beat_interval_group['intervals']:
+			video_segment, new_rejected_segments = generate_video_segment(videos, interval)
 
-			video_segment = random_video.subclip(start_time,end_time)
-			# Add extra metadata for music video spec
+			# Add metadata for music video spec
 			video_segment.sequence_number = len(video_segments)
-			video_segment.src_video_file = random_video.src_file
-			video_segment.src_start_time = start_time
-			video_segment.src_end_time = end_time
-
-			# Discard video segment if there is a scene change
-			if segment_contains_scene_change(video_segment):
-				rejected_segments['scene_change'].append(video_segment)
-				video_segment = None
-			# Discard video segment if there is any detectable text
-			elif segment_contains_text(video_segment):
-				rejected_segments['text_detected'].append(video_segment)
-				video_segment = None
-			# Discard video segment if it contains a solid color
-			elif segment_has_solid_color(video_segment):
-				rejected_segments['solid_color'].append(video_segment)
-				video_segment = None
-
-		video_segments.append(video_segment)
-
+			video_segment.beat_interval_numbers = beat_interval_group['beat_interval_numbers']
+			
+			video_segments.append(video_segment)
+			rejected_segments.extend(new_rejected_segments)
+	
 	return video_segments, rejected_segments
+
+def generate_video_segment(videos, duration):
+	video_segment = None
+	rejected_segments = []
+	while video_segment == None:
+		random_video_number = random.randint(0, len(videos) - 1)
+		random_video = videos[random_video_number]
+		start_time = round(random.uniform(0, random_video.duration - duration), DURATION_PRECISION)
+		end_time = start_time + round(duration, DURATION_PRECISION)
+
+		video_segment = random_video.subclip(start_time,end_time)
+		# Add metadata for music video spec
+		video_segment.src_video_file = random_video.src_file
+		video_segment.src_start_time = start_time
+		video_segment.src_end_time = end_time
+
+		# Discard video segment if there is a scene change
+		reject_type = None
+		if segment_contains_scene_change(video_segment):
+			reject_type = RS_TYPE_SCENE_CHANGE
+		# Discard video segment if there is any detectable text
+		elif segment_contains_text(video_segment):
+			reject_type = RS_TYPE_TEXT_DETECTED
+		# Discard video segment if it contains a solid color
+		elif segment_has_solid_color(video_segment):
+			reject_type = RS_TYPE_SOLID_COLOR
+
+		if reject_type:
+			rejected_segments.append({'reject_type':reject_type, 'video_segment': video_segment})
+			video_segment = None
+
+	return video_segment, rejected_segments
+
+# Group together beat intervals based on speed_multiplier by
+# -> splitting individual beat intervals for speedup
+# -> combining adjacent beat intervals for slowdown
+# -> using original beat interval for normal speed
+def get_beat_interval_groups(beat_intervals, speed_multiplier):
+	beat_interval_groups = [] 
+	beat_intervals = beat_intervals.tolist()
+	
+	beat_intervals_covered = 0
+	for index, beat_interval in enumerate(beat_intervals):
+		if index < beat_intervals_covered:
+			continue
+
+		beat_interval_group = None
+
+		if speed_multiplier < 1:
+			desired_num_intervals = speed_multiplier.denominator
+			remaining_intervals = len(beat_intervals) - index
+			if remaining_intervals < desired_num_intervals:
+				desired_num_intervals = remaining_intervals
+
+			interval_combo = sum(beat_intervals[index:index + desired_num_intervals])
+			interval_combo_numbers = range(index, index + desired_num_intervals)
+			beat_interval_group = {'intervals':[interval_combo], 'beat_interval_numbers':interval_combo_numbers}
+
+			beat_intervals_covered += desired_num_intervals
+		elif speed_multiplier > 1:
+			speedup_factor = speed_multiplier.numerator
+			interval_splinter = beat_interval/speedup_factor
+			interval_splinters = [interval_splinter] * speedup_factor
+			beat_interval_group = {'intervals':interval_splinters, 'beat_interval_numbers':index}
+			beat_intervals_covered += 1
+		else:
+			beat_interval_group = {'intervals':[beat_interval], 'beat_interval_numbers':index}
+			beat_intervals_covered += 1
+
+		beat_interval_groups.append(beat_interval_group)
+
+	logging.debug("\nbeat_interval_groups: {}\n".format(beat_interval_groups))
+
+	return beat_interval_groups
 
 # Compile music video from video segments and audio
 def create_music_video(video_segments, audio_file):
@@ -134,7 +203,7 @@ def create_music_video(video_segments, audio_file):
 	audio = AudioFileClip(audio_file)
 	music_video = concatenate_videoclips(video_segments, method="compose")
 	music_video = music_video.set_audio(audio)
-	music_video.write_videofile(output_path, fps=24, codec="libx264", audio_bitrate="320K")
+	music_video.write_videofile(output_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, audio_bitrate=MOVIEPY_AUDIO_BITRATE)
 
 # Save the individual segments that compose the music video
 def save_video_segments(video_segments):
@@ -147,48 +216,53 @@ def save_video_segments(video_segments):
 	count = 0
 	for video_segment in video_segments:
 		segment_path = segments_dir + "%s" % count + OUTPUT_EXTENSION
-		video_segment.write_videofile(segment_path, fps=24, codec="libx264")
+		video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
 		count += 1
 
+# Save the video segments that were rejected
 def save_rejected_segments(rejected_segments):
 	print("Saving rejected segments...")
 
 	# Create rejected segments directories (overwrite if exists)
-	recreate_dir(*[RS_PATH_BASE, RS_SCENE_CHANGE,RS_TEXT_DETECTED, RS_SOLID_COLOR])
+	recreate_dir(*[RS_PATH_BASE, RS_PATH_SCENE_CHANGE,RS_PATH_TEXT_DETECTED, RS_PATH_SOLID_COLOR])
 
-	count = 0
-	for rejected_segment in rejected_segments['scene_change']:
-		segment_path = RS_SCENE_CHANGE + "%s" % count + OUTPUT_EXTENSION
-		rejected_segment.write_videofile(segment_path, fps=24, codec="libx264")
-		count += 1
+	rs_scene_change_count = 0
+	rs_text_detected_count = 0
+	rs_solid_color_count = 0
+	for rejected_segment in rejected_segments:
+		reject_type = rejected_segment['reject_type']
+		video_segment = rejected_segment['video_segment']
 
-	count = 0
-	for rejected_segment in rejected_segments['text_detected']:
-		segment_path = RS_TEXT_DETECTED + "%s" % count + OUTPUT_EXTENSION
-		rejected_segment.write_videofile(segment_path, fps=24, codec="libx264")
-		count += 1
-
-	count = 0
-	for rejected_segment in rejected_segments['solid_color']:
-		segment_path = RS_SOLID_COLOR + "%s" % count + OUTPUT_EXTENSION
-		rejected_segment.write_videofile(segment_path, fps=24, codec="libx264")
-		count += 1
+		if reject_type == RS_TYPE_SCENE_CHANGE:
+			segment_path = RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + OUTPUT_EXTENSION
+			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+			rs_scene_change_count += 1
+		elif reject_type == RS_TYPE_TEXT_DETECTED:
+			segment_path = RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + OUTPUT_EXTENSION
+			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+			rs_text_detected_count += 1
+		else:
+			segment_path = RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + OUTPUT_EXTENSION
+			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+			rs_solid_color_count += 1
 
 # Save reusable spec for the music video
-def save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, video_segments):
+def save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, beat_interval_groups, video_segments):
 	print("Saving music video spec...")
 
 	spec = OrderedDict([('audio_file', audio_file), 
 						('video_files', video_files),
-						('speed_multiplier', speed_multiplier),
+						('speed_multiplier', float(speed_multiplier)),
 						('beats_per_minute', beat_stats['bpm']),
 						('beat_locations', beat_stats['beat_locations'].tolist()),
 						('beat_intervals', beat_stats['beat_intervals'].tolist()),
 						('bpm_estimates', beat_stats['bpm_estimates'].tolist()),
+						('beat_interval_groups', beat_interval_groups),
 						('video_segments', [])])
 
 	for video_segment in video_segments:
-		segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number), 
+		segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number),
+									('beat_interval_numbers', video_segment.beat_interval_numbers),
 									('duration', video_segment.duration), 
 									('src_video_file', video_segment.src_video_file),
 									('src_start_time', video_segment.src_start_time),
@@ -198,17 +272,17 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats,
 
 	spec_path = get_spec_path(music_video_name)
 	with open(spec_path, 'w') as outfile:
-		json.dump(spec, outfile, indent=4, ensure_ascii=False)
+		json.dump(spec, outfile, indent=2, ensure_ascii=False)
 
 # HELPER METHODS
 
 def print_rejected_segment_stats(rejected_segments):
-	print("# rejected segments with scene changes: {}".format(len(rejected_segments['scene_change'])))
-	print("# rejected segments with text detected: {}".format(len(rejected_segments['text_detected'])))
-	print("# rejected segments with solid colors: {}".format(len(rejected_segments['solid_color'])))
+	print("# rejected segments with scene changes: {}".format(len([seg for seg in rejected_segments if seg['reject_type'] == RS_TYPE_SCENE_CHANGE])))
+	print("# rejected segments with text detected: {}".format(len([seg for seg in rejected_segments if seg['reject_type'] == RS_TYPE_TEXT_DETECTED])))
+	print("# rejected segments with solid colors: {}".format(len([seg for seg in rejected_segments if seg['reject_type'] == RS_TYPE_SOLID_COLOR])))
 
 def segment_contains_scene_change(video_segment):
-	cuts, luminosities = detect_scenes(video_segment, fps=24, progress_bar=False)
+	cuts, luminosities = detect_scenes(video_segment, fps=MOVIEPY_FPS, progress_bar=False)
 
 	return True if len(cuts) > 1 else False
 		
@@ -321,7 +395,7 @@ def get_video_files(video_src):
 		logging.debug("video_file: {}".format(video_file))
 	return video_files
 
-def validate_speed_multiplier(speed_multiplier):
+def parse_speed_multiplier(speed_multiplier):
 	try:
 		speed_multiplier = Fraction(speed_multiplier)
 	except (ValueError, ZeroDivisionError) as e:
@@ -333,6 +407,8 @@ def validate_speed_multiplier(speed_multiplier):
 			sys.exit(1)
 
 	logging.debug('speed_multiplier: {}'.format(speed_multiplier))
+
+	return speed_multiplier
 
 def ensure_dir(*directories):
 	for directory in directories:
@@ -394,19 +470,22 @@ if __name__ == '__main__':
 	if debug:
 		logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-	validate_speed_multiplier(speed_multiplier)
+	speed_multiplier = parse_speed_multiplier(speed_multiplier)
 	music_video_name = get_music_video_name(output_name)
 	audio_file = get_audio_file(audio_src)
 	video_files = get_video_files(video_src)
 	
 	# Get beat locations and intervals from audio file
 	beat_stats = get_beat_stats(audio_file)
+
+	# Assign beat intervals to groups based on speed_multiplier
+	beat_interval_groups = get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier)
 	
 	# Generate random video segments according to beat intervals
-	video_segments, rejected_segments = get_video_segments(video_files, beat_stats, speed_multiplier)
+	video_segments, rejected_segments = get_video_segments(video_files, beat_interval_groups, speed_multiplier)
 
 	# Save reusable spec for the music video
-	save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, video_segments)
+	save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, beat_interval_groups, video_segments)
 
 	# Compile music video from video segments and audio
 	create_music_video(video_segments, audio_file)
@@ -418,7 +497,7 @@ if __name__ == '__main__':
 	if save_segments:
 		save_video_segments(video_segments)
 
-	# Save the rejected video segments if in debug mode
+	# Save the video segments that were rejected if in debug mode
 	if debug:
 		save_rejected_segments(rejected_segments)
 
