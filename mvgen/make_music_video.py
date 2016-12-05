@@ -430,6 +430,9 @@ def get_spec_path(music_video_name):
 def get_segments_dir(music_video_name):
 	return SEGMENTS_PATH_BASE + music_video_name + '/'
 
+def reserve_file(file_name):
+	open(file_name, 'a').close()
+
 def get_music_video_name(output_name):
 	if output_name == None:
 		count = 0
@@ -438,6 +441,10 @@ def get_music_video_name(output_name):
 		return OUTPUT_NAME + "_%s" % count
 	else:
 		return output_name
+
+def sanitize_filename(filename):
+	keepcharacters = (' ','.','_','-','(',')','[',']')
+	return "".join(c for c in filename if c.isalnum() or c in keepcharacters).rstrip() if filename else None
 
 def listdir_nohidden(path):
     for file in os.listdir(path):
@@ -470,8 +477,11 @@ if __name__ == '__main__':
 	if debug:
 		logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-	speed_multiplier = parse_speed_multiplier(speed_multiplier)
+	# Prepare Inputs
+	output_name = sanitize_filename(output_name)
 	music_video_name = get_music_video_name(output_name)
+	reserve_file(get_output_path(music_video_name))
+	speed_multiplier = parse_speed_multiplier(speed_multiplier)
 	audio_file = get_audio_file(audio_src)
 	video_files = get_video_files(video_src)
 	
