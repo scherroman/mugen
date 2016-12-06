@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import atexit
 import shutil
 import random
 import logging
@@ -25,6 +26,7 @@ music_video_name = None
 # Utility constants
 MOVIEPY_FPS = 24
 MOVIEPY_CODEC = 'libx264'
+MOVIEPY_CRF = "18"
 MOVIEPY_AUDIO_BITRATE = '320K'
 
 MIN_EXTREMA_RANGE = 30
@@ -33,6 +35,8 @@ DURATION_PRECISION = 17
 RS_TYPE_SCENE_CHANGE = 'scene_change'
 RS_TYPE_TEXT_DETECTED = 'text_detected'
 RS_TYPE_SOLID_COLOR = 'solid_color'
+
+HELP = " Please review supported inputs and values on the help menu via --help"
 
 # Path constants
 OUTPUT_PATH_BASE = 'output/'
@@ -79,7 +83,7 @@ def get_beat_stats(audio_file):
 
 # Generates a set of random video segments from the video files
 # with durations corresponding to the durations of the beat intervals
-def get_video_segments(video_files, beat_interval_groups, speed_multiplier):
+def get_video_segments(video_files, beat_interval_groups):
 	# Remove improper video files from video_files
 	videos = []
 	for video_file in video_files:
@@ -152,7 +156,7 @@ def generate_video_segment(videos, duration):
 # -> splitting individual beat intervals for speedup
 # -> combining adjacent beat intervals for slowdown
 # -> using original beat interval for normal speed
-def get_beat_interval_groups(beat_intervals, speed_multiplier):
+def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_offset):
 	beat_interval_groups = [] 
 	beat_intervals = beat_intervals.tolist()
 	
@@ -163,8 +167,13 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier):
 
 		beat_interval_group = None
 
+		# Combine beat intervals
 		if speed_multiplier < 1:
 			desired_num_intervals = speed_multiplier.denominator
+			# Apply offset to first group
+			if beat_intervals_covered == 0 and speed_multiplier_offset:
+				desired_num_intervals -= speed_multiplier_offset
+
 			remaining_intervals = len(beat_intervals) - index
 			if remaining_intervals < desired_num_intervals:
 				desired_num_intervals = remaining_intervals
@@ -174,11 +183,12 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier):
 			beat_interval_group = {'intervals':[interval_combo], 'beat_interval_numbers':interval_combo_numbers}
 
 			beat_intervals_covered += desired_num_intervals
+		# Split up individual beat intervals
 		elif speed_multiplier > 1:
 			speedup_factor = speed_multiplier.numerator
-			interval_splinter = beat_interval/speedup_factor
-			interval_splinters = [interval_splinter] * speedup_factor
-			beat_interval_group = {'intervals':interval_splinters, 'beat_interval_numbers':index}
+			interval_fragment = beat_interval/speedup_factor
+			interval_fragments = [interval_fragment] * speedup_factor
+			beat_interval_group = {'intervals':interval_fragments, 'beat_interval_numbers':index}
 			beat_intervals_covered += 1
 		else:
 			beat_interval_group = {'intervals':[beat_interval], 'beat_interval_numbers':index}
@@ -203,7 +213,7 @@ def create_music_video(video_segments, audio_file):
 	audio = AudioFileClip(audio_file)
 	music_video = concatenate_videoclips(video_segments, method="compose")
 	music_video = music_video.set_audio(audio)
-	music_video.write_videofile(output_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, audio_bitrate=MOVIEPY_AUDIO_BITRATE)
+	music_video.write_videofile(output_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, audio_bitrate=MOVIEPY_AUDIO_BITRATE, threads=4, ffmpeg_params=['-crf', MOVIEPY_CRF])
 
 # Save the individual segments that compose the music video
 def save_video_segments(video_segments):
@@ -216,7 +226,7 @@ def save_video_segments(video_segments):
 	count = 0
 	for video_segment in video_segments:
 		segment_path = segments_dir + "%s" % count + OUTPUT_EXTENSION
-		video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+		video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, ffmpeg_params=['-crf', MOVIEPY_CRF])
 		count += 1
 
 # Save the video segments that were rejected
@@ -235,24 +245,25 @@ def save_rejected_segments(rejected_segments):
 
 		if reject_type == RS_TYPE_SCENE_CHANGE:
 			segment_path = RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + OUTPUT_EXTENSION
-			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, ffmpeg_params=['-crf', MOVIEPY_CRF])
 			rs_scene_change_count += 1
 		elif reject_type == RS_TYPE_TEXT_DETECTED:
 			segment_path = RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + OUTPUT_EXTENSION
-			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, ffmpeg_params=['-crf', MOVIEPY_CRF])
 			rs_text_detected_count += 1
 		else:
 			segment_path = RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + OUTPUT_EXTENSION
-			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC)
+			video_segment.write_videofile(segment_path, fps=MOVIEPY_FPS, codec=MOVIEPY_CODEC, ffmpeg_params=['-crf', MOVIEPY_CRF])
 			rs_solid_color_count += 1
 
 # Save reusable spec for the music video
-def save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, beat_interval_groups, video_segments):
+def save_music_video_spec(audio_file, video_files, speed_multiplier, speed_multiplier_offset, beat_stats, beat_interval_groups, video_segments):
 	print("Saving music video spec...")
 
 	spec = OrderedDict([('audio_file', audio_file), 
 						('video_files', video_files),
 						('speed_multiplier', float(speed_multiplier)),
+						('speed_multiplier_offset', speed_multiplier_offset),
 						('beats_per_minute', beat_stats['bpm']),
 						('beat_locations', beat_stats['beat_locations'].tolist()),
 						('beat_intervals', beat_stats['beat_intervals'].tolist()),
@@ -395,20 +406,34 @@ def get_video_files(video_src):
 		logging.debug("video_file: {}".format(video_file))
 	return video_files
 
-def parse_speed_multiplier(speed_multiplier):
+def parse_speed_multiplier(speed_multiplier, speed_multiplier_offset):
 	try:
 		speed_multiplier = Fraction(speed_multiplier)
 	except (ValueError, ZeroDivisionError) as e:
-		print("Improper speed multiplier provided. Please check supported values on the help menu via --help")
+		print("Improper speed multiplier provided." + HELP)
 		sys.exit(1)
 	else:
 		if speed_multiplier == 0 or (speed_multiplier.numerator != 1 and speed_multiplier.denominator != 1):
-			print("Improper speed multiplier provided. Please check supported values on the help menu via --help")
+			print("Improper speed multiplier provided." + HELP)
 			sys.exit(1)
+
+	if speed_multiplier_offset:
+		try:
+			speed_multiplier_offset = int(speed_multiplier_offset)
+		except ValueError as e:
+			print("Improper speed multiplier offset provided." + HELP)
+			sys.exit(1)
+		else:
+			if speed_multiplier >= 1:
+				print("Speed multiplier offsets may only be used with slowdown speed multipliers." + HELP)
+				sys.exit(1)
+			elif speed_multiplier_offset > speed_multiplier.denominator - 1:
+				print("Speed multiplier offset may not be greater than x - 1 for a slowdown of 1/x." + HELP)
+				sys.exit(1)
 
 	logging.debug('speed_multiplier: {}'.format(speed_multiplier))
 
-	return speed_multiplier
+	return speed_multiplier, speed_multiplier_offset
 
 def ensure_dir(*directories):
 	for directory in directories:
@@ -451,6 +476,12 @@ def listdir_nohidden(path):
         if not file.startswith('.'):
             yield path + file
 
+def exit_handler():
+	# Cleanup reserved music video file if empty
+	reserved_music_video_file = get_output_path(music_video_name)
+	if os.path.exists(reserved_music_video_file) and os.stat(reserved_music_video_file).st_size == 0:
+		os.remove(reserved_music_video_file)
+
 # MAIN
 
 def parse_args(args):
@@ -458,7 +489,8 @@ def parse_args(args):
 	parser.add_argument('-a', '--audio-source', dest='audio_src', help='The audio file for the music video. Supports any audio format supported by ffmpeg, such as wav, aiff, flac, ogg, mp3, etc...')
 	parser.add_argument('-v', '--video-source', dest='video_src', help='The video(s) for the music video. Either a singular video file or a folder containing multiple video files. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
 	parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output music_video_0' + OUTPUT_EXTENSION + ', music_video_1' + OUTPUT_EXTENSION + ', etc...')
-	parser.add_argument('-s', '--speed-multiplier', dest='speed_multiplier', default=1, help='Pass in this argument to speed up or slow down the scene changes in the music video. Should be of the form x or 1/x, where x is a natural number. e.g. 2 for double speed, or 1/2 for half speed.')
+	parser.add_argument('-sm', '--speed-multiplier', dest='speed_multiplier', default=1, help='Pass in this argument to speed up or slow down the scene changes in the music video. Should be of the form x or 1/x, where x is a natural number. e.g. 2 for double speed, or 1/2 for half speed.')
+	parser.add_argument('-smo', '--speed-multiplier-offset', dest='speed_multiplier_offset', help='Pass in this argument alongside a slowdown speed multiplier to offset the grouping of beat intervals by a specified amount. Takes an integer, with a max offset of x - 1 for a slowdown of 1/x.')
 	parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')
 	parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print debug statements and save all rejected segments.')
 	return parser.parse_args(args)
@@ -470,10 +502,11 @@ if __name__ == '__main__':
 	video_src = args.video_src
 	output_name = args.output_name
 	speed_multiplier = args.speed_multiplier
+	speed_multiplier_offset = args.speed_multiplier_offset
 	save_segments = args.save_segments
 	debug = args.debug
 	
-	# Setup debug logging
+	atexit.register(exit_handler)
 	if debug:
 		logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
@@ -481,7 +514,7 @@ if __name__ == '__main__':
 	output_name = sanitize_filename(output_name)
 	music_video_name = get_music_video_name(output_name)
 	reserve_file(get_output_path(music_video_name))
-	speed_multiplier = parse_speed_multiplier(speed_multiplier)
+	speed_multiplier, speed_multiplier_offset = parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
 	audio_file = get_audio_file(audio_src)
 	video_files = get_video_files(video_src)
 	
@@ -489,13 +522,13 @@ if __name__ == '__main__':
 	beat_stats = get_beat_stats(audio_file)
 
 	# Assign beat intervals to groups based on speed_multiplier
-	beat_interval_groups = get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier)
+	beat_interval_groups = get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier, speed_multiplier_offset)
 	
 	# Generate random video segments according to beat intervals
-	video_segments, rejected_segments = get_video_segments(video_files, beat_interval_groups, speed_multiplier)
+	video_segments, rejected_segments = get_video_segments(video_files, beat_interval_groups)
 
 	# Save reusable spec for the music video
-	save_music_video_spec(audio_file, video_files, speed_multiplier, beat_stats, beat_interval_groups, video_segments)
+	save_music_video_spec(audio_file, video_files, speed_multiplier, speed_multiplier_offset, beat_stats, beat_interval_groups, video_segments)
 
 	# Compile music video from video segments and audio
 	create_music_video(video_segments, audio_file)

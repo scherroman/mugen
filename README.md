@@ -14,7 +14,7 @@ Generate a set of random video segments from the video files, with durations cor
 
 Combine all the segments in order, overlay the audio, and output the resulting video.
 
-Note: The audio should have a sample rate of 44.1 KHz for accurate rhythm analysis via Essentia. 
+Note: The audio should have a sample rate of 44.1 KHz for accurate rhythm analysis via essentia. 
 
 ## Installation (Mac OS X)
 
@@ -43,14 +43,14 @@ export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 
 **7 - Update Xcode to most recent version**
 
-**8 - [Install Essentia >= 2.1](https://github.com/MTG/essentia) via Homebrew**
+**8 - [Install essentia >= 2.1](https://github.com/MTG/essentia) via Homebrew**
 
 ```
 brew tap MTG/essentia
 brew install essentia 
 ```
 
-**9 - Move Essentia package from Homebrew to your mvgen conda environment**
+**9 - Move essentia package from Homebrew to your mvgen conda environment**
 
 `cp -r /usr/local/lib/python2.7/site-packages/essentia /Users/myuser/miniconda/envs/mvgen/lib/python2.7/site-packages/essentia`
 
