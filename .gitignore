@@ -1,3 +1,4 @@
+*.pyc
 audio/
 video/
 output/
