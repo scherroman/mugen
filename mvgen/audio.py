@@ -1,3 +1,4 @@
+import sys
 import logging
 import essentia
 import essentia.standard
@@ -20,9 +21,7 @@ def get_beat_stats(audio_file):
 	audio = loader()
 	rhythm_loader = essentia.standard.RhythmExtractor2013()
 	rhythm = rhythm_loader(audio)
-	beat_stats = {'bpm':rhythm[0], 
-				  'beat_locations':rhythm[1], 
-				  'bpm_estimates':rhythm[3], 
+	beat_stats = {'bpm':rhythm[0], 'beat_locations':rhythm[1], 'bpm_estimates':rhythm[3], 
 				  'beat_intervals':rhythm[4]}
 
 	logging.debug("\n")
@@ -47,7 +46,8 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_
 		if index < total_beat_intervals_covered:
 			continue
 
-		beat_interval_group, num_beat_intervals_covered = get_beat_interval_group(beat_intervals, index, speed_multiplier, speed_multiplier_offset)
+		beat_interval_group, num_beat_intervals_covered = get_beat_interval_group(beat_interval, index, beat_intervals, 
+																				  speed_multiplier, speed_multiplier_offset)
 		beat_interval_groups.append(beat_interval_group)
 		total_beat_intervals_covered += num_beat_intervals_covered
 
@@ -57,7 +57,8 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_
 
 ### HELPER FUNCTIONS ###
 
-def get_beat_interval_group(beat_intervals, index, speed_multiplier, speed_multiplier_offset):
+def get_beat_interval_group(beat_interval, index, beat_intervals, 
+							speed_multiplier, speed_multiplier_offset):
 	beat_interval_group = None
 	num_beat_intervals_covered = 0
 

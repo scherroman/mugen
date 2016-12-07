@@ -63,7 +63,9 @@ if __name__ == '__main__':
 	video_segments, rejected_segments = video.get_video_segments(video_files, beat_interval_groups)
 
 	# Save reusable spec for the music video
-	video.save_music_video_spec(audio_file, video_files, speed_multiplier, speed_multiplier_offset, beat_stats, beat_interval_groups, video_segments)
+	video.save_music_video_spec(audio_file, video_files, speed_multiplier, 
+								speed_multiplier_offset, beat_stats, beat_interval_groups, 
+								video_segments)
 
 	# Compile music video from video segments and audio
 	video.create_music_video(video_segments, audio_file)
@@ -78,5 +80,7 @@ if __name__ == '__main__':
 	# Save the video segments that were rejected if in debug mode
 	if s.debug:
 		video.save_rejected_segments(rejected_segments)
+
+	print("All Done!")
 
 
