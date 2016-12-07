@@ -26,15 +26,15 @@ def create_music_video(video_segments, audio_file):
 	audio = AudioFileClip(audio_file)
 	music_video = concatenate_videoclips(video_segments, method="compose")
 	music_video = music_video.set_audio(audio)
-	music_video.write_videofile(output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, threads=4, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
+	music_video.write_videofile(output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+								audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
 
 # Generates a set of random video segments from the video files
 # with durations corresponding to the durations of the beat intervals
 def get_video_segments(video_files, beat_interval_groups):
-	# Remove improper video files from video_files
+	# Remove improper video files
 	videos = []
 	for video_file in video_files:
-		video = None
 		try:
 			video = VideoFileClip(video_file).without_audio()
 		except Exception as e:
@@ -78,7 +78,8 @@ def save_video_segments(video_segments):
 	count = 0
 	for video_segment in video_segments:
 		segment_path = segments_dir + "%s" % count + s.OUTPUT_EXTENSION
-		video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
+		video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+									  ffmpeg_params=['-crf', s.MOVIEPY_CRF])
 		count += 1
 
 # Save the video segments that were rejected
@@ -86,7 +87,8 @@ def save_rejected_segments(rejected_segments):
 	print("Saving rejected segments...")
 
 	# Create rejected segments directories (overwrite if exists)
-	util.recreate_dir(*[s.RS_PATH_BASE, s.RS_PATH_SCENE_CHANGE, s.RS_PATH_TEXT_DETECTED, s.RS_PATH_SOLID_COLOR])
+	util.recreate_dir(*[s.RS_PATH_BASE, s.RS_PATH_SCENE_CHANGE, s.RS_PATH_TEXT_DETECTED, 
+						s.RS_PATH_SOLID_COLOR])
 
 	rs_scene_change_count = 0
 	rs_text_detected_count = 0
@@ -97,24 +99,32 @@ def save_rejected_segments(rejected_segments):
 
 		if reject_type == s.RS_TYPE_SCENE_CHANGE:
 			segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.OUTPUT_EXTENSION
-			video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
+			video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+										  ffmpeg_params=['-crf', s.MOVIEPY_CRF])
 			rs_scene_change_count += 1
 		elif reject_type == s.RS_TYPE_TEXT_DETECTED:
 			segment_path =  s.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + s.OUTPUT_EXTENSION
-			video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
+			video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+										  ffmpeg_params=['-crf', s.MOVIEPY_CRF])
 			rs_text_detected_count += 1
 		else:
 			segment_path = s.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + s.OUTPUT_EXTENSION
-			video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
+			video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+										  ffmpeg_params=['-crf', s.MOVIEPY_CRF])
 			rs_solid_color_count += 1
 
 def print_rejected_segment_stats(rejected_segments):
-	print("# rejected segments with scene changes: {}".format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SCENE_CHANGE])))
-	print("# rejected segments with text detected: {}".format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_TEXT_DETECTED])))
-	print("# rejected segments with solid colors: {}".format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SOLID_COLOR])))
+	print("# rejected segments with scene changes: {}"
+		  .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SCENE_CHANGE])))
+	print("# rejected segments with text detected: {}"
+		  .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_TEXT_DETECTED])))
+	print("# rejected segments with solid colors: {}"
+		  .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SOLID_COLOR])))
 
 # Save reusable spec for the music video
-def save_music_video_spec(audio_file, video_files, speed_multiplier, speed_multiplier_offset, beat_stats, beat_interval_groups, video_segments):
+def save_music_video_spec(audio_file, video_files, speed_multiplier, 
+						  speed_multiplier_offset, beat_stats, beat_interval_groups, 
+						  video_segments):
 	print("Saving music video spec...")
 
 	spec = OrderedDict([('audio_file', audio_file), 
