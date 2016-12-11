@@ -6,13 +6,17 @@ Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy]
 
 ## Strategy
 
-Provide an audio file and a set of video files.
+1 - Provide an audio file and a set of video files.
 
-Extract beat intervals from the audio.
+2 - Perform rhythm analysis and extract beat intervals from the audio.
 
-Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace segments with scene changes, solid colors or very dark scenes, and detectable text (e.g. credits).
+3 - Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace segments with scene changes, solid colors or very dark scenes, and detectable text (e.g. credits).
 
-Combine all the segments in order, overlay the audio, and output the resulting video.
+4 - Combine all the segments in order, overlay the audio, and output the resulting music video.
+
+5 - Save a reusable spec file detailing the structure of the music video. 
+
+6 - Optionally output all the video segments that compose the music video, so that users can edit and compose the music video elsewhere.
 
 Note: The audio should have a sample rate of 44.1 KHz for accurate rhythm analysis via essentia. 
 
@@ -68,13 +72,17 @@ brew install essentia
 
 **Get Help Menu**
 
-`python make_music_video.py --help`
+```
+python make_music_video.py --help
+python make_music_video.py create --help
+python make_music_video.py recreate --help
+```
 
 **Run generator with file selection dialog**
 
-`python make_music_video.py`
+`python make_music_video.py create`
 
 **Run generator with file inputs via terminal**
 
-`python make_music_video.py -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv`
+`python make_music_video.py create -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv`
 
