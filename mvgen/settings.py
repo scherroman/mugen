@@ -3,7 +3,12 @@ debug = False
 music_video_name = None
 
 ### GENERAL ###
+VERSION = "1.0"
 HELP = " Please review supported inputs and values on the help menu via --help"
+
+FILE_TYPE_AUDIO = "audio"
+FILE_TYPE_VIDEO = 'video'
+FILE_TYPE_SPEC = "spec"
 
 ### VIDEO ###
 MOVIEPY_FPS = 24

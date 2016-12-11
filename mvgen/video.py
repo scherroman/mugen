@@ -31,14 +31,14 @@ def create_music_video(video_segments, audio_file):
 
 # Generates a set of random video segments from the video files
 # with durations corresponding to the durations of the beat intervals
-def get_video_segments(video_files, beat_interval_groups):
+def generate_video_segments(video_files, beat_interval_groups):
 	# Remove improper video files
 	videos = []
 	for video_file in video_files:
 		try:
 			video = VideoFileClip(video_file).without_audio()
 		except Exception as e:
-			print("Error reading video file '{}'. Will be excluded from the music video.".format(video_file))
+			print("Error reading video file '{}'. Will be excluded from the music video. Error: {}".format(video_file, e))
 			continue
 		else:
 			video.src_file = video_file
@@ -66,6 +66,41 @@ def get_video_segments(video_files, beat_interval_groups):
 			rejected_segments.extend(new_rejected_segments)
 	
 	return video_segments, rejected_segments
+
+# Regenerates the video segments from the videos specified in the spec
+def regenerate_video_segments(spec, replace_segments):
+	# Remove improper video files
+	videos = []
+	for video_file in spec['video_files']:
+		try:
+			video = VideoFileClip(video_file['file_path']).without_audio()
+		except Exception as e:
+			print("Error reading video file '{}'. Will be excluded from the music video. Error: {}".format(video_file['file_path'], e))
+			continue
+		else:
+			video.src_file = video_file['file_path']
+			videos.append(video)
+
+	# If no video files to work with, exit
+	if len(videos) == 0:
+		print("No more video files left to work with. I can't continue :(")
+		sys.exit(1)
+
+	print("Regenerating video segments from {} videos according to spec...".format(len(videos)))
+
+	# Regenerate video segments from videos
+	regen_video_segments = []
+	for index, video_segment in enumerate(tqdm(spec['video_segments'])):
+		replace_segment = True if replace_segments and index in replace_segments else False
+		regen_video_segment = regenerate_video_segment(videos, video_segment, spec['video_files'], replace_segment)
+
+		# Add metadata for music video spec
+		regen_video_segment.sequence_number = index
+		regen_video_segment.beat_interval_numbers = video_segment['beat_interval_numbers']
+		
+		regen_video_segments.append(regen_video_segment)
+	
+	return regen_video_segments
 
 # Save the individual segments that compose the music video
 def save_video_segments(video_segments):
@@ -127,25 +162,57 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
 						  video_segments):
 	print("Saving music video spec...")
 
-	spec = OrderedDict([('audio_file', audio_file), 
-						('video_files', video_files),
+	# Video duration is sum of video segment durations
+	video_duration = sum(video_segment.duration for video_segment in video_segments) 
+
+	spec = OrderedDict([('version', s.VERSION),
+						('video_duration', video_duration),
 						('speed_multiplier', float(speed_multiplier)),
 						('speed_multiplier_offset', speed_multiplier_offset),
 						('beats_per_minute', beat_stats['bpm']),
+						('audio_file', {}), 
+						('video_files', []),
+						('video_segments', []),
 						('beat_locations', beat_stats['beat_locations'].tolist()),
 						('beat_intervals', beat_stats['beat_intervals'].tolist()),
 						('bpm_estimates', beat_stats['bpm_estimates'].tolist()),
-						('beat_interval_groups', beat_interval_groups),
-						('video_segments', [])])
+						('beat_interval_groups', beat_interval_groups)])
+
+	# Add extra metadata
+	audio_file_spec = OrderedDict([('file_path', audio_file),
+								   ('offset', 0)])
+	spec['audio_file'] = audio_file_spec
+
+	for index, video_file in enumerate(video_files):
+		video_file_spec = OrderedDict([('video_number', index),
+									   ('file_path', video_file),
+									   ('offset', 0)])
+		spec['video_files'].append(video_file_spec)
 
 	for video_segment in video_segments:
 		segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number),
-									('beat_interval_numbers', video_segment.beat_interval_numbers),
-									('duration', video_segment.duration), 
-									('src_video_file', video_segment.src_video_file),
-									('src_start_time', video_segment.src_start_time),
-									('src_end_time', video_segment.src_end_time)])
+									('video_number', video_files.index(video_segment.src_video_file)),
+									('video_start_time', video_segment.src_start_time),
+									('video_end_time', video_segment.src_end_time),
+									('duration', video_segment.duration),
+									('beat_interval_numbers', video_segment.beat_interval_numbers)])
+		spec['video_segments'].append(segment_spec)
 
+	spec_path = util.get_spec_path(s.music_video_name)
+	with open(spec_path, 'w') as outfile:
+		json.dump(spec, outfile, indent=2, ensure_ascii=False)
+
+def save_regenerated_music_video_spec(spec, regen_video_segments):
+	print("Saving regenerated music video spec...")
+
+	spec['video_segments'] = []
+	for video_segment in regen_video_segments:
+		segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number),
+									('video_number', next(video_file['video_number'] for video_file in spec['video_files'] if video_file['file_path']==video_segment.src_video_file)),
+									('video_start_time', video_segment.src_start_time),
+									('video_end_time', video_segment.src_end_time),
+									('duration', video_segment.duration),
+									('beat_interval_numbers', video_segment.beat_interval_numbers)])
 		spec['video_segments'].append(segment_spec)
 
 	spec_path = util.get_spec_path(s.music_video_name)
@@ -185,6 +252,32 @@ def generate_video_segment(videos, duration):
 			video_segment = None
 
 	return video_segment, rejected_segments
+
+def regenerate_video_segment(videos, video_segment, video_files, replace_segment):
+	regen_video_segment = None
+
+	video_file = video_files[video_segment['video_number']]
+	video = next(video for video in videos if video.src_file==video_file['file_path'])
+	start_time = video_segment['video_start_time']
+	end_time = video_segment['video_end_time']
+	offset = video_file['offset']
+
+	if replace_segment:
+		regen_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'])
+	else:
+		try:
+			regen_video_segment = video.subclip(start_time + offset,end_time + offset)
+			# Add metadata for music video spec
+			regen_video_segment.src_video_file = video_file['file_path']
+			regen_video_segment.src_start_time = start_time
+			regen_video_segment.src_end_time = end_time
+		except Exception as e:
+			# If we run into an error regenerating a video segment, 
+			# replace it a random video segment
+			print('Error regenerating video segment {}, Will generate a random video segment to replace it instead. Error: {}'.format(video_segment['sequence_number'], e))
+			regen_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'])
+
+	return regen_video_segment
 
 def segment_contains_scene_change(video_segment):
 	cuts, luminosities = detect_scenes(video_segment, fps=s.MOVIEPY_FPS, progress_bar=False)

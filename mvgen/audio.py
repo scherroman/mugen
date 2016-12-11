@@ -14,7 +14,7 @@ def get_beat_stats(audio_file):
 	try:
 		loader = essentia.standard.MonoLoader(filename = audio_file)
 	except Exception as e:
-		print(e)
+		print("Error reading audio file '{}'. Cannot continue. Error: {}".format(audio_file, e))
 		sys.exit(1)
 	
 	# Get beat stats from audio
