@@ -4,6 +4,8 @@ A music video generator based on beat patterns
 
 Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [tesseract](https://github.com/tesseract-ocr/tesseract) OCR
 
+Use it to brainstorm AMVs, montages, what have you
+
 ## Strategy
 
 1 - Provide an audio file and a set of video files.
@@ -16,11 +18,17 @@ Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy]
 
 5 - Save a reusable spec file detailing the structure of the music video. 
 
-6 - Optionally output all the video segments that compose the music video, so that users can edit and compose the music video elsewhere.
-
 Note: The audio should have a sample rate of 44.1 KHz for accurate rhythm analysis via essentia. 
 
-## Installation (Mac OS X)
+## Requirements
+
+You'll need a python virtual environment with Python 2.7 and the pip packages listed in the conda [environment](environment.yml) for this repository. I recommend using [miniconda](http://conda.pydata.org/miniconda.html) as shown in the installation walkthrough below.
+
+You'll also need to install the python bindings for [essentia](https://github.com/MTG/essentia) >= 2.1, my fork of moviepy [scherroman/moviepy](https://github.com/scherroman/moviepy), and [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04.
+
+Recommended install order: tesseract -> conda virtual environment -> essentia -> moviepy 
+
+## Installation Walkthrough (Mac OS X)
 
 **1 - [Install Miniconda](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)**
 
@@ -33,7 +41,7 @@ Note: The audio should have a sample rate of 44.1 KHz for accurate rhythm analys
 export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 ```
 
-**4 - [Install tesseract >= 3.04](https://github.com/tesseract-ocr/tesseract) via Homebrew8**
+**4 - [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
 
 `brew install tesseract --with-all-languages`
 
