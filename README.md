@@ -2,9 +2,9 @@
 
 A music video generator based on beat patterns
 
-Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [tesseract](https://github.com/tesseract-ocr/tesseract) OCR
-
 Use it to brainstorm AMVs, montages, what have you
+
+Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [tesseract](https://github.com/tesseract-ocr/tesseract) OCR
 
 ## Strategy
 
