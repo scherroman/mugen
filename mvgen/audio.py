@@ -1,5 +1,6 @@
 import sys
 import logging
+import pprint
 import essentia
 import essentia.standard
 
@@ -25,10 +26,10 @@ def get_beat_stats(audio_file):
                   'beat_intervals':rhythm[4]}
 
     logging.debug("\n")
-    logging.debug("Beats per minute: {}".format(beat_stats['bpm']))
-    logging.debug("Beat locations: {}".format(beat_stats['beat_locations'].tolist()))
-    logging.debug("Beat intervals: {}".format(beat_stats['beat_intervals'].tolist()))
-    logging.debug("BPM estimates: {}".format(beat_stats['bpm_estimates'].tolist()))
+    logging.debug("Beats per minute: {}".format(pprint.pformat(beat_stats['bpm'])))
+    logging.debug("Beat locations: {}".format(pprint.pformat(beat_stats['beat_locations'].tolist())))
+    logging.debug("Beat intervals: {}".format(pprint.pformat(beat_stats['beat_intervals'].tolist())))
+    logging.debug("BPM estimates: {}".format(pprint.pformat(beat_stats['bpm_estimates'].tolist())))
     logging.debug("\n")
 
     return beat_stats
@@ -51,7 +52,7 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_
         beat_interval_groups.append(beat_interval_group)
         total_beat_intervals_covered += num_beat_intervals_covered
 
-    logging.debug("\nbeat_interval_groups: {}\n".format(beat_interval_groups))
+    logging.debug("\nbeat_interval_groups: {}\n".format(pprint.pformat(beat_interval_groups)))
 
     return beat_interval_groups
 

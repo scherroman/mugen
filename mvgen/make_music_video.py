@@ -17,7 +17,7 @@ def create_music_video(args):
     save_rejected_segments = args.save_rejected_segments
 
     audio_src = args.audio_src
-    video_src = args.video_src
+    video_src = args.video_src if args.video_src else []
     speed_multiplier = args.speed_multiplier
     speed_multiplier_offset = args.speed_multiplier_offset
 
@@ -25,8 +25,8 @@ def create_music_video(args):
     output_name = util.sanitize_filename(output_name)
     s.music_video_name = util.get_music_video_name(output_name, False)
     speed_multiplier, speed_multiplier_offset = util.parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
-    audio_file = util.get_file(audio_src, s.FILE_TYPE_AUDIO)
-    video_files = util.get_files(video_src, s.FILE_TYPE_VIDEO)
+    audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
+    video_files = util.get_files(s.FILE_TYPE_VIDEO, *video_src)
 
     # Reserve music video output path
     util.reserve_file(util.get_output_path(s.music_video_name))
@@ -68,7 +68,7 @@ def recreate_music_video(args):
     # Prepare Inputs
     output_name = util.sanitize_filename(output_name)
     s.music_video_name = util.get_music_video_name(output_name, True)
-    spec_file = util.get_file(spec_src, s.FILE_TYPE_SPEC)
+    spec_file = util.get_file(s.FILE_TYPE_SPEC, spec_src)
     spec = util.parse_spec_file(spec_file)
     audio_file = spec['audio_file']['file_path']
 
@@ -109,7 +109,7 @@ def parse_args(args):
     create_parser = subparsers.add_parser('create', parents = [parent_parser])
     create_parser.set_defaults(func=create_music_video)
     create_parser.add_argument('-a', '--audio-source', dest='audio_src', help='The audio file for the music video. Supports any audio format supported by ffmpeg, such as wav, aiff, flac, ogg, mp3, etc...')
-    create_parser.add_argument('-v', '--video-source', dest='video_src', help='The video(s) for the music video. Either a singular video file or a folder containing multiple video files. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
+    create_parser.add_argument('-v', '--video-source', dest='video_src', nargs='+', help='The video(s) for the music video. Takes a list of files and folders separated by spaces. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
     create_parser.add_argument('-sm', '--speed-multiplier', dest='speed_multiplier', type=Fraction, default=1, help='Pass in this argument to speed up or slow down the scene changes in the music video. Should be of the form x or 1/x, where x is a natural number. (e.g.) 2 for double speed, or 1/2 for half speed.')
     create_parser.add_argument('-smo', '--speed-multiplier-offset', dest='speed_multiplier_offset', type=int, help='Pass in this argument alongside a slowdown speed multiplier to offset the grouping of beat intervals by a specified amount. Takes an integer, with a max offset of x - 1 for a slowdown of 1/x.')
     create_parser.add_argument('-sx', '--save-rejected-segments', dest='save_rejected_segments', action='store_true', default=False, help='Pass in this argument to save all segments that were rejected from the music video.')
@@ -118,7 +118,7 @@ def parse_args(args):
     recreate_parser = subparsers.add_parser('recreate', parents = [parent_parser])
     recreate_parser.set_defaults(func=recreate_music_video)
     recreate_parser.add_argument('-s', '--spec-source', dest='spec_src', help='The spec file from which to recreate the music video. Spec files are generated alongside music videos created by this program.')
-    recreate_parser.add_argument('-rs', '--replace-segments', dest='replace_segments', type=int, nargs='+', help='The a list of segment numbers in the music video to replace with new random segments. Takes values separated by spaces (e.g.) 98 171 200 305.')
+    recreate_parser.add_argument('-rs', '--replace-segments', dest='replace_segments', type=int, nargs='+', help='Pass in this argument to provide a list of segment numbers in the music video to replace with new random segments. Takes values separated by spaces (e.g.) 98 171 200 305.')
 
     return parser.parse_args(args)
 

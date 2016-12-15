@@ -29,71 +29,84 @@ def get_music_video_name(output_name, is_regenerated):
 
     return music_video_name
 
-# Validates a file path from a given source, or returns a file path after prompting user for selection
-def get_file(src, file_type):
+'''
+Validates a file path from a given source, 
+or returns a file path after prompting user via file selection dialog
+'''
+def get_file(file_type, source):
     file = None
 
     # Select via terminal input
-    if src:
-        src_exists = os.path.exists(src)
+    if source:
+        source_exists = os.path.exists(source)
 
         # Check that file exists
-        if not src_exists:
-            print("{} source path '{}' does not exist.".format(file_type, src))
+        if not source_exists:
+            print("{} source path '{}' does not exist.".format(file_type, source))
             sys.exit(1)
 
-        file = src
+        file = source
     # Select via file selection dialog
     else:
         root = tk.Tk()
         root.withdraw()
-        src = tkFileDialog.askopenfilename(message="Select {} file".format(file_type))
+        source = tkFileDialog.askopenfilename(message="Select {} file".format(file_type))
         root.update()
 
-        if src == "":
+        if source == "":
             print("No {} file was selected.".format(file_type))
             sys.exit(1)
 
         # Properly encode file name
-        file = src.encode('utf-8')
+        file = source.encode('utf-8')
 
     logging.debug("{}_file {}".format(file_type, file))
     return file
 
-# Returns list of file paths from a given source, or after prompting user for selection
-def get_files(src, file_type):
+'''
+Returns list of file paths from a given list of sources, 
+or after prompting user for a list of sources via file selection dialog
+'''
+def get_files(file_type, *sources):
     files = []
 
     # Select  via terminal input
-    if src:
-        src_exists = os.path.exists(src)
-        src_is_dir = os.path.isdir(src)
+    if sources:
+        for source in sources:
+            source_exists = os.path.exists(source)
+            source_is_dir = os.path.isdir(source)
 
-        # Check that file/directory exists
-        if not src_exists:
-            print("{} source path {} does not exist.".format(file_type, src))
-            sys.exit(1)
+            # Check that file/directory exists
+            if not source_exists:
+                print("{} source path {} does not exist.".format(file_type, source))
+                sys.exit(1)
 
-        # Check if source is file or directory  
-        if src_is_dir:
-            files = [file for file in listdir_nohidden(src) if os.path.isfile(file)]
-        else:
-            files = [src]
+            # Check if source is file or directory  
+            if source_is_dir:
+                files.extend([file for file in listdir_nohidden(source) if os.path.isfile(file)])
+            else:
+                files.append(source)
     # Select files via file selection dialog
     else:
-        root = tk.Tk()
-        root.withdraw()
-        src = tkFileDialog.askopenfilename(message="Select {} file(s)".format(file_type), multiple=True)
-        root.update()
+        message = "Select {} files".format(file_type)
+        while True:
+            root = tk.Tk()
+            root.withdraw()
+            source = tkFileDialog.askopenfilename(message=message, multiple=True)
+            message = "Select more {} files, or press cancel if done".format(file_type)
+            root.update()
+    
+            if not source:
+                break
 
-        if src == "":
-            print("No {} file(s) were selected.".format(file_type, src))
+            # Properly encode file names
+            files.extend([file.encode('utf-8') for file in source])
+
+        if len(files) == 0:
+            print("No {} files were selected.".format(file_type, source))
             sys.exit(1)
 
-        # Properly encode file names
-        files = [file.encode('utf-8') for file in src]
-
-    logging.debug("{}_src {}".format(file_type, src))
+    logging.debug("{}_source {}".format(file_type, source))
     for file in files:
         logging.debug("{}_file: {}".format(file_type, file))
     return files
@@ -151,6 +164,8 @@ def sanitize_filename(filename):
     return "".join(c for c in filename if c.isalnum() or c in keepcharacters).rstrip() if filename else None
 
 def listdir_nohidden(path):
+    # Make sure path has trailing slash
+    path = os.path.join(path, '')
     for file in os.listdir(path):
         if not file.startswith('.'):
             yield path + file
