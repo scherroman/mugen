@@ -86,11 +86,11 @@ python make_music_video.py create --help
 python make_music_video.py recreate --help
 ```
 
-**Run generator with file selection dialog**
+**Run generator with file selection dialogs**
 
 `python make_music_video.py create`
 
 **Run generator with file inputs via terminal**
 
-`python make_music_video.py create -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv`
+`python make_music_video.py create -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
 
