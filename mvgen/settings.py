@@ -24,6 +24,8 @@ RS_TYPE_TEXT_DETECTED = 'text_detected'
 RS_TYPE_SOLID_COLOR = 'solid_color'
 
 ### PATHS ###
+TEMP_PATH_BASE = 'temp/'
+
 OUTPUT_PATH_BASE = 'output/'
 OUTPUT_NAME_DEFAULT = 'music_video'
 OUTPUT_EXTENSION = '.mp4'

@@ -71,9 +71,14 @@ def recreate_music_video(args):
     spec_file = util.get_file(s.FILE_TYPE_SPEC, spec_src)
     spec = util.parse_spec_file(spec_file)
     audio_file = spec['audio_file']['file_path']
+    audio_offset = spec['audio_file']['offset']
 
     # Reserve music video output path
     util.reserve_file(util.get_output_path(s.music_video_name))
+
+    # Offset the audio if specified in spec
+    if audio_offset and audio_offset > 0:
+        audio_file = audio.get_temp_offset_audio_file(audio_file, audio_offset)
 
     # Regenerate the video segments from the spec file
     regen_video_segments = video.regenerate_video_segments(spec, replace_segments)
@@ -94,6 +99,8 @@ def exit_handler():
         reserved_music_video_file = util.get_output_path(s.music_video_name)
         if os.path.exists(reserved_music_video_file) and os.stat(reserved_music_video_file).st_size == 0:
             os.remove(reserved_music_video_file)
+    # Cleanup temp folder
+    util.delete_dir(s.TEMP_PATH_BASE)
 
 def parse_args(args):
     parser = argparse.ArgumentParser()

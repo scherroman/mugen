@@ -29,11 +29,11 @@ def get_music_video_name(output_name, is_regenerated):
 
     return music_video_name
 
-'''
-Validates a file path from a given source, 
-or returns a file path after prompting user via file selection dialog
-'''
 def get_file(file_type, source):
+    """
+    Validates a file path from a given source, 
+    or returns a file path after prompting user via file selection dialog
+    """
     file = None
 
     # Select via terminal input
@@ -63,11 +63,11 @@ def get_file(file_type, source):
     logging.debug("{}_file {}".format(file_type, file))
     return file
 
-'''
-Returns list of file paths from a given list of sources, 
-or after prompting user for a list of sources via file selection dialog
-'''
 def get_files(file_type, *sources):
+    """
+    Returns list of file paths from a given list of sources, 
+    or after prompting user for a list of sources via file selection dialog
+    """
     files = []
 
     # Select  via terminal input
@@ -134,6 +134,19 @@ def parse_spec_file(spec_file):
 
     return spec
 
+def get_ffmpeg_binary():
+    """
+    Return appropriate ffmpeg binary for system
+    """
+    # Unix
+    if which("ffmpeg"):
+        return "ffmpeg"
+    # Windows
+    elif which("ffmpeg.exe"):
+        return "ffmpeg.exe"
+    else:
+        raise IOError("Could not find ffmpeg binary for system.")
+
 ### FILESYSTEM ###
 
 def ensure_dir(*directories):
@@ -147,6 +160,11 @@ def recreate_dir(*directories):
             shutil.rmtree(directory)
         os.makedirs(directory)
 
+def delete_dir(*directories):
+    for directory in directories:
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+
 def get_output_path(music_video_name):
     return s.OUTPUT_PATH_BASE + music_video_name + s.OUTPUT_EXTENSION
 
@@ -155,6 +173,9 @@ def get_spec_path(music_video_name):
 
 def get_segments_dir(music_video_name):
     return s.SEGMENTS_PATH_BASE + music_video_name + '/'
+
+def get_temp_audio_file_path(audio_file):
+    return s.TEMP_PATH_BASE + 'offset_audio' + os.path.splitext(audio_file)[1]
 
 def reserve_file(file_name):
     open(file_name, 'a').close()
@@ -169,3 +190,14 @@ def listdir_nohidden(path):
     for file in os.listdir(path):
         if not file.startswith('.'):
             yield path + file
+
+def which(program):
+    """
+    Mimics behavior of UNIX which command.
+    """
+    envdir_list = [os.curdir] + os.environ["PATH"].split(os.pathsep)
+
+    for envdir in envdir_list:
+        program_path = os.path.join(envdir, program)
+        if os.path.isfile(program_path) and os.access(program_path, os.X_OK):
+            return program_path

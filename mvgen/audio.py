@@ -3,12 +3,16 @@ import logging
 import pprint
 import essentia
 import essentia.standard
+import subprocess as sp
 
 # Project modules
 import settings as s
+import utility as util
 
-# Extracts beat locations and intervals from an audio file
 def get_beat_stats(audio_file):
+    """
+    Extracts beat locations and intervals from an audio file
+    """
     print("Processing audio beat patterns...")
 
     # Load audio
@@ -34,11 +38,13 @@ def get_beat_stats(audio_file):
 
     return beat_stats
 
-# Group together beat intervals based on speed_multiplier by
-# -> splitting individual beat intervals for speedup
-# -> combining adjacent beat intervals for slowdown
-# -> using original beat interval for normal speed
 def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_offset):
+    """
+    Group together beat intervals based on speed_multiplier by
+    -> splitting individual beat intervals for speedup
+    -> combining adjacent beat intervals for slowdown
+    -> using original beat interval for normal speed
+    """
     beat_interval_groups = [] 
     beat_intervals = beat_intervals.tolist()
     
@@ -92,3 +98,33 @@ def get_beat_interval_group(beat_interval, index, beat_intervals,
         num_beat_intervals_covered = 1
 
     return beat_interval_group, num_beat_intervals_covered
+
+def get_temp_offset_audio_file(audio_file, offset):
+    """
+    Create a temporary new audio file with the given offset to use for the music video
+    """
+    print("Creating temporary audio file with specified offset {}...".format(offset))
+    offset_audio_path = None
+
+    # Get path to temporary offset audio file
+    util.ensure_dir(s.TEMP_PATH_BASE)
+    temp_offset_audio_path = util.get_temp_audio_file_path(audio_file)
+
+    cmd = [
+            util.get_ffmpeg_binary(),
+            '-i', audio_file,
+            '-ss', str(offset),
+            '-acodec', 'copy',
+            temp_offset_audio_path
+          ]
+
+    # Generate new temporary audio file with offset
+    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
+    p_out, p_err = p.communicate()
+    
+    if p.returncode != 0:
+        raise IOError("Failed to create temporary audio file with specified offset {}. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(offset, p.returncode, p_err))
+    
+    return temp_offset_audio_path
+
+

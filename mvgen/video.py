@@ -13,8 +13,10 @@ from collections import OrderedDict
 import utility as util
 import settings as s
 
-# Compile music video from video segments and audio
 def create_music_video(video_segments, audio_file):
+    """
+    Compile music video from video segments and audio
+    """
     print("Generating music video from video segments and audio...")
 
     # Make sure output directory exists
@@ -29,9 +31,11 @@ def create_music_video(video_segments, audio_file):
     music_video.write_videofile(output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                 audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', s.MOVIEPY_CRF])
 
-# Generates a set of random video segments from the video files
-# with durations corresponding to the durations of the beat intervals
 def generate_video_segments(video_files, beat_interval_groups):
+    """
+    Generates a set of random video segments from the video files
+    with durations corresponding to the durations of the beat intervals
+    """
     # Remove improper video files
     videos = []
     for video_file in video_files:
@@ -67,8 +71,10 @@ def generate_video_segments(video_files, beat_interval_groups):
     
     return video_segments, rejected_segments
 
-# Regenerates the video segments from the videos specified in the spec
 def regenerate_video_segments(spec, replace_segments):
+    """
+    Regenerates the video segments from the videos specified in the spec
+    """
     # Remove improper video files
     videos = []
     for video_file in spec['video_files']:
@@ -102,8 +108,10 @@ def regenerate_video_segments(spec, replace_segments):
     
     return regen_video_segments
 
-# Save the individual segments that compose the music video
 def save_video_segments(video_segments):
+    """
+    Save the individual segments that compose the music video
+    """
     print("Saving video segments...")
 
     # Create music video's segments directory (overwrite if exists)
@@ -117,8 +125,10 @@ def save_video_segments(video_segments):
                                       ffmpeg_params=['-crf', s.MOVIEPY_CRF])
         count += 1
 
-# Save the video segments that were rejected
 def save_rejected_segments(rejected_segments):
+    """
+    Save the video segments that were rejected
+    """
     print("Saving rejected segments...")
 
     # Create rejected segments directories (overwrite if exists)
@@ -156,10 +166,12 @@ def print_rejected_segment_stats(rejected_segments):
     print("# rejected segments with solid colors: {}"
           .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SOLID_COLOR])))
 
-# Save reusable spec for the music video
 def save_music_video_spec(audio_file, video_files, speed_multiplier, 
                           speed_multiplier_offset, beat_stats, beat_interval_groups, 
                           video_segments):
+    """
+    Save reusable spec for the music video
+    """
     print("Saving music video spec...")
 
     # Video duration is sum of video segment durations
@@ -180,13 +192,13 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
 
     # Add extra metadata
     audio_file_spec = OrderedDict([('file_path', audio_file),
-                                   ('offset', 0)])
+                                   ('offset', None)])
     spec['audio_file'] = audio_file_spec
 
     for index, video_file in enumerate(video_files):
         video_file_spec = OrderedDict([('video_number', index),
                                        ('file_path', video_file),
-                                       ('offset', 0)])
+                                       ('offset', None)])
         spec['video_files'].append(video_file_spec)
 
     for video_segment in video_segments:
@@ -274,7 +286,7 @@ def regenerate_video_segment(videos, video_segment, video_files, replace_segment
         except Exception as e:
             # If we run into an error regenerating a video segment, 
             # replace it a random video segment
-            print('Error regenerating video segment {}, Will generate a random video segment to replace it instead. Error: {}'.format(video_segment['sequence_number'], e))
+            print("Error regenerating video segment {}, Will generate a random video segment to replace it instead. Error: {}".format(video_segment['sequence_number'], e))
             regen_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'])
 
     return regen_video_segment
