@@ -13,6 +13,8 @@ import settings as s
 
 def create_music_video(args):
     output_name = args.output_name
+    video_dimensions = (args.video_dimensions[0], args.video_dimensions[0])
+    preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
     save_rejected_segments = args.save_rejected_segments
 
@@ -31,11 +33,17 @@ def create_music_video(args):
     # Reserve music video output path
     util.reserve_file(util.get_output_path(s.music_video_name))
 
+    # Set dimensions for music video
+    if not preserve_video_dimensions:
+        s.music_video_dimensions = video_dimensions if video_dimensions \
+                                   else video.get_music_video_dimensions(video_files)
+
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
 
     # Assign beat intervals to groups based on speed_multiplier
-    beat_interval_groups = audio.get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier, speed_multiplier_offset)
+    beat_interval_groups = audio.get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier, 
+                                                          speed_multiplier_offset)
     
     # Generate random video segments according to beat intervals
     video_segments, rejected_segments = video.generate_video_segments(video_files, beat_interval_groups)
@@ -61,6 +69,8 @@ def create_music_video(args):
 
 def recreate_music_video(args):
     output_name = args.output_name
+    video_dimensions = args.video_dimensions
+    preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
     spec_src = args.spec_src
     replace_segments = args.replace_segments
@@ -70,11 +80,16 @@ def recreate_music_video(args):
     s.music_video_name = util.get_music_video_name(output_name, True)
     spec_file = util.get_file(s.FILE_TYPE_SPEC, spec_src)
     spec = util.parse_spec_file(spec_file)
+    video_files = [video_file['file_path'] for video_file in spec['video_files']]
     audio_file = spec['audio_file']['file_path']
     audio_offset = spec['audio_file']['offset']
 
     # Reserve music video output path
     util.reserve_file(util.get_output_path(s.music_video_name))
+
+    # Set dimensions for music video
+    s.music_video_dimensions = video_dimensions if video_dimensions \
+                               else video.get_music_video_dimensions(video_files)
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
@@ -109,6 +124,8 @@ def parse_args(args):
 
     # Common Parameters
     parent_parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output music_video_0' + s.OUTPUT_EXTENSION + ', music_video_1' + s.OUTPUT_EXTENSION + ', etc...')
+    parent_parser.add_argument('-vd', '--video-dimensions', dest='video_dimensions', type=int, nargs=2, help='Pass in this argument to manuualy set the pixel dimensions for the music video, width and height. All video segments will be resized (cropped and/or scaled) appropriately to match these dimensions. Otherwise, the best dimensions for the music video are calculated automatically. Takes width then height integer values separated by spaces e.g., 1920 1080')
+    parent_parser.add_argument('-pvd', '--preserve-video-dimensions', dest='preserve_video_dimensions', action='store_true', default=False, help='Pass in this argument to preserve the various screen dimensions of the videos, and not perform any resizing.')
     parent_parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')
     parent_parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print useful debug info and save all rejected segments.')
     
