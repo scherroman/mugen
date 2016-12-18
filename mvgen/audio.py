@@ -66,6 +66,9 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_
 
 def get_beat_interval_group(beat_interval, index, beat_intervals, 
                             speed_multiplier, speed_multiplier_offset):
+    """
+    Assign beat intervals to groups based on speed_multiplier
+    """
     beat_interval_group = None
     num_beat_intervals_covered = 0
 

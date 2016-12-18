@@ -1,6 +1,7 @@
 ### Globals ###
 debug = False
 music_video_name = None
+music_video_dimensions = None
 
 ### GENERAL ###
 VERSION = "1.0"
@@ -11,6 +12,8 @@ FILE_TYPE_VIDEO = 'video'
 FILE_TYPE_SPEC = "spec"
 
 ### VIDEO ###
+WIDESCREEN_ASPECT_RATIO = 16/float(9)
+
 MOVIEPY_FPS = 24
 MOVIEPY_CODEC = 'libx264'
 MOVIEPY_CRF = "18"

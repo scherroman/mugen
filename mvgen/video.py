@@ -36,22 +36,8 @@ def generate_video_segments(video_files, beat_interval_groups):
     Generates a set of random video segments from the video files
     with durations corresponding to the durations of the beat intervals
     """
-    # Remove improper video files
-    videos = []
-    for video_file in video_files:
-        try:
-            video = VideoFileClip(video_file).without_audio()
-        except Exception as e:
-            print("Error reading video file '{}'. Will be excluded from the music video. Error: {}".format(video_file, e))
-            continue
-        else:
-            video.src_file = video_file
-            videos.append(video)
-
-    # If no video files to work with, exit
-    if len(videos) == 0:
-        print("No more video files left to work with. I can't continue :(")
-        sys.exit(1)
+    # Get video file clips
+    videos = get_video_file_clips(video_files)
 
     print("Grabbing random video segments from {} videos according to beat patterns...".format(len(videos)))
 
@@ -68,6 +54,9 @@ def generate_video_segments(video_files, beat_interval_groups):
             
             video_segments.append(video_segment)
             rejected_segments.extend(new_rejected_segments)
+
+    if s.music_video_dimensions:
+        video_segments = resize_video_segments(video_segments)
     
     return video_segments, rejected_segments
 
@@ -75,22 +64,8 @@ def regenerate_video_segments(spec, replace_segments):
     """
     Regenerates the video segments from the videos specified in the spec
     """
-    # Remove improper video files
-    videos = []
-    for video_file in spec['video_files']:
-        try:
-            video = VideoFileClip(video_file['file_path']).without_audio()
-        except Exception as e:
-            print("Error reading video file '{}'. Will be excluded from the music video. Error: {}".format(video_file['file_path'], e))
-            continue
-        else:
-            video.src_file = video_file['file_path']
-            videos.append(video)
-
-    # If no video files to work with, exit
-    if len(videos) == 0:
-        print("No more video files left to work with. I can't continue :(")
-        sys.exit(1)
+    video_files = [video_file['file_path'] for video_file in spec['video_files']]
+    videos = get_video_file_clips(video_files)
 
     print("Regenerating video segments from {} videos according to spec...".format(len(videos)))
 
@@ -105,6 +80,9 @@ def regenerate_video_segments(spec, replace_segments):
         regen_video_segment.beat_interval_numbers = video_segment['beat_interval_numbers']
         
         regen_video_segments.append(regen_video_segment)
+
+    if s.music_video_dimensions:
+        regen_video_segments = resize_video_segments(regen_video_segments)
     
     return regen_video_segments
 
@@ -233,7 +211,34 @@ def save_regenerated_music_video_spec(spec, regen_video_segments):
 
 ### HELPER FUNCTIONS ###
 
+def get_video_file_clips(video_files):
+    """
+    Returns a list of videoFileClips from a list of video file names,
+    excluding those that could not be properly read
+    """
+    # Remove improper video files
+    video_file_clips = []
+    for video_file in video_files:
+        try:
+            video_file_clip = VideoFileClip(video_file).without_audio()
+        except Exception as e:
+            print("Error reading video file '{}'. Will be excluded from the music video. Error: {}".format(video_file, e))
+            continue
+        else:
+            video_file_clip.src_file = video_file
+            video_file_clips.append(video_file_clip)
+
+    # If no video files to work with, exit
+    if len(video_file_clips) == 0:
+        print("No more video files left to work with. I can't continue :(")
+        sys.exit(1)
+
+    return video_file_clips
+
 def generate_video_segment(videos, duration):
+    """
+    Generates a random video segment with the specified duration from the given videos 
+    """
     video_segment = None
     rejected_segments = []
     while video_segment == None:
@@ -266,13 +271,18 @@ def generate_video_segment(videos, duration):
     return video_segment, rejected_segments
 
 def regenerate_video_segment(videos, video_segment, video_files, replace_segment):
+    """
+    Attempts to regenerate a spec file video segment
+    If it cannot do so successfully, generates a random video segment 'B' from the given videos 
+    with the same duration
+    """
     regen_video_segment = None
 
     video_file = video_files[video_segment['video_number']]
     video = next(video for video in videos if video.src_file==video_file['file_path'])
     start_time = video_segment['video_start_time']
     end_time = video_segment['video_end_time']
-    offset = video_file['offset']
+    offset = video_file['offset'] if video_file['offset'] else 0
 
     if replace_segment:
         regen_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'])
@@ -291,12 +301,54 @@ def regenerate_video_segment(videos, video_segment, video_files, replace_segment
 
     return regen_video_segment
 
+def resize_video_segments(video_segments):
+    resized_video_segments = []
+
+    music_video_aspect_ratio = s.music_video_dimensions[0]/float(s.music_video_dimensions[1])
+
+    for video_segment in video_segments:
+        resized_video_segment = None
+        width = video_segment.size[0]
+        height = video_segment.size[1]
+        aspect_ratio = width/float(height)
+
+        # Crop video segment if needed, to match aspect ratio of music video dimensions
+        if aspect_ratio > music_video_aspect_ratio:
+            # Crop sides
+            cropped_width = int(music_video_aspect_ratio * height)
+            width_difference = width - cropped_width
+            video_segment = video_segment.crop(x1 = width_difference/2, x2 = width - width_difference/2)
+        elif aspect_ratio < music_video_aspect_ratio:
+            # Crop top & bottom
+            cropped_height = int(width/music_video_aspect_ratio)
+            height_difference = height - cropped_height
+            cropped_dimensions = (width, cropped_height)
+            video_segment = video_segment.crop(y1 = height_difference/2, y2 = height - height_difference/2)
+
+        # Resize video if needed, to match music video dimensions
+        if tuple(video_segment.size) != s.music_video_dimensions:
+            # Video needs resize
+            resized_video_segment = video_segment.resize(s.music_video_dimensions)
+        else:
+            # Video is already correct size
+            resized_video_segment = video_segment
+            
+        resized_video_segments.append(resized_video_segment)
+
+    return resized_video_segments
+
 def segment_contains_scene_change(video_segment):
+    """
+    Checks if a video segment contains a scene change
+    """
     cuts, luminosities = detect_scenes(video_segment, fps=s.MOVIEPY_FPS, progress_bar=False)
 
     return True if len(cuts) > 1 else False
         
 def segment_contains_text(video_segment):
+    """
+    Checks if a video segment contains text
+    """
     first_frame_contains_text = False
     last_frame_contains_text = False
     first_frame = video_segment.get_frame(t='00:00:00')
@@ -317,6 +369,9 @@ def segment_contains_text(video_segment):
     return True if first_frame_contains_text or last_frame_contains_text else False
 
 def segment_has_solid_color(video_segment):
+    """
+    Checks if a video segment contains a solid color or close to a solid color
+    """
     first_frame_is_solid_color = False
     last_frame_is_solid_color = False
     first_frame = video_segment.get_frame(t='00:00:00')
@@ -335,3 +390,60 @@ def segment_has_solid_color(video_segment):
         last_frame_is_solid_color = True
 
     return True if first_frame_is_solid_color or last_frame_is_solid_color else False
+
+def get_music_video_dimensions(video_files):
+    """
+    Returns the largest widescreen (16:9) dimensions possible for a group of videos
+    """
+    # Get video file clips
+    music_video_dimensions = None
+    largest_widescreen_dimensions = None
+    videos = get_video_file_clips(video_files)
+    logging.debug("\n")
+
+    unique_dimensions = set()
+
+    for video in videos:
+        closest_widescreen_dimensions = None
+        width = video.size[0]
+        height = video.size[1]
+        aspect_ratio = width/float(height)
+        unique_dimensions.add((width, height))
+        
+        logging.debug(video.src_file)
+        logging.debug("dimensions: {}".format(video.size))
+
+        # Crop sides
+        if aspect_ratio > s.WIDESCREEN_ASPECT_RATIO:
+            cropped_width = int(s.WIDESCREEN_ASPECT_RATIO * height)
+            closest_widescreen_dimensions = (cropped_width, height)
+        # Crop top & bottom
+        elif aspect_ratio < s.WIDESCREEN_ASPECT_RATIO:
+            cropped_height = int(width/s.WIDESCREEN_ASPECT_RATIO)
+            closest_widescreen_dimensions = (width, cropped_height)
+        else:
+            closest_widescreen_dimensions = (width, height)
+
+        logging.debug("closest_widescreen_dimensions: {}\n".format(closest_widescreen_dimensions))
+
+        # Check if the closest_widescreen_dimensions are the largest so far
+        if not largest_widescreen_dimensions:
+            largest_widescreen_dimensions = closest_widescreen_dimensions
+        elif closest_widescreen_dimensions[0] * closest_widescreen_dimensions[1] > \
+             largest_widescreen_dimensions[0] * largest_widescreen_dimensions[1]:
+            largest_widescreen_dimensions = closest_widescreen_dimensions
+
+    # Only one set of dimensions, use those
+    if len(unique_dimensions) == 1:
+        music_video_dimensions = next(iter(unique_dimensions))
+        print("Using video dimensions: {}".format(music_video_dimensions))
+    # Multiple sets of dimensions, use the largest widescreen dimensions calculated
+    else:
+        music_video_dimensions = largest_widescreen_dimensions
+        print("Multiple video sizes detected. Using largest widescreen dimensions possible: {}".format(music_video_dimensions))
+        
+    return music_video_dimensions
+
+
+
+
