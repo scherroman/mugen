@@ -444,6 +444,10 @@ def get_music_video_dimensions(video_files):
         
     return music_video_dimensions
 
+def reserve_music_video_file(music_video_name):
+    util.ensure_dir(s.OUTPUT_PATH_BASE)
+    util.reserve_file(util.get_output_path(music_video_name))
+
 
 
 

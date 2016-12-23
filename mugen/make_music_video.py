@@ -30,8 +30,8 @@ def create_music_video(args):
     audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
     video_files = util.get_files(s.FILE_TYPE_VIDEO, *video_src)
 
-    # Reserve music video output path
-    util.reserve_file(util.get_output_path(s.music_video_name))
+    # Reserve file for music video
+    video.reserve_music_video_file(s.music_video_name)
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
@@ -84,8 +84,8 @@ def recreate_music_video(args):
     audio_file = spec['audio_file']['file_path']
     audio_offset = spec['audio_file']['offset']
 
-    # Reserve music video output path
-    util.reserve_file(util.get_output_path(s.music_video_name))
+    # Reserve file for music video
+    video.reserve_music_video_file(s.music_video_name)
 
     # Set dimensions for music video
     s.music_video_dimensions = video_dimensions if video_dimensions \

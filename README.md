@@ -1,4 +1,11 @@
-# mvgen
+```
+                                   
+ _ __ ___  _   _  __ _  ___ _ __  
+| '_ ` _ \| | | |/ _` |/ _ \ '_ \ 
+| | | | | | |_| | (_| |  __/ | | |
+|_| |_| |_|\__,_|\__, |\___|_| |_|
+                  |___/            
+```
 
 A music video generator based on beat patterns
 
@@ -45,13 +52,13 @@ export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 
 `brew install tesseract --with-all-languages`
 
-**5 - Create mvgen virtual environment**
+**5 - Create mugen virtual environment**
 
 `conda env create -f environment.yml`
 
-**6 - Activate mvgen environment**
+**6 - Activate mugen environment**
 
-`source activate mvgen`
+`source activate mugen`
 
 **7 - Update Xcode to most recent version**
 
@@ -62,9 +69,9 @@ brew tap MTG/essentia
 brew install essentia 
 ```
 
-**9 - Move essentia package from Homebrew to your mvgen conda environment**
+**9 - Move essentia package from Homebrew to your mugen conda environment**
 
-`cp -r /usr/local/lib/python2.7/site-packages/essentia /Users/myuser/miniconda/envs/mvgen/lib/python2.7/site-packages/essentia`
+`cp -r /usr/local/lib/python2.7/site-packages/essentia /Users/myuser/miniconda/envs/mugen/lib/python2.7/site-packages/essentia`
 
 **10 - [Fix matplotlib](http://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python)**
 
@@ -72,7 +79,7 @@ brew install essentia
 
 **11 - Download [scherroman/moviepy](https://github.com/scherroman/moviepy) from github (forked from [Zulko/moviepy](https://github.com/Zulko/moviepy) with added fix [#225](https://github.com/Zulko/moviepy/pull/225)).**
 
-**12 - Install moviepy into mvgen conda environment (from downloaded moviepy directory)**
+**12 - Install moviepy into mugen conda environment (from downloaded moviepy directory)**
 
 `(sudo) python setup.py install`
 
@@ -86,11 +93,19 @@ python make_music_video.py create --help
 python make_music_video.py recreate --help
 ```
 
-**Run generator with file selection dialogs**
+**Run creator with file selection dialogs**
 
 `python make_music_video.py create`
 
-**Run generator with file inputs via terminal**
+**Run creator with file inputs via terminal**
 
 `python make_music_video.py create -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
+
+**Run recreator with file input via terminal**
+
+`python make_music_video.py create -s ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
+
+**Slow down scene changes to every other beat**
+
+`python make_music_video.py create -sm 1/2`
 
