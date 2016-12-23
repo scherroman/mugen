@@ -93,17 +93,17 @@ python make_music_video.py create --help
 python make_music_video.py recreate --help
 ```
 
-**Run creator with file selection dialogs**
+**Create a music video**
 
 `python make_music_video.py create`
 
-**Run creator with file inputs via terminal**
-
 `python make_music_video.py create -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
 
-**Run recreator with file input via terminal**
+**Recreate a music video**
 
-`python make_music_video.py create -s ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
+`python make_music_video.py recreate`
+
+`python make_music_video.py recreate -s ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
 
 **Slow down scene changes to every other beat**
 
