@@ -9,7 +9,7 @@ from fractions import Fraction
 from collections import OrderedDict
 
 # Project modules
-import settings as s
+import mugen.settings as s
 
 ### INPUTS ###
 

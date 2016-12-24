@@ -6,8 +6,8 @@ import essentia.standard
 import subprocess as sp
 
 # Project modules
-import settings as s
-import utility as util
+import mugen.settings as s
+import mugen.utility as util
 
 def get_beat_stats(audio_file):
     """

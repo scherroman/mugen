@@ -5,11 +5,14 @@ import logging
 import argparse
 from fractions import Fraction
 
+# Add base project module to python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Project modules
-import audio
-import video
-import utility as util
-import settings as s
+import mugen.audio as audio
+from mugen.video import video, sizing
+import mugen.utility as util
+import mugen.settings as s
 
 def create_music_video(args):
     output_name = args.output_name
@@ -36,7 +39,7 @@ def create_music_video(args):
     # Set dimensions for music video
     if not preserve_video_dimensions:
         s.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else video.get_music_video_dimensions(video_files)
+                                   else sizing.get_music_video_dimensions(video_files)
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
@@ -89,7 +92,7 @@ def recreate_music_video(args):
 
     # Set dimensions for music video
     s.music_video_dimensions = video_dimensions if video_dimensions \
-                               else video.get_music_video_dimensions(video_files)
+                               else sizing.get_music_video_dimensions(video_files)
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
