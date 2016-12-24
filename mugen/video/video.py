@@ -183,6 +183,9 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
         json.dump(spec, outfile, indent=2, ensure_ascii=False)
 
 def save_regenerated_music_video_spec(spec, regen_video_segments):
+    """
+    Save reusable spec for the regenerated music video
+    """
     print("Saving regenerated music video spec...")
 
     spec['video_segments'] = []
@@ -239,7 +242,7 @@ def generate_video_segment(videos, duration):
         elif detect.segment_contains_text(video_segment):
             reject_type = s.RS_TYPE_TEXT_DETECTED
         # Discard video segment if it contains a solid color
-        elif detect.segment_has_solid_color(video_segment):
+        elif detect.segment_contains_solid_color(video_segment):
             reject_type = s.RS_TYPE_SOLID_COLOR
 
         if reject_type:

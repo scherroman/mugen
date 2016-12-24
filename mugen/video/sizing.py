@@ -5,6 +5,10 @@ from mugen.video import utility as v_util
 import mugen.settings as s
 
 def resize_video_segments(video_segments):
+    """
+    Crop and/or resize video segments as necessary
+    to reach chosen dimensions of music video
+    """
     resized_video_segments = []
 
     music_video_aspect_ratio = s.music_video_dimensions[0]/float(s.music_video_dimensions[1])

@@ -36,7 +36,7 @@ def segment_contains_text(video_segment):
 
     return True if first_frame_contains_text or last_frame_contains_text else False
 
-def segment_has_solid_color(video_segment):
+def segment_contains_solid_color(video_segment):
     """
     Checks if a video segment contains a solid color or close to a solid color
     """
