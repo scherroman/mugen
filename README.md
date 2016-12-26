@@ -25,8 +25,6 @@ Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy]
 
 5 - Save a reusable spec file detailing the structure of the music video. 
 
-Note: The audio should have a sample rate of 44.1 KHz for accurate rhythm analysis via essentia. 
-
 ## Requirements
 
 You'll need a python virtual environment with Python 2.7 and the pip packages listed in the conda [environment](environment.yml) for this repository. I recommend using [miniconda](http://conda.pydata.org/miniconda.html) as shown in the installation walkthrough below.
@@ -105,7 +103,10 @@ python make_music_video.py recreate --help
 
 `python make_music_video.py recreate -s ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
 
+**Preview beat locations in a song**
+
+`python make_music_video.py preview -a ~/Documents/mp3s/Spazzkid\ -\ Goodbye.mp3`
+
 **Slow down scene changes to every other beat**
 
 `python make_music_video.py create -sm 1/2`
-

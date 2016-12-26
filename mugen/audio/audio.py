@@ -1,11 +1,13 @@
 import sys
 import logging
 import pprint
+import numpy as np
 import essentia
 import essentia.standard
 import subprocess as sp
 
 # Project modules
+import mugen.audio.utility as a_util
 import mugen.settings as s
 import mugen.utility as util
 
@@ -16,18 +18,23 @@ def get_beat_stats(audio_file):
     print("Processing audio beat patterns...")
 
     # Load audio
-    try:
-        loader = essentia.standard.MonoLoader(filename = audio_file)
-    except Exception as e:
-        print("Error reading audio file '{}'. Cannot continue. Error: {}".format(audio_file, e))
-        sys.exit(1)
+    audio = a_util.load_audio(audio_file)
     
     # Get beat stats from audio
-    audio = loader()
-    rhythm_loader = essentia.standard.RhythmExtractor2013()
-    rhythm = rhythm_loader(audio)
+    rhythm_extractor = essentia.standard.RhythmExtractor2013()
+    duration_extractor = essentia.standard.Duration()
+
+    rhythm = rhythm_extractor(audio)
+    duration = duration_extractor(audio)
+    beat_intervals = rhythm[4]
+
+    # Fill in start and end intervals
+    start_interval = rhythm[1][0]
+    end_interval = duration - rhythm[1][len(rhythm[1]) - 1]
+    beat_intervals = np.concatenate([[start_interval], beat_intervals, [end_interval]])
+   
     beat_stats = {'bpm':rhythm[0], 'beat_locations':rhythm[1], 'bpm_estimates':rhythm[3], 
-                  'beat_intervals':rhythm[4]}
+                  'beat_intervals':beat_intervals}
 
     logging.debug("\n")
     logging.debug("Beats per minute: {}".format(pprint.pformat(beat_stats['bpm'])))
@@ -102,7 +109,18 @@ def get_beat_interval_group(beat_interval, index, beat_intervals,
 
     return beat_interval_group, num_beat_intervals_covered
 
-def get_temp_offset_audio_file(audio_file, offset):
+def flatten_beat_interval_groups(beat_interval_groups):
+    flattened_beat_locations = []
+
+    for beat_interval_group in beat_interval_groups:
+        for interval in beat_interval_group['intervals']:
+            prev_beat_location = flattened_beat_locations[-1] if flattened_beat_locations else 0
+            next_beat_location = prev_beat_location + interval
+            flattened_beat_locations.append(next_beat_location)
+
+    return flattened_beat_locations
+
+def get_offset_audio_file(audio_file, offset):
     """
     Create a temporary new audio file with the given offset to use for the music video
     """
@@ -129,5 +147,19 @@ def get_temp_offset_audio_file(audio_file, offset):
         raise IOError("Failed to create temporary audio file with specified offset {}. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(offset, p.returncode, p_err))
     
     return temp_offset_audio_path
+
+def preview_audio_beats(audio_file, beat_locations):
+    print("Creating audio preview...")
+
+    # Load audio
+    audio = a_util.load_audio(audio_file)
+    onsets_marker = essentia.standard.AudioOnsetsMarker(onsets = beat_locations)
+    mono_writer = essentia.standard.MonoWriter(filename = "marked_audio_preview.wav", bitrate = 320)
+
+    # Create preview audio file
+    marked_audio = onsets_marker(audio)
+    mono_writer(marked_audio)
+
+
 
 
