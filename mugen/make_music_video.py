@@ -16,7 +16,7 @@ import mugen.settings as s
 
 def create_music_video(args):
     output_name = args.output_name
-    video_dimensions = (args.video_dimensions[0], args.video_dimensions[0]) if args.video_dimensions else None
+    video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
     save_rejected_segments = args.save_rejected_segments
@@ -72,8 +72,8 @@ def create_music_video(args):
 
 def recreate_music_video(args):
     output_name = args.output_name
-    video_dimensions = args.video_dimensions
-    preserve_video_dimensions = args.preserve_video_dimensions if args.video_dimensions else None
+    video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
+    preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
     spec_src = args.spec_src
     replace_segments = args.replace_segments
@@ -91,8 +91,9 @@ def recreate_music_video(args):
     video.reserve_music_video_file(s.music_video_name)
 
     # Set dimensions for music video
-    s.music_video_dimensions = video_dimensions if video_dimensions \
-                               else sizing.get_music_video_dimensions(video_files)
+    if not preserve_video_dimensions:
+        s.music_video_dimensions = video_dimensions if video_dimensions \
+                                   else sizing.get_music_video_dimensions(video_files)
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
