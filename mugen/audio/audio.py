@@ -154,7 +154,7 @@ def preview_audio_beats(audio_file, beat_locations):
     # Load audio
     audio = a_util.load_audio(audio_file)
     onsets_marker = essentia.standard.AudioOnsetsMarker(onsets = beat_locations)
-    mono_writer = essentia.standard.MonoWriter(filename = "marked_audio_preview.wav", bitrate = 320)
+    mono_writer = essentia.standard.MonoWriter(filename = s.OUTPUT_PATH_BASE + "marked_audio_preview.wav", bitrate = 320)
 
     # Create preview audio file
     marked_audio = onsets_marker(audio)

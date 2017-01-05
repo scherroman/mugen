@@ -20,7 +20,6 @@ def create_music_video(args):
     preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
     save_rejected_segments = args.save_rejected_segments
-
     audio_src = args.audio_src
     video_src = args.video_src if args.video_src else []
     speed_multiplier = args.speed_multiplier
@@ -117,6 +116,7 @@ def preview_audio(args):
     speed_multiplier = args.speed_multiplier
     speed_multiplier_offset = args.speed_multiplier_offset
 
+    # Prepare Inputs
     speed_multiplier, speed_multiplier_offset = util.parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
     audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
 
@@ -142,6 +142,16 @@ def exit_handler():
     # Cleanup temp folder
     util.delete_dir(s.TEMP_PATH_BASE)
 
+def prepare_args(args):
+    s.debug = args.debug
+    
+    # Configuration
+    if s.debug:
+        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    atexit.register(exit_handler)
+
+    return args
+
 def parse_args(args):
     parser = argparse.ArgumentParser()
     common_parser = argparse.ArgumentParser(add_help=False)
@@ -166,34 +176,28 @@ def parse_args(args):
     audio_parser.add_argument('-smo', '--speed-multiplier-offset', dest='speed_multiplier_offset', type=int, help='Pass in this argument alongside a slowdown speed multiplier to offset the grouping of beat intervals by a specified amount. Takes an integer, with a max offset of x - 1 for a slowdown of 1/x.')
 
     ### COMMANDS ###
-
-    # Preview Command Parameters
-    preview_parser = subparsers.add_parser('preview', parents = [common_parser, audio_parser])
-    preview_parser.set_defaults(func=preview_audio)
-    
+ 
     # Create Command Parameters
-    create_parser = subparsers.add_parser('create', parents = [common_parser, audio_parser, video_parser])
+    create_parser = subparsers.add_parser('create', parents = [common_parser, audio_parser, video_parser], help="Create a new music video.")
     create_parser.set_defaults(func=create_music_video)
     create_parser.add_argument('-v', '--video-source', dest='video_src', nargs='+', help='The video(s) for the music video. Takes a list of files and folders separated by spaces. Supports any video format supported by ffmpeg, such as .ogv, .mp4, .mpeg, .avi, .mov, etc...')
     create_parser.add_argument('-sx', '--save-rejected-segments', dest='save_rejected_segments', action='store_true', default=False, help='Pass in this argument to save all segments that were rejected from the music video.')
 
     # Recreate Command Parameters
-    recreate_parser = subparsers.add_parser('recreate', parents = [common_parser, video_parser])
+    recreate_parser = subparsers.add_parser('recreate', parents = [common_parser, video_parser], help="Recreate a music video from a spec file.")
     recreate_parser.set_defaults(func=recreate_music_video)
     recreate_parser.add_argument('-s', '--spec-source', dest='spec_src', help='The spec file from which to recreate the music video. Spec files are generated alongside music videos created by this program.')
     recreate_parser.add_argument('-rs', '--replace-segments', dest='replace_segments', type=int, nargs='+', help='Pass in this argument to provide a list of segment numbers in the music video to replace with new random segments. Takes values separated by spaces (e.g.) 98 171 200 305.')
+
+    # Preview Command Parameters
+    preview_parser = subparsers.add_parser('preview', parents = [common_parser, audio_parser], help="Create an audio preview of scene change locations for a music video by marking the audio with beeps.")
+    preview_parser.set_defaults(func=preview_audio)
 
     return parser.parse_args(args)
 
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])
-    s.debug = args.debug
-    
-    # Configuration
-    if s.debug:
-        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    atexit.register(exit_handler)
-
+    args = prepare_args(args)
     args.func(args)
 
     print("All Done!")

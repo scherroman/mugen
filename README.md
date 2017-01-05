@@ -33,17 +33,22 @@ You'll also need to install the python bindings for [essentia](https://github.co
 
 Recommended install order: tesseract -> conda virtual environment -> essentia -> moviepy 
 
+Below, an installation walthrough is provided for Mac OS X to give you a better idea of the installation process. This project has not been tested on Windows or Linux, but it should work on these systems provided the dependencies are compiled and installed properly.
+
 ## Installation Walkthrough (Mac OS X)
 
-**1 - [Install Miniconda](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)**
+**1 - [Install Miniconda 3.5](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)**
 
 **2 - [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
 
-**3 - Add homebrew to top of path in `~/.bash_profile`**
+**3 - Ensure Miniconda & Homebrew are at top of path by appending below text to `~/.bash_profile`**
 
 ```
 #Homebrew
 export PATH=/usr/local/bin:/usr/local/sbin:$PATH
+
+#Miniconda
+export PATH="~/miniconda/bin:$PATH"
 ```
 
 **4 - [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
@@ -58,7 +63,7 @@ export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 
 `source activate mugen`
 
-**7 - Update Xcode to most recent version**
+**7 - Ensure most recent version of Xcode**
 
 **8 - [Install essentia >= 2.1](https://github.com/MTG/essentia) via Homebrew**
 
@@ -69,7 +74,7 @@ brew install essentia
 
 **9 - Move essentia package from Homebrew to your mugen conda environment**
 
-`cp -r /usr/local/lib/python2.7/site-packages/essentia /Users/myuser/miniconda/envs/mugen/lib/python2.7/site-packages/essentia`
+`cp -r /usr/local/lib/python2.7/site-packages/essentia ~/miniconda/envs/mugen/lib/python2.7/site-packages/essentia`
 
 **10 - [Fix matplotlib](http://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python)**
 
@@ -89,6 +94,7 @@ brew install essentia
 python make_music_video.py --help
 python make_music_video.py create --help
 python make_music_video.py recreate --help
+python make_music_video.py preview --help
 ```
 
 **Create a music video**
