@@ -16,6 +16,7 @@ import mugen.settings as s
 
 def create_music_video(args):
     output_name = args.output_name
+    s.music_video_crf = args.crf
     video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
@@ -71,6 +72,7 @@ def create_music_video(args):
 
 def recreate_music_video(args):
     output_name = args.output_name
+    s.music_video_crf = args.crf
     video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
     save_segments = args.save_segments
@@ -166,6 +168,7 @@ def parse_args(args):
 
     # Video Common Parameters
     video_parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output music_video_0' + s.OUTPUT_EXTENSION + ', music_video_1' + s.OUTPUT_EXTENSION + ', etc...')
+    video_parser.add_argument('-crf', '--crf', dest='crf', default=s.music_video_crf, help='The crf quality value for the music video. Defaults to 18.')
     video_parser.add_argument('-vd', '--video-dimensions', dest='video_dimensions', type=int, nargs=2, help='Pass in this argument to manually set the pixel dimensions for the music video, width and height. All video segments will be resized (cropped and/or scaled) appropriately to match these dimensions. Otherwise, the best dimensions for the music video are calculated automatically. Takes width then height integer values separated by spaces e.g., 1920 1080')
     video_parser.add_argument('-pvd', '--preserve-video-dimensions', dest='preserve_video_dimensions', action='store_true', default=False, help='Pass in this argument to preserve the various screen dimensions of the videos, and not perform any resizing.')
     video_parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')

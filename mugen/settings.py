@@ -2,6 +2,7 @@
 debug = False
 music_video_name = None
 music_video_dimensions = None
+music_video_crf = '18'
 
 ### GENERAL ###
 VERSION = "1.0"
@@ -16,7 +17,6 @@ WIDESCREEN_ASPECT_RATIO = 16/float(9)
 
 MOVIEPY_FPS = 24
 MOVIEPY_CODEC = 'libx264'
-MOVIEPY_CRF = "18"
 MOVIEPY_AUDIO_BITRATE = '320K'
 
 MIN_EXTREMA_RANGE = 30
