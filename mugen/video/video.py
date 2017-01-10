@@ -36,15 +36,15 @@ def generate_video_segments(video_files, beat_interval_groups):
     """
     # Get video file clips
     videos = v_util.get_video_file_clips(video_files)
+    video_segments = []
+    rejected_segments = [] 
 
     print("Grabbing random video segments from {} videos according to beat patterns...".format(len(videos)))
 
     # Extract video segments from videos
-    video_segments = []
-    rejected_segments = [] 
     for beat_interval_group in tqdm(beat_interval_groups):
         for interval in beat_interval_group['intervals']:
-            video_segment, new_rejected_segments = generate_video_segment(videos, interval)
+            video_segment, new_rejected_segments = generate_video_segment(videos, interval, video_segments)
 
             # Add metadata for music video spec
             video_segment.sequence_number = len(video_segments)
@@ -64,20 +64,44 @@ def regenerate_video_segments(spec, replace_segments):
     """
     video_files = [video_file['file_path'] for video_file in spec['video_files']]
     videos = v_util.get_video_file_clips(video_files)
+    regen_video_segments = []
 
     print("Regenerating video segments from {} videos according to spec...".format(len(videos)))
 
     # Regenerate video segments from videos
-    regen_video_segments = []
     for index, video_segment in enumerate(tqdm(spec['video_segments'])):
-        replace_segment = True if replace_segments and index in replace_segments else False
-        regen_video_segment = regenerate_video_segment(videos, video_segment, spec['video_files'], replace_segment)
+        replace_segment = True if index in replace_segments else False
+        if replace_segment:
+            # Wait to replace segments until later
+            continue
+
+        # Regenerate segment from the spec
+        regen_video_segment = regenerate_video_segment(videos, video_segment, spec['video_files'])
+
+        if not regen_video_segment:
+            # Unable to regnereate segment, add it to list of segments to replace
+            replace_segments.append(index)
+            continue
 
         # Add metadata for music video spec
         regen_video_segment.sequence_number = index
         regen_video_segment.beat_interval_numbers = video_segment['beat_interval_numbers']
         
         regen_video_segments.append(regen_video_segment)
+
+    # Replace segments as needed and requested
+    # Sort segment indeces beforehand to replace in order
+    replace_segments.sort()
+    for index in replace_segments:
+        video_segment = spec['video_segments'][index]
+        # Generate new random segment
+        replacement_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'], regen_video_segments)
+
+        # Add metadata for music video spec
+        replacement_video_segment.sequence_number = index
+        replacement_video_segment.beat_interval_numbers = video_segment['beat_interval_numbers']
+
+        regen_video_segments.insert(index, replacement_video_segment)
 
     if s.music_video_dimensions:
         regen_video_segments = sizing.resize_video_segments(regen_video_segments)
@@ -108,9 +132,10 @@ def save_rejected_segments(rejected_segments):
     print("Saving rejected segments...")
 
     # Create rejected segments directories (overwrite if exists)
-    util.recreate_dir(*[s.RS_PATH_BASE, s.RS_PATH_SCENE_CHANGE, s.RS_PATH_TEXT_DETECTED, 
+    util.recreate_dir(*[s.RS_PATH_BASE, s.RS_PATH_REPEAT, s.RS_PATH_SCENE_CHANGE, s.RS_PATH_TEXT_DETECTED, 
                         s.RS_PATH_SOLID_COLOR])
 
+    rs_repeat_count = 0
     rs_scene_change_count = 0
     rs_text_detected_count = 0
     rs_solid_color_count = 0
@@ -118,7 +143,12 @@ def save_rejected_segments(rejected_segments):
         reject_type = rejected_segment['reject_type']
         video_segment = rejected_segment['video_segment']
 
-        if reject_type == s.RS_TYPE_SCENE_CHANGE:
+        if reject_type == s.RS_TYPE_REPEAT:
+            segment_path = s.RS_PATH_REPEAT + "%s" % rs_repeat_count + s.OUTPUT_EXTENSION
+            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+                                          ffmpeg_params=['-crf', s.music_video_crf])
+            rs_repeat_count += 1
+        elif reject_type == s.RS_TYPE_SCENE_CHANGE:
             segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.OUTPUT_EXTENSION
             video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                           ffmpeg_params=['-crf', s.music_video_crf])
@@ -170,12 +200,8 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
         spec['video_files'].append(video_file_spec)
 
     for video_segment in video_segments:
-        segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number),
-                                    ('video_number', video_files.index(video_segment.src_video_file)),
-                                    ('video_start_time', video_segment.src_start_time),
-                                    ('video_end_time', video_segment.src_end_time),
-                                    ('duration', video_segment.duration),
-                                    ('beat_interval_numbers', video_segment.beat_interval_numbers)])
+        video_segment.video_number = video_files.index(video_segment.src_video_file)
+        segment_spec = get_segment_spec(video_segment)
         spec['video_segments'].append(segment_spec)
 
     spec_path = util.get_spec_path(s.music_video_name)
@@ -190,19 +216,25 @@ def save_regenerated_music_video_spec(spec, regen_video_segments):
 
     spec['video_segments'] = []
     for video_segment in regen_video_segments:
-        segment_spec = OrderedDict([('sequence_number', video_segment.sequence_number),
-                                    ('video_number', next(video_file['video_number'] for video_file in spec['video_files'] if video_file['file_path']==video_segment.src_video_file)),
-                                    ('video_start_time', video_segment.src_start_time),
-                                    ('video_end_time', video_segment.src_end_time),
-                                    ('duration', video_segment.duration),
-                                    ('beat_interval_numbers', video_segment.beat_interval_numbers)])
+        video_segment.video_number = next(video_file['video_number'] for video_file in spec['video_files'] if video_file['file_path']==video_segment.src_video_file)
+        segment_spec = get_segment_spec(video_segment)
         spec['video_segments'].append(segment_spec)
 
     spec_path = util.get_spec_path(s.music_video_name)
     with open(spec_path, 'w') as outfile:
         json.dump(spec, outfile, indent=2, ensure_ascii=False)
 
+def get_segment_spec(video_segment):
+    return OrderedDict([('sequence_number', video_segment.sequence_number),
+                        ('video_number', video_segment.video_number),
+                        ('video_start_time', video_segment.src_start_time),
+                        ('video_end_time', video_segment.src_end_time),
+                        ('duration', video_segment.duration),
+                        ('beat_interval_numbers', video_segment.beat_interval_numbers)])
+
 def print_rejected_segment_stats(rejected_segments):
+    print("# rejected segment repeats: {}"
+          .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_REPEAT])))
     print("# rejected segments with scene changes: {}"
           .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SCENE_CHANGE])))
     print("# rejected segments with text detected: {}"
@@ -216,7 +248,7 @@ def reserve_music_video_file(music_video_name):
 
 ### HELPER FUNCTIONS ###
 
-def generate_video_segment(videos, duration):
+def generate_video_segment(videos, duration, video_segments_used):
     """
     Generates a random video segment with the specified duration from the given videos 
     """
@@ -236,7 +268,9 @@ def generate_video_segment(videos, duration):
 
         # Discard video segment if there is a scene change
         reject_type = None
-        if detect.segment_contains_scene_change(video_segment):
+        if not s.allow_repeats and detect.segment_is_repeat(video_segment, video_segments_used)[0]:
+            reject_type = s.RS_TYPE_REPEAT
+        elif detect.segment_contains_scene_change(video_segment):
             reject_type = s.RS_TYPE_SCENE_CHANGE
         # Discard video segment if there is any detectable text
         elif detect.segment_contains_text(video_segment):
@@ -251,11 +285,10 @@ def generate_video_segment(videos, duration):
 
     return video_segment, rejected_segments
 
-def regenerate_video_segment(videos, video_segment, video_files, replace_segment):
+def regenerate_video_segment(videos, video_segment, video_files):
     """
-    Attempts to regenerate a spec file video segment
-    If it cannot do so successfully, generates a random video segment 'B' from the given videos 
-    with the same duration
+    Attempts to regenerate a spec file video segment.
+    If this cannot be done successfully, returns null
     """
     regen_video_segment = None
 
@@ -265,19 +298,13 @@ def regenerate_video_segment(videos, video_segment, video_files, replace_segment
     end_time = video_segment['video_end_time']
     offset = video_file['offset'] if video_file['offset'] else 0
 
-    if replace_segment:
-        regen_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'])
-    else:
-        try:
-            regen_video_segment = video.subclip(start_time + offset,end_time + offset)
-            # Add metadata for music video spec
-            regen_video_segment.src_video_file = video_file['file_path']
-            regen_video_segment.src_start_time = start_time
-            regen_video_segment.src_end_time = end_time
-        except Exception as e:
-            # If we run into an error regenerating a video segment, 
-            # replace it a random video segment
-            print("Error regenerating video segment {}, Will generate a random video segment to replace it instead. Error: {}".format(video_segment['sequence_number'], e))
-            regen_video_segment, rejected_segments = generate_video_segment(videos, video_segment['duration'])
+    try:
+        regen_video_segment = video.subclip(start_time + offset,end_time + offset)
+        # Add metadata for music video spec
+        regen_video_segment.src_video_file = video_file['file_path']
+        regen_video_segment.src_start_time = start_time
+        regen_video_segment.src_end_time = end_time
+    except Exception as e:
+        regen_video_segment = None
 
     return regen_video_segment

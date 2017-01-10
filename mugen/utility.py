@@ -134,6 +134,12 @@ def parse_spec_file(spec_file):
 
     return spec
 
+def validate_replace_segments(replace_segments, video_segments):
+    for segment in replace_segments:
+        if segment < 0 or segment > (len(video_segments) - 1):
+            print("No segment {} exists in spec for music video".format(segment))
+            sys.exit(1)
+
 def get_ffmpeg_binary():
     """
     Return appropriate ffmpeg binary for system

@@ -3,6 +3,7 @@ debug = False
 music_video_name = None
 music_video_dimensions = None
 music_video_crf = '18'
+allow_repeats = False
 
 ### GENERAL ###
 VERSION = "1.0"
@@ -22,6 +23,7 @@ MOVIEPY_AUDIO_BITRATE = '320K'
 MIN_EXTREMA_RANGE = 30
 DURATION_PRECISION = 17
 
+RS_TYPE_REPEAT = 'repeat'
 RS_TYPE_SCENE_CHANGE = 'scene_change'
 RS_TYPE_TEXT_DETECTED = 'text_detected'
 RS_TYPE_SOLID_COLOR = 'solid_color'
@@ -36,6 +38,7 @@ SPEC_EXTENSION = '.json'
 
 SEGMENTS_PATH_BASE = 'segments/'
 RS_PATH_BASE = 'rejected_segments/'
+RS_PATH_REPEAT = RS_PATH_BASE + RS_TYPE_REPEAT +'/'
 RS_PATH_SCENE_CHANGE = RS_PATH_BASE + RS_TYPE_SCENE_CHANGE + '/'
 RS_PATH_TEXT_DETECTED = RS_PATH_BASE + RS_TYPE_TEXT_DETECTED + '/'
 RS_PATH_SOLID_COLOR = RS_PATH_BASE + RS_TYPE_SOLID_COLOR +'/'
