@@ -19,6 +19,7 @@ def create_music_video(args):
     s.music_video_crf = args.crf
     video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
+    s.allow_repeats = args.allow_repeats
     save_segments = args.save_segments
     save_rejected_segments = args.save_rejected_segments
     audio_src = args.audio_src
@@ -75,15 +76,17 @@ def recreate_music_video(args):
     s.music_video_crf = args.crf
     video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
+    s.allow_repeats = args.allow_repeats
     save_segments = args.save_segments
     spec_src = args.spec_src
-    replace_segments = args.replace_segments
+    replace_segments = args.replace_segments if args.replace_segments else []
 
     # Prepare Inputs
     output_name = util.sanitize_filename(output_name)
     s.music_video_name = util.get_music_video_name(output_name, True)
     spec_file = util.get_file(s.FILE_TYPE_SPEC, spec_src)
     spec = util.parse_spec_file(spec_file)
+    util.validate_replace_segments(replace_segments, spec['video_segments'])
     video_files = [video_file['file_path'] for video_file in spec['video_files']]
     audio_file = spec['audio_file']['file_path']
     audio_offset = spec['audio_file']['offset']
@@ -171,6 +174,7 @@ def parse_args(args):
     video_parser.add_argument('-crf', '--crf', dest='crf', default=s.music_video_crf, help='The crf quality value for the music video. Defaults to 18.')
     video_parser.add_argument('-vd', '--video-dimensions', dest='video_dimensions', type=int, nargs=2, help='Pass in this argument to manually set the pixel dimensions for the music video, width and height. All video segments will be resized (cropped and/or scaled) appropriately to match these dimensions. Otherwise, the best dimensions for the music video are calculated automatically. Takes width then height integer values separated by spaces e.g., 1920 1080')
     video_parser.add_argument('-pvd', '--preserve-video-dimensions', dest='preserve_video_dimensions', action='store_true', default=False, help='Pass in this argument to preserve the various screen dimensions of the videos, and not perform any resizing.')
+    video_parser.add_argument('-ar', '--allow-repeats', dest='allow_repeats', action='store_true', default=s.allow_repeats, help='Pass in this argument to allow repeat segments in the music video (segments that overlap in any way).')
     video_parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')
 
     # Audio Common Parameters
