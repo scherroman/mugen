@@ -84,7 +84,7 @@ brew install essentia
 
 **12 - Install moviepy into mugen conda environment (from downloaded moviepy directory)**
 
-`(sudo) python setup.py install`
+`pip install .`
 
 ## Examples
 

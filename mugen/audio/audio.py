@@ -4,10 +4,10 @@ import pprint
 import numpy as np
 import essentia
 import essentia.standard
-import subprocess as sp
 
 # Project modules
 import mugen.audio.utility as a_util
+import mugen.exceptions as ex
 import mugen.settings as s
 import mugen.utility as util
 
@@ -131,20 +131,19 @@ def get_offset_audio_file(audio_file, offset):
     util.ensure_dir(s.TEMP_PATH_BASE)
     temp_offset_audio_path = util.get_temp_audio_file_path(audio_file)
 
-    cmd = [
+    # Generate new temporary audio file with offset
+    ffmpeg_cmd = [
             util.get_ffmpeg_binary(),
             '-i', audio_file,
             '-ss', str(offset),
             '-acodec', 'copy',
             temp_offset_audio_path
           ]
-
-    # Generate new temporary audio file with offset
-    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
-    p_out, p_err = p.communicate()
-    
-    if p.returncode != 0:
-        raise IOError("Failed to create temporary audio file with specified offset {}. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(offset, p.returncode, p_err))
+          
+    try:
+        util.execute_ffmpeg_command(ffmpeg_cmd)
+    except ex.FFMPEGError as e:
+        print("Failed to create temporary audio file with specified offset {}. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(offset, e.return_code, e.stderr))
     
     return temp_offset_audio_path
 
