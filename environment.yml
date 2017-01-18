@@ -1,8 +1,8 @@
 name: mugen
 dependencies:
 - python=2.7.12
+- cython=0.25.2
 - pip
-- cython=0.24.1
 - pip:
   - ipython==5.1.0
   - numpy==1.11.2
@@ -10,5 +10,6 @@ dependencies:
   - pyyaml==3.12
   - argparse==1.4.0
   - tqdm==4.10.0
+  - pysrt==1.1.1
   - Pillow==3.4.2
   - tesserocr==2.1.3

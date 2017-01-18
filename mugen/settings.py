@@ -28,13 +28,19 @@ RS_TYPE_SCENE_CHANGE = 'scene_change'
 RS_TYPE_TEXT_DETECTED = 'text_detected'
 RS_TYPE_SOLID_COLOR = 'solid_color'
 
+### SUBTITLES ###
+
+SUBS_TRACK_FRAME_NUMBERS = 'frame_numbers'
+SUBS_TRACK_SPEC ='spec'
+
 ### PATHS ###
 TEMP_PATH_BASE = 'temp/'
 
 OUTPUT_PATH_BASE = 'output/'
 OUTPUT_NAME_DEFAULT = 'music_video'
-OUTPUT_EXTENSION = '.mp4'
+OUTPUT_EXTENSION = '.mkv'
 SPEC_EXTENSION = '.json'
+SUBTITLES_EXTENSION = '.srt'
 
 SEGMENTS_PATH_BASE = 'segments/'
 RS_PATH_BASE = 'rejected_segments/'

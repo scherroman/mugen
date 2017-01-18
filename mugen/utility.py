@@ -5,10 +5,12 @@ import shutil
 import logging
 import Tkinter as tk
 import tkFileDialog
+import subprocess as sp
 from fractions import Fraction
 from collections import OrderedDict
 
 # Project modules
+import mugen.exceptions as ex
 import mugen.settings as s
 
 ### INPUTS ###
@@ -26,6 +28,8 @@ def get_music_video_name(output_name, is_regenerated):
                 count += 1
     else:
         music_video_name = output_name
+
+    print("Preparing {}...".format(music_video_name))
 
     return music_video_name
 
@@ -140,19 +144,6 @@ def validate_replace_segments(replace_segments, video_segments):
             print("No segment {} exists in spec for music video".format(segment))
             sys.exit(1)
 
-def get_ffmpeg_binary():
-    """
-    Return appropriate ffmpeg binary for system
-    """
-    # Unix
-    if which("ffmpeg"):
-        return "ffmpeg"
-    # Windows
-    elif which("ffmpeg.exe"):
-        return "ffmpeg.exe"
-    else:
-        raise IOError("Could not find ffmpeg binary for system.")
-
 ### FILESYSTEM ###
 
 def ensure_dir(*directories):
@@ -171,20 +162,23 @@ def delete_dir(*directories):
         if os.path.exists(directory):
             shutil.rmtree(directory)
 
+def get_segments_dir(music_video_name):
+    return s.SEGMENTS_PATH_BASE + music_video_name + '/'
+
 def get_output_path(music_video_name):
     return s.OUTPUT_PATH_BASE + music_video_name + s.OUTPUT_EXTENSION
 
 def get_spec_path(music_video_name):
     return s.OUTPUT_PATH_BASE + music_video_name + '_spec' + s.SPEC_EXTENSION
 
-def get_segments_dir(music_video_name):
-    return s.SEGMENTS_PATH_BASE + music_video_name + '/'
+def get_temp_output_path(music_video_name):
+    return s.TEMP_PATH_BASE + 'temp_' + music_video_name + s.OUTPUT_EXTENSION
+
+def get_temp_subtitles_path(music_video_name):
+    return s.TEMP_PATH_BASE + music_video_name + '_subs' + s.SUBTITLES_EXTENSION
 
 def get_temp_audio_file_path(audio_file):
     return s.TEMP_PATH_BASE + 'offset_audio' + os.path.splitext(audio_file)[1]
-
-def reserve_file(file_name):
-    open(file_name, 'a').close()
 
 def sanitize_filename(filename):
     keepcharacters = (' ','.','_','-','(',')','[',']')
@@ -196,6 +190,31 @@ def listdir_nohidden(path):
     for file in os.listdir(path):
         if not file.startswith('.'):
             yield path + file
+
+### SYSTEM ###
+
+def get_ffmpeg_binary():
+    """
+    Return appropriate ffmpeg binary for system
+    """
+    # Unix
+    if which("ffmpeg"):
+        return "ffmpeg"
+    # Windows
+    elif which("ffmpeg.exe"):
+        return "ffmpeg.exe"
+    else:
+        raise IOError("Could not find ffmpeg binary for system.")
+
+def execute_ffmpeg_command(cmd):
+    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
+    p_out, p_err = p.communicate()
+
+    if p.returncode != 0:
+        raise ex.FFMPEGError("Error executing ffmpeg command.", p.returncode, p_out, p_err)
+
+def touch(filename):
+    open(filename, 'a').close()
 
 def which(program):
     """
