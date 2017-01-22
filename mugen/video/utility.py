@@ -1,3 +1,4 @@
+import sys
 import moviepy.editor as moviepy
 
 # Project modules
