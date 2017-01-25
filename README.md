@@ -9,7 +9,7 @@
 
 A music video generator based on beat patterns
 
-Use it to brainstorm AMVs, montages, what have you. [Check it out](https://youtu.be/gygHoRu7MGg).
+Use it to brainstorm AMVs, montages, what have you. [Check it out](https://youtu.be/ZlTR6XULe5M).
 
 Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [tesseract](https://github.com/tesseract-ocr/tesseract) OCR
 

@@ -3,6 +3,7 @@ import pysrt
 from collections import OrderedDict
 
 # Project modules
+import mugen.audio.audio as audio
 import mugen.utility as util
 import mugen.exceptions as ex
 import mugen.settings as s
@@ -139,39 +140,37 @@ def get_segment_spec(video_segment):
 
 ### SUBTITLES ###
 
-def add_subtitle_tracks(video_file, spec):
+def add_auxiliary_tracks(video_file, spec):
     """
     Add metadata subtitle tracks to music video
     """
-    print("Writing final video {}...".format(util.get_output_path(s.music_video_name)))
+    print("Writing final video {} with auxiliary tracks...".format(util.get_output_path(s.music_video_name)))
     
     output_path = util.get_output_path(s.music_video_name)
-    temp_subtitles_path = util.get_temp_subtitles_path(s.music_video_name)
-    util.ensure_dir(s.TEMP_PATH_BASE)
-    util.touch(temp_subtitles_path)
-    subs = pysrt.open(temp_subtitles_path, encoding='utf-8')
 
-    # Create frame numbers subtitles
-    running_time = 0
-    for index, video_segment in enumerate(spec['video_segments']):
-        start_time = pysrt.SubRipTime.from_ordinal(running_time * 1000)
-        end_time = start_time + pysrt.SubRipTime.from_ordinal(video_segment['duration'] * 1000)
-        next_sub = pysrt.SubRipItem(index=index, start=start_time, end=end_time, 
-                                    text=video_segment['sequence_number'])
-        running_time += video_segment['duration']
-        subs.append(next_sub)
-    subs.save(temp_subtitles_path, encoding='utf-8')
+    # Audio Tracks
+    audio_track_beat_locations = audio.get_marked_audio_file(spec['audio_file']['file_path'], spec['beat_locations'])
 
-    # Create new music video with subtitles mixed in
+    # Subtitle Tracks
+    subtitle_track_segment_numbers = create_subtitle_track(spec, s.SUBS_TRACK_SEGMENT_NUMBERS)
+    subtitle_track_segment_durations = create_subtitle_track(spec, s.SUBS_TRACK_SEGMENT_DURATIONS)
+
+    # Create new music video with auxiliary audio & subtitle tracks mixed in
     ffmpeg_cmd = [
             util.get_ffmpeg_binary(),
             '-y',
             '-i', video_file,
-            '-i', temp_subtitles_path,
+            '-i', audio_track_beat_locations,
+            '-i', subtitle_track_segment_numbers,
+            '-i', subtitle_track_segment_durations,
             '-map', '0',
             '-c', 'copy',
             '-map', '1',
-            '-c:s:0', 'srt', '-metadata:s:s:0', 'title="{}"'.format(s.SUBS_TRACK_FRAME_NUMBERS),
+            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(s.AUDIO_TRACK_BEAT_LOCATIONS),
+            '-map', '2',
+            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(s.SUBS_TRACK_SEGMENT_NUMBERS),
+            '-map', '3',
+            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(s.SUBS_TRACK_SEGMENT_DURATIONS),
             output_path
           ]
 
@@ -180,5 +179,25 @@ def add_subtitle_tracks(video_file, spec):
     except ex.FFMPEGError as e:
         print("Failed to add subtitles to music video. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(e.return_code, e.stderr))
 
+def create_subtitle_track(spec, track_type):
+    subtitle_path = util.get_temp_subtitle_path(s.music_video_name, track_type)
 
+    util.touch(subtitle_path)
+    subs = pysrt.open(subtitle_path, encoding='utf-8')
 
+    running_time = 0
+    for index, video_segment in enumerate(spec['video_segments']):
+        start_time = pysrt.SubRipTime.from_ordinal(running_time * 1000)
+        end_time = start_time + pysrt.SubRipTime.from_ordinal(video_segment['duration'] * 1000)
+        next_sub = pysrt.SubRipItem(index=index, start=start_time, end=end_time)
+
+        if track_type == s.SUBS_TRACK_SEGMENT_NUMBERS:
+            next_sub.text = video_segment['sequence_number']
+        elif track_type == s.SUBS_TRACK_SEGMENT_DURATIONS:
+            next_sub.text = video_segment['duration']
+
+        running_time += video_segment['duration']
+        subs.append(next_sub)
+    subs.save(subtitle_path, encoding='utf-8')
+            
+    return subtitle_path

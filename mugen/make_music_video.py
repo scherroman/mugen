@@ -88,9 +88,10 @@ def recreate_music_video(args):
     spec = util.parse_spec_file(spec_file)
     util.validate_replace_segments(replace_segments, spec['video_segments'])
     video_files = [video_file['file_path'] for video_file in spec['video_files']]
-    audio_file = spec['audio_file']['file_path']
+    audio_src = spec['audio_file']['file_path']
     audio_offset = spec['audio_file']['offset']
-
+    audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
+    
     # Reserve file for music video
     v_util.reserve_music_video_file(s.music_video_name)
 
@@ -154,6 +155,10 @@ def prepare_args(args):
     if s.debug:
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     atexit.register(exit_handler)
+
+    # Create temp and output folders are created
+    util.ensure_dir(s.TEMP_PATH_BASE)
+    util.ensure_dir(s.OUTPUT_PATH_BASE)
 
     return args
 

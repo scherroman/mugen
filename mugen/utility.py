@@ -171,14 +171,29 @@ def get_output_path(music_video_name):
 def get_spec_path(music_video_name):
     return s.OUTPUT_PATH_BASE + music_video_name + '_spec' + s.SPEC_EXTENSION
 
+def get_audio_preview_path(audio_file):
+    return s.OUTPUT_PATH_BASE + filename_from_path(audio_file) + "_marked_audio_preview" + s.ESSENTIA_ONSETS_AUDIO_EXTENSION
+
 def get_temp_output_path(music_video_name):
     return s.TEMP_PATH_BASE + 'temp_' + music_video_name + s.OUTPUT_EXTENSION
 
-def get_temp_subtitles_path(music_video_name):
-    return s.TEMP_PATH_BASE + music_video_name + '_subs' + s.SUBTITLES_EXTENSION
+def get_temp_subtitle_path(music_video_name, track_type):
+    return s.TEMP_PATH_BASE + music_video_name + '_' + track_type + '_subs' + s.SUBTITLES_EXTENSION
 
-def get_temp_audio_file_path(audio_file):
-    return s.TEMP_PATH_BASE + 'offset_audio' + os.path.splitext(audio_file)[1]
+def get_temp_audio_onsets_path(audio_file):
+    return s.TEMP_PATH_BASE + filename_from_path(audio_file) + '_marked_audio' + s.ESSENTIA_ONSETS_AUDIO_EXTENSION
+
+def get_temp_audio_offset_path(audio_file):
+    return s.TEMP_PATH_BASE + music_video_name + '_offset_audio' + os.path.splitext(audio_file)[1]
+
+def filename_from_path(path):
+    """
+    Returns a path's file basename without its extension
+    """
+    file = os.path.basename(path)
+    filename, extension = os.path.splitext(file)
+
+    return filename
 
 def sanitize_filename(filename):
     keepcharacters = (' ','.','_','-','(',')','[',']')

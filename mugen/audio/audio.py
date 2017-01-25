@@ -1,6 +1,7 @@
 import sys
-import logging
+import shutil
 import pprint
+import logging
 import numpy as np
 import essentia
 import essentia.standard
@@ -128,8 +129,7 @@ def get_offset_audio_file(audio_file, offset):
     offset_audio_path = None
 
     # Get path to temporary offset audio file
-    util.ensure_dir(s.TEMP_PATH_BASE)
-    temp_offset_audio_path = util.get_temp_audio_file_path(audio_file)
+    temp_offset_audio_path = util.get_temp_audio_offset_path(audio_file)
 
     # Generate new temporary audio file with offset
     ffmpeg_cmd = [
@@ -147,18 +147,22 @@ def get_offset_audio_file(audio_file, offset):
     
     return temp_offset_audio_path
 
-def preview_audio_beats(audio_file, beat_locations):
-    print("Creating audio preview...")
+def get_marked_audio_file(audio_file, beat_locations):
+    output_path = util.get_temp_audio_onsets_path(audio_file)
 
     # Load audio
     audio = a_util.load_audio(audio_file)
     onsets_marker = essentia.standard.AudioOnsetsMarker(onsets = beat_locations)
-    mono_writer = essentia.standard.MonoWriter(filename = s.OUTPUT_PATH_BASE + "marked_audio_preview.wav", bitrate = 320)
+    mono_writer = essentia.standard.MonoWriter(filename = output_path, bitrate = s.ESSENTIA_BITRATE)
 
     # Create preview audio file
     marked_audio = onsets_marker(audio)
     mono_writer(marked_audio)
 
+    return output_path
 
+def preview_audio_beats(audio_file, beat_locations):
+    print("Creating audio preview...")
 
-
+    marked_audio_file = get_marked_audio_file(audio_file, beat_locations)
+    shutil.move(marked_audio_file, util.get_audio_preview_path(audio_file))

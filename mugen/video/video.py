@@ -14,9 +14,6 @@ def create_music_video(video_segments, audio_file, spec):
     Compile music video from video segments and audio
     """
     print("Generating music video from video segments and audio...")
-
-    # Make sure output directory exists
-    util.ensure_dir(s.TEMP_PATH_BASE)
     
     # Get output path for file
     temp_output_path = util.get_temp_output_path(s.music_video_name)
@@ -26,7 +23,7 @@ def create_music_video(video_segments, audio_file, spec):
     music_video = music_video.set_audio(audio)
     music_video.write_videofile(temp_output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                 audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', s.music_video_crf])
-    v_io.add_subtitle_tracks(temp_output_path, spec)
+    v_io.add_auxiliary_tracks(temp_output_path, spec)
 
 def generate_video_segments(video_files, beat_interval_groups):
     """

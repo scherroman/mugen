@@ -6,7 +6,6 @@ import mugen.utility as util
 import mugen.settings as s
 
 def reserve_music_video_file(music_video_name):
-    util.ensure_dir(s.OUTPUT_PATH_BASE)
     util.touch(util.get_output_path(music_video_name))
 
 def get_video_file_clips(video_files):
