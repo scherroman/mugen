@@ -3,3 +3,5 @@ output/
 segments/
 rejected_segments/
 temp/
+.idea
+testing.py
