@@ -20,7 +20,7 @@ def save_video_segments(video_segments):
 
     count = 0
     for video_segment in video_segments:
-        segment_path = segments_dir + "%s" % count + s.OUTPUT_EXTENSION
+        segment_path = segments_dir + "%s" % count + s.VIDEO_OUTPUT_EXTENSION
         video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                       ffmpeg_params=['-crf', s.music_video_crf])
         count += 1
@@ -44,22 +44,22 @@ def save_rejected_segments(rejected_segments):
         video_segment = rejected_segment['video_segment']
 
         if reject_type == s.RS_TYPE_REPEAT:
-            segment_path = s.RS_PATH_REPEAT + "%s" % rs_repeat_count + s.OUTPUT_EXTENSION
+            segment_path = s.RS_PATH_REPEAT + "%s" % rs_repeat_count + s.VIDEO_OUTPUT_EXTENSION
             video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                           ffmpeg_params=['-crf', s.music_video_crf])
             rs_repeat_count += 1
         elif reject_type == s.RS_TYPE_SCENE_CHANGE:
-            segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.OUTPUT_EXTENSION
+            segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.VIDEO_OUTPUT_EXTENSION
             video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                           ffmpeg_params=['-crf', s.music_video_crf])
             rs_scene_change_count += 1
         elif reject_type == s.RS_TYPE_TEXT_DETECTED:
-            segment_path =  s.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + s.OUTPUT_EXTENSION
+            segment_path =  s.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + s.VIDEO_OUTPUT_EXTENSION
             video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                           ffmpeg_params=['-crf', s.music_video_crf])
             rs_text_detected_count += 1
         else:
-            segment_path = s.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + s.OUTPUT_EXTENSION
+            segment_path = s.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + s.VIDEO_OUTPUT_EXTENSION
             video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
                                           ffmpeg_params=['-crf', s.music_video_crf])
             rs_solid_color_count += 1

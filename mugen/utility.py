@@ -6,7 +6,6 @@ import logging
 import Tkinter as tk
 import tkFileDialog
 import subprocess as sp
-from fractions import Fraction
 from collections import OrderedDict
 
 # Project modules
@@ -21,7 +20,7 @@ def get_music_video_name(output_name, is_regenerated):
         count = 0
         while True:
             music_video_name = 'regenerated_' if is_regenerated else ""
-            music_video_name += s.OUTPUT_NAME_DEFAULT + "_%s" % count
+            music_video_name += s.MUSIC_VIDEO_NAME_DEFAULT + "_%s" % count
             if not os.path.exists(get_output_path(music_video_name)):
                 break
             else:
@@ -107,10 +106,10 @@ def get_files(file_type, *sources):
             files.extend([file.encode('utf-8') for file in source])
 
         if len(files) == 0:
-            print("No {} files were selected.".format(file_type, source))
+            print("No {} files were selected.".format(file_type))
             sys.exit(1)
 
-    logging.debug("{}_source {}".format(file_type, source))
+    logging.debug("{}_source {}".format(file_type, sources))
     for file in files:
         logging.debug("{}_file: {}".format(file_type, file))
     return files
@@ -166,7 +165,7 @@ def get_segments_dir(music_video_name):
     return s.SEGMENTS_PATH_BASE + music_video_name + '/'
 
 def get_output_path(music_video_name):
-    return s.OUTPUT_PATH_BASE + music_video_name + s.OUTPUT_EXTENSION
+    return s.OUTPUT_PATH_BASE + music_video_name + s.VIDEO_OUTPUT_EXTENSION
 
 def get_spec_path(music_video_name):
     return s.OUTPUT_PATH_BASE + music_video_name + '_spec' + s.SPEC_EXTENSION
@@ -175,7 +174,7 @@ def get_audio_preview_path(audio_file):
     return s.OUTPUT_PATH_BASE + filename_from_path(audio_file) + "_marked_audio_preview" + s.ESSENTIA_ONSETS_AUDIO_EXTENSION
 
 def get_temp_output_path(music_video_name):
-    return s.TEMP_PATH_BASE + 'temp_' + music_video_name + s.OUTPUT_EXTENSION
+    return s.TEMP_PATH_BASE + 'temp_' + music_video_name + s.VIDEO_OUTPUT_EXTENSION
 
 def get_temp_subtitle_path(music_video_name, track_type):
     return s.TEMP_PATH_BASE + music_video_name + '_' + track_type + '_subs' + s.SUBTITLES_EXTENSION
@@ -184,7 +183,7 @@ def get_temp_audio_onsets_path(audio_file):
     return s.TEMP_PATH_BASE + filename_from_path(audio_file) + '_marked_audio' + s.ESSENTIA_ONSETS_AUDIO_EXTENSION
 
 def get_temp_audio_offset_path(audio_file):
-    return s.TEMP_PATH_BASE + music_video_name + '_offset_audio' + os.path.splitext(audio_file)[1]
+    return s.TEMP_PATH_BASE + filename_from_path(audio_file) + '_offset_audio' + os.path.splitext(audio_file)[1]
 
 def filename_from_path(path):
     """

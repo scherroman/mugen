@@ -9,5 +9,5 @@ def load_audio(audio_file):
         print("Error reading audio file '{}'. Cannot continue. Error: {}".format(audio_file, e))
         sys.exit(1)
     else:
-    	audio = loader()
-    	return audio
+        audio = loader()
+        return audio
