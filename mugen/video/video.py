@@ -1,6 +1,4 @@
-import sys
 import random
-import logging
 import moviepy.editor as moviepy
 from tqdm import tqdm
 
@@ -21,8 +19,14 @@ def create_music_video(video_segments, audio_file, spec):
     audio = moviepy.AudioFileClip(audio_file)
     music_video = moviepy.concatenate_videoclips(video_segments, method="compose")
     music_video = music_video.set_audio(audio)
+<<<<<<< HEAD
     music_video.write_videofile(temp_output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
                                 audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', s.music_video_crf])
+=======
+    music_video.write_videofile(temp_output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+                                audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', s.music_video_crf],
+                                temp_audiofile=s.TEMP_MOVIEPY_AUDIOFILE)
+>>>>>>> master
     v_io.add_auxiliary_tracks(temp_output_path, spec)
 
 def generate_video_segments(video_files, beat_interval_groups):

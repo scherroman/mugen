@@ -1,4 +1,3 @@
-import sys
 import shutil
 import pprint
 import logging

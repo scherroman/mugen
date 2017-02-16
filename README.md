@@ -37,18 +37,18 @@ Below, an installation walthrough is provided for Mac OS X to give you a better 
 
 ## Installation Walkthrough (Mac OS X)
 
-**1 - [Install Miniconda 3.5](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)**
+**1 - [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
 
-**2 - [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
+**2 - [Install Miniconda 3.5](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)**
 
-**3 - Ensure Miniconda & Homebrew are at top of path by appending below text to `~/.bash_profile`**
+**3 - Ensure Homebrew & Miniconda are at top of path by appending below text to `~/.bash_profile`**
 
 ```
-#Homebrew
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH
-
 #Miniconda
 export PATH="~/miniconda/bin:$PATH"
+
+#Homebrew
+export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 ```
 
 **4 - [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**

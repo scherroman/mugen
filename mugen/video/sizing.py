@@ -29,7 +29,6 @@ def resize_video_segments(video_segments):
             # Crop top & bottom
             cropped_height = int(width/music_video_aspect_ratio)
             height_difference = height - cropped_height
-            cropped_dimensions = (width, cropped_height)
             video_segment = video_segment.crop(y1 = height_difference/2, y2 = height - height_difference/2)
 
         # Resize video if needed, to match music video dimensions
