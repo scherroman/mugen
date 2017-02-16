@@ -39,29 +39,26 @@ def save_rejected_segments(rejected_segments):
     rs_scene_change_count = 0
     rs_text_detected_count = 0
     rs_solid_color_count = 0
-    for rejected_segment in rejected_segments:
-        reject_type = rejected_segment['reject_type']
-        video_segment = rejected_segment['video_segment']
-
-        if reject_type == s.RS_TYPE_REPEAT:
+    for segment in rejected_segments:
+        if segment.reject_type == s.RS_TYPE_REPEAT:
             segment_path = s.RS_PATH_REPEAT + "%s" % rs_repeat_count + s.OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
+            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', s.music_video_crf])
             rs_repeat_count += 1
-        elif reject_type == s.RS_TYPE_SCENE_CHANGE:
+        elif segment.reject_type == s.RS_TYPE_SCENE_CHANGE:
             segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
+            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', s.music_video_crf])
             rs_scene_change_count += 1
-        elif reject_type == s.RS_TYPE_TEXT_DETECTED:
+        elif segment.reject_type == s.RS_TYPE_TEXT_DETECTED:
             segment_path =  s.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + s.OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
+            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', s.music_video_crf])
             rs_text_detected_count += 1
         else:
             segment_path = s.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + s.OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
+            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', s.music_video_crf])
             rs_solid_color_count += 1
 
 ### SPEC FILES ###
@@ -103,7 +100,7 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
 
     for video_segment in video_segments:
         video_segment.video_number = video_files.index(video_segment.src_video_file)
-        segment_spec = get_segment_spec(video_segment)
+        segment_spec = video_segment.to_spec()
         spec['video_segments'].append(segment_spec)
 
     spec_path = util.get_spec_path(s.music_video_name)
@@ -121,7 +118,7 @@ def save_regenerated_music_video_spec(spec, regen_video_segments):
     spec['video_segments'] = []
     for video_segment in regen_video_segments:
         video_segment.video_number = next(video_file['video_number'] for video_file in spec['video_files'] if video_file['file_path']==video_segment.src_video_file)
-        segment_spec = get_segment_spec(video_segment)
+        segment_spec = video_segment.to_spec()
         spec['video_segments'].append(segment_spec)
 
     spec_path = util.get_spec_path(s.music_video_name)
@@ -129,14 +126,6 @@ def save_regenerated_music_video_spec(spec, regen_video_segments):
         json.dump(spec, outfile, indent=2, ensure_ascii=False)
 
     return spec
-
-def get_segment_spec(video_segment):
-    return OrderedDict([('sequence_number', video_segment.sequence_number),
-                        ('video_number', video_segment.video_number),
-                        ('video_start_time', video_segment.src_start_time),
-                        ('video_end_time', video_segment.src_end_time),
-                        ('duration', video_segment.duration),
-                        ('beat_interval_numbers', video_segment.beat_interval_numbers)])
 
 ### SUBTITLES ###
 

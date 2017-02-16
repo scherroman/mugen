@@ -21,7 +21,7 @@ def create_music_video(video_segments, audio_file, spec):
     audio = moviepy.AudioFileClip(audio_file)
     music_video = moviepy.concatenate_videoclips(video_segments, method="compose")
     music_video = music_video.set_audio(audio)
-    music_video.write_videofile(temp_output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
+    music_video.write_videofile(temp_output_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
                                 audio_bitrate=s.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', s.music_video_crf])
     v_io.add_auxiliary_tracks(temp_output_path, spec)
 
@@ -30,8 +30,8 @@ def generate_video_segments(video_files, beat_interval_groups):
     Generates a set of random video segments from the video files
     with durations corresponding to the durations of the beat intervals
     """
-    # Get video file clips
-    videos = v_util.get_video_file_clips(video_files)
+    # Get videos
+    videos = v_util.get_videos(video_files)
     video_segments = []
     rejected_segments = [] 
 
@@ -59,7 +59,7 @@ def regenerate_video_segments(spec, replace_segments):
     Regenerates the video segments from the videos specified in the spec
     """
     video_files = [video_file['file_path'] for video_file in spec['video_files']]
-    videos = v_util.get_video_file_clips(video_files)
+    videos = v_util.get_videos(video_files)
     regen_video_segments = []
 
     print("Regenerating video segments from {} videos according to spec...".format(len(videos)))
@@ -79,10 +79,6 @@ def regenerate_video_segments(spec, replace_segments):
             replace_segments.append(index)
             continue
 
-        # Add metadata for music video spec
-        regen_video_segment.sequence_number = index
-        regen_video_segment.beat_interval_numbers = video_segment['beat_interval_numbers']
-        
         regen_video_segments.append(regen_video_segment)
 
     # Replace segments as needed and requested
@@ -113,32 +109,24 @@ def generate_video_segment(videos, duration, video_segments_used):
     video_segment = None
     rejected_segments = []
     while video_segment == None:
-        random_video_number = random.randint(0, len(videos) - 1)
-        random_video = videos[random_video_number]
-        start_time = round(random.uniform(0, random_video.duration - duration), s.DURATION_PRECISION)
-        end_time = start_time + round(duration, s.DURATION_PRECISION)
+        random_video = random.choice(videos)
+        video_segment = random_video.random_subclip(duration)
 
-        video_segment = random_video.subclip(start_time,end_time)
-        # Add metadata for music video spec
-        video_segment.src_video_file = random_video.src_file
-        video_segment.src_start_time = start_time
-        video_segment.src_end_time = end_time
-
+        # Discard video segment if it is a repeat
+        if not s.allow_repeats and v_detect.video_segment_is_repeat(video_segment, video_segments_used):
+            video_segment.reject_type = s.RS_TYPE_REPEAT
         # Discard video segment if there is a scene change
-        reject_type = None
-        if not s.allow_repeats and v_detect.segment_is_repeat(video_segment, video_segments_used)[0]:
-            reject_type = s.RS_TYPE_REPEAT
-        elif v_detect.segment_contains_scene_change(video_segment):
-            reject_type = s.RS_TYPE_SCENE_CHANGE
+        elif v_detect.video_segment_contains_scene_change(video_segment):
+            video_segment.reject_type = s.RS_TYPE_SCENE_CHANGE
         # Discard video segment if there is any detectable text
-        elif v_detect.segment_contains_text(video_segment):
-            reject_type = s.RS_TYPE_TEXT_DETECTED
+        elif v_detect.video_segment_contains_text(video_segment):
+            video_segment.reject_type = s.RS_TYPE_TEXT_DETECTED
         # Discard video segment if it contains a solid color
-        elif v_detect.segment_contains_solid_color(video_segment):
-            reject_type = s.RS_TYPE_SOLID_COLOR
+        elif v_detect.video_segment_contains_solid_color(video_segment):
+            video_segment.reject_type = s.RS_TYPE_SOLID_COLOR
 
-        if reject_type:
-            rejected_segments.append({'reject_type':reject_type, 'video_segment': video_segment})
+        if video_segment.reject_type:
+            rejected_segments.append(video_segment)
             video_segment = None
 
     return video_segment, rejected_segments
@@ -151,17 +139,16 @@ def regenerate_video_segment(videos, video_segment, video_files):
     regen_video_segment = None
 
     video_file = video_files[video_segment['video_number']]
-    video = next(video for video in videos if video.src_file==video_file['file_path'])
+    video = next(video for video in videos if video.src_video_file==video_file['file_path'])
     start_time = video_segment['video_start_time']
     end_time = video_segment['video_end_time']
     offset = video_file['offset'] if video_file['offset'] else 0
 
     try:
-        regen_video_segment = video.subclip(start_time + offset,end_time + offset)
+        regen_video_segment = video.subclip(start_time + offset, end_time + offset)
         # Add metadata for music video spec
-        regen_video_segment.src_video_file = video_file['file_path']
-        regen_video_segment.src_start_time = start_time
-        regen_video_segment.src_end_time = end_time
+        regen_video_segment.sequence_number = video_segment['sequence_number']
+        regen_video_segment.beat_interval_numbers = video_segment['beat_interval_numbers']
     except Exception as e:
         regen_video_segment = None
 

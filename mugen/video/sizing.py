@@ -44,14 +44,14 @@ def resize_video_segments(video_segments):
 
     return resized_video_segments
 
-def get_music_video_dimensions(video_files):
+def calculate_largest_widescreen_dimensions(video_files):
     """
     Returns the largest widescreen (16:9) dimensions possible for a group of videos
     """
-    # Get video file clips
+    # Get videos
     music_video_dimensions = None
     largest_widescreen_dimensions = None
-    videos = v_util.get_video_file_clips(video_files)
+    videos = v_util.get_videos(video_files)
     logging.debug("\n")
 
     unique_dimensions = set()
@@ -62,8 +62,8 @@ def get_music_video_dimensions(video_files):
         height = video.size[1]
         aspect_ratio = width/float(height)
         unique_dimensions.add((width, height))
-        
-        logging.debug(video.src_file)
+
+        logging.debug(video.src_video_file)
         logging.debug("dimensions: {}".format(video.size))
 
         # Crop sides
@@ -94,5 +94,5 @@ def get_music_video_dimensions(video_files):
     else:
         music_video_dimensions = largest_widescreen_dimensions
         print("Multiple video sizes detected. Using largest widescreen dimensions possible: {}".format(music_video_dimensions))
-        
+
     return music_video_dimensions

@@ -40,7 +40,7 @@ def create_music_video(args):
     # Set dimensions for music video
     if not preserve_video_dimensions:
         s.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.get_music_video_dimensions(video_files)
+                                   else v_sizing.calculate_largest_widescreen_dimensions(video_files)
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
@@ -98,7 +98,7 @@ def recreate_music_video(args):
     # Set dimensions for music video
     if not preserve_video_dimensions:
         s.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.get_music_video_dimensions(video_files)
+                                   else v_sizing.calculate_largest_widescreen_dimensions(video_files)
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
