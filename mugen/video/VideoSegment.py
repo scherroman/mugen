@@ -1,39 +1,57 @@
 import random
 from collections import OrderedDict
 
-import tesserocr
-from PIL import Image
 from moviepy.editor import VideoFileClip
-from moviepy.video.tools.cuts import detect_scenes
+from moviepy.decorators import convert_to_seconds
 
 # Project modules
-import mugen.settings as s
+import mugen.constants as c
 
 class VideoSegment(VideoFileClip, object):
     """
-    A piece of video
+    A segment of video from a video file
+
+    Attributes:
+        source_video_file: The video file that the video segment comes from.
+        source_video_start_time (float): Start time of the video segment in the source_video_file
+        source_video_end_time (float): End time of the video segment in the source_video_file
+        audio (bool): Enables or disables audio from the source_video_file
+        video_traits (list of VideoTrait): Externally detected traits describing the video segment
     """
 
-    def __init__(self, src_video_file, src_start_time=None, src_end_time=None, video_traits=None, enable_audio=False):
-        super(VideoSegment, self).__init__(src_video_file, audio=enable_audio)
-        self.src_video_file = src_video_file
-        self.video_traits = []
+    @convert_to_seconds(['source_video_start_time', 'source_video_end_time'])
+    def __init__(self, video_file, source_video_start_time=None, source_video_end_time=None, audio=False, 
+                 video_traits=None, *args, **kwargs):
+        """
+        Args:
+            video_file (str): A path to a video file. Can have any extension supported by ffmpeg.
+            source_video_start_time (multiple): ~
+            source_video_end_time (multiple): ~
 
-        if src_start_time and src_end_time:
-            self = self.subclip(src_start_time, src_end_time)
+            source_video_start_time, source_video_end_time accept the following formats:
+            (SEC.MIL)
+            (MIN, SEC.MIL)
+            (HRS, MIN, SEC.MIL)
+            'HRS:MIN:SEC.MIL'
+        """
+        super(VideoSegment, self).__init__(video_file, audio=audio, *args, **kwargs)
+        self.source_video_file = video_file
+        self.video_traits = video_traits if video_traits else []
+
+        if source_video_start_time and source_video_end_time:
+            self = self.subclip(source_video_start_time, source_video_end_time)
         else:
-            self.src_start_time = 0
-            self.src_end_time = self.duration
+            self.source_video_start_time = 0
+            self.source_video_end_time = self.duration
 
-        # TODO MAKE INHERENT TO MusicVideo Class
-        self.sequence_number = None
-        self.video_number = None
-        self.beat_interval_numbers = None
+    @property
+    def aspect_ratio(self):
+        return self.w/float(self.h)
 
-    def subclip(self, src_start_time, src_end_time):
-        subclip = super(VideoSegment, self).subclip(src_start_time, src_end_time)
-        subclip.src_start_time = src_start_time
-        subclip.src_end_time = src_end_time
+    def subclip(self, start_time, end_time):
+        subclip = super(VideoSegment, self).subclip(start_time, end_time)
+        subclip.source_video_start_time += start_time
+        subclip.source_video_end_time -= (self.duration - end_time)
 
         return subclip
 
@@ -43,10 +61,39 @@ class VideoSegment(VideoFileClip, object):
 
         return self.subclip(start_time, end_time)
 
+    def resize(self, desired_dimensions):
+        """
+        Args:
+            desired_dimensions (int, int)
+
+        Returns (VideoSegment): New video segment, cropped and/or scaled as necessary to reach desired dimensions
+        """
+        resized_video_segment = None
+        desired_aspect_ratio = desired_dimensions[0] / float(desired_dimensions[1])
+
+        # Crop video segment if needed, to match aspect ratio
+        if self.aspect_ratio > desired_aspect_ratio:
+            # Crop sides
+            cropped_width = int(desired_aspect_ratio * self.h)
+            width_difference = self.w - cropped_width
+            resized_video_segment = self.crop(x1=width_difference/2, x2=self.w - width_difference/2)
+        elif self.aspect_ratio < desired_aspect_ratio:
+            # Crop top & bottom
+            cropped_height = int(self.w/desired_aspect_ratio)
+            height_difference = self.h - cropped_height
+            resized_video_segment = self.crop(y1=height_difference/2, y2=self.h - height_difference/2)
+
+        # Resize video if needed, to match aspect ratio
+        if self.size != desired_dimensions:
+            # Video needs resize
+            resized_video_segment = self.resize(desired_dimensions)
+        else:
+            # Video is already correct size
+            resized_video_segment = self
+
+        return resized_video_segment
+
     def to_spec(self):
-        return OrderedDict([('sequence_number', self.sequence_number),
-                            ('video_number', self.video_number),
-                            ('video_start_time', self.src_start_time),
-                            ('video_end_time', self.src_end_time),
-                            ('duration', self.duration),
-                            ('beat_interval_numbers', self.beat_interval_numbers)])
+
+    @classmethod
+    def from_spec(cls):

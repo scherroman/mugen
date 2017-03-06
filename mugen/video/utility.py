@@ -3,10 +3,10 @@ import sys
 # Project modules
 from mugen.video.VideoSegment import VideoSegment
 import mugen.utility as util
-import mugen.settings as s
+import mugen.constants as c
 
 def reserve_music_video_file(music_video_name):
-    util.touch(util.get_output_path(music_video_name))
+    util.touch(util.get_music_video_output_path(music_video_name))
 
 def get_videos(video_files):
     """
@@ -33,10 +33,10 @@ def get_videos(video_files):
 
 def print_rejected_segment_stats(rejected_segments):
     print("# rejected segment repeats: {}"
-          .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_REPEAT])))
+          .format(len([seg for seg in rejected_segments if seg['reject_type'] == c.VideoTrait.IS_REPEAT])))
     print("# rejected segments with scene changes: {}"
-          .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SCENE_CHANGE])))
+          .format(len([seg for seg in rejected_segments if seg['reject_type'] == c.VideoTrait.HAS_SCENE_CHANGE])))
     print("# rejected segments with text detected: {}"
-          .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_TEXT_DETECTED])))
+          .format(len([seg for seg in rejected_segments if seg['reject_type'] == c.VideoTrait.HAS_TEXT])))
     print("# rejected segments with solid colors: {}"
-          .format(len([seg for seg in rejected_segments if seg['reject_type'] == s.RS_TYPE_SOLID_COLOR])))
+          .format(len([seg for seg in rejected_segments if seg['reject_type'] == c.VideoTrait.HAS_SOLID_COLOR])))

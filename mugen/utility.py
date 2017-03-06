@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 # Project modules
 import mugen.exceptions as ex
-import mugen.settings as s
+import mugen.constants as c
 
 ### INPUTS ###
 
@@ -20,8 +20,8 @@ def get_music_video_name(output_name, is_regenerated):
         count = 0
         while True:
             music_video_name = 'regenerated_' if is_regenerated else ""
-            music_video_name += s.MUSIC_VIDEO_NAME_DEFAULT + "_%s" % count
-            if not os.path.exists(get_output_path(music_video_name)):
+            music_video_name += c.MUSIC_VIDEO_NAME_DEFAULT + "_%s" % count
+            if not os.path.exists(get_music_video_output_path(music_video_name)):
                 break
             else:
                 count += 1
@@ -116,15 +116,15 @@ def get_files(file_type, *sources):
 
 def parse_speed_multiplier(speed_multiplier, speed_multiplier_offset):
     if speed_multiplier == 0 or (speed_multiplier.numerator != 1 and speed_multiplier.denominator != 1):
-        print("Improper speed multiplier provided." + s.HELP)
+        print("Improper speed multiplier provided." + c.HELP)
         sys.exit(1)
 
     if speed_multiplier_offset:
         if speed_multiplier >= 1:
-            print("Speed multiplier offsets may only be used with slowdown speed multipliers." + s.HELP)
+            print("Speed multiplier offsets may only be used with slowdown speed multipliers." + c.HELP)
             sys.exit(1)
         elif speed_multiplier_offset > speed_multiplier.denominator - 1:
-            print("Speed multiplier offset may not be greater than x - 1 for a slowdown of 1/x." + s.HELP)
+            print("Speed multiplier offset may not be greater than x - 1 for a slowdown of 1/x." + c.HELP)
             sys.exit(1)
 
     logging.debug('speed_multiplier: {}'.format(speed_multiplier))
@@ -162,28 +162,28 @@ def delete_dir(*directories):
             shutil.rmtree(directory)
 
 def get_segments_dir(music_video_name):
-    return s.SEGMENTS_PATH_BASE + music_video_name + '/'
+    return c.SEGMENTS_PATH_BASE + music_video_name + '/'
 
-def get_output_path(music_video_name):
-    return s.OUTPUT_PATH_BASE + music_video_name + s.VIDEO_OUTPUT_EXTENSION
+def get_music_video_output_path(music_video_name):
+    return c.OUTPUT_PATH_BASE + music_video_name + c.VIDEO_OUTPUT_EXTENSION
 
 def get_spec_path(music_video_name):
-    return s.OUTPUT_PATH_BASE + music_video_name + '_spec' + s.SPEC_EXTENSION
+    return c.OUTPUT_PATH_BASE + music_video_name + '_spec' + c.SPEC_EXTENSION
 
 def get_audio_preview_path(audio_file):
-    return s.OUTPUT_PATH_BASE + filename_from_path(audio_file) + "_marked_audio_preview" + s.ESSENTIA_ONSETS_AUDIO_EXTENSION
+    return c.OUTPUT_PATH_BASE + filename_from_path(audio_file) + "_marked_audio_preview" + c.ESSENTIA_ONSETS_AUDIO_EXTENSION
 
-def get_temp_output_path(music_video_name):
-    return s.TEMP_PATH_BASE + 'temp_' + music_video_name + s.VIDEO_OUTPUT_EXTENSION
+def get_temp_music_video_output_path(music_video_name):
+    return c.TEMP_PATH_BASE + 'temp_' + music_video_name + c.VIDEO_OUTPUT_EXTENSION
 
 def get_temp_subtitle_path(music_video_name, track_type):
-    return s.TEMP_PATH_BASE + music_video_name + '_' + track_type + '_subs' + s.SUBTITLES_EXTENSION
+    return c.TEMP_PATH_BASE + music_video_name + '_' + track_type + '_subs' + c.SUBTITLES_EXTENSION
 
 def get_temp_audio_onsets_path(audio_file):
-    return s.TEMP_PATH_BASE + filename_from_path(audio_file) + '_marked_audio' + s.ESSENTIA_ONSETS_AUDIO_EXTENSION
+    return c.TEMP_PATH_BASE + filename_from_path(audio_file) + '_marked_audio' + c.ESSENTIA_ONSETS_AUDIO_EXTENSION
 
 def get_temp_audio_offset_path(audio_file):
-    return s.TEMP_PATH_BASE + filename_from_path(audio_file) + '_offset_audio' + os.path.splitext(audio_file)[1]
+    return c.TEMP_PATH_BASE + filename_from_path(audio_file) + '_offset_audio' + os.path.splitext(audio_file)[1]
 
 def filename_from_path(path):
     """

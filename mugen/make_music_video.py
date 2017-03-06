@@ -12,14 +12,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import mugen.audio.audio as audio
 from mugen.video import video, sizing as v_sizing, io as v_io, utility as v_util
 import mugen.utility as util
-import mugen.settings as s
+import mugen.constants as c
 
 def create_music_video(args):
     output_name = args.output_name
-    s.music_video_crf = str(args.crf)
+    c.music_video_crf = str(args.crf)
     video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
-    s.allow_repeats = args.allow_repeats
+    c.allow_repeats = args.allow_repeats
     save_segments = args.save_segments
     save_rejected_segments = args.save_rejected_segments
     audio_src = args.audio_src
@@ -29,18 +29,18 @@ def create_music_video(args):
 
     # Prepare Inputs
     output_name = util.sanitize_filename(output_name)
-    s.music_video_name = util.get_music_video_name(output_name, False)
+    c.music_video_name = util.get_music_video_name(output_name, False)
     speed_multiplier, speed_multiplier_offset = util.parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
-    audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
-    video_files = util.get_files(s.FILE_TYPE_VIDEO, *video_src)
+    audio_file = util.get_file(c.FileType.AUDIO, audio_src)
+    video_files = util.get_files(c.FileType.VIDEO, *video_src)
 
     # Reserve file for music video
-    v_util.reserve_music_video_file(s.music_video_name)
+    v_util.reserve_music_video_file(c.music_video_name)
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
-        s.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.calculate_largest_widescreen_dimensions(video_files)
+        c.music_video_dimensions = video_dimensions if video_dimensions \
+                                   else v_sizing.largest_dimensions_for_aspect_ratio(video_files)
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
@@ -73,32 +73,32 @@ def create_music_video(args):
 
 def recreate_music_video(args):
     output_name = args.output_name
-    s.music_video_crf = str(args.crf)
+    c.music_video_crf = str(args.crf)
     video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
     preserve_video_dimensions = args.preserve_video_dimensions
-    s.allow_repeats = args.allow_repeats
+    c.allow_repeats = args.allow_repeats
     save_segments = args.save_segments
     spec_src = args.spec_src
     replace_segments = args.replace_segments if args.replace_segments else []
 
     # Prepare Inputs
     output_name = util.sanitize_filename(output_name)
-    s.music_video_name = util.get_music_video_name(output_name, True)
-    spec_file = util.get_file(s.FILE_TYPE_SPEC, spec_src)
+    c.music_video_name = util.get_music_video_name(output_name, True)
+    spec_file = util.get_file(c.FileType.SPEC, spec_src)
     spec = util.parse_spec_file(spec_file)
     util.validate_replace_segments(replace_segments, spec['video_segments'])
     video_files = [video_file['file_path'] for video_file in spec['video_files']]
     audio_src = spec['audio_file']['file_path']
     audio_offset = spec['audio_file']['offset']
-    audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
+    audio_file = util.get_file(c.FileType.AUDIO, audio_src)
     
     # Reserve file for music video
-    v_util.reserve_music_video_file(s.music_video_name)
+    v_util.reserve_music_video_file(c.music_video_name)
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
-        s.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.calculate_largest_widescreen_dimensions(video_files)
+        c.music_video_dimensions = video_dimensions if video_dimensions \
+                                   else v_sizing.largest_dimensions_for_aspect_ratio(video_files)
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
@@ -124,7 +124,7 @@ def preview_audio(args):
 
     # Prepare Inputs
     speed_multiplier, speed_multiplier_offset = util.parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
-    audio_file = util.get_file(s.FILE_TYPE_AUDIO, audio_src)
+    audio_file = util.get_file(c.FileType.AUDIO, audio_src)
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
@@ -141,24 +141,24 @@ def preview_audio(args):
 
 def exit_handler():
     # Cleanup reserved music video file if empty
-    if s.music_video_name:
-        reserved_music_video_file = util.get_output_path(s.music_video_name)
+    if c.music_video_name:
+        reserved_music_video_file = util.get_music_video_output_path(c.music_video_name)
         if os.path.exists(reserved_music_video_file) and os.stat(reserved_music_video_file).st_size == 0:
             os.remove(reserved_music_video_file)
     # Cleanup temp folder
-    util.delete_dir(s.TEMP_PATH_BASE)
+    util.delete_dir(c.TEMP_PATH_BASE)
 
 def prepare_args(args):
-    s.debug = args.debug
+    c.debug = args.debug
     
     # Configuration
-    if s.debug:
+    if c.debug:
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     atexit.register(exit_handler)
 
     # Create temp and output folders are created
-    util.ensure_dir(s.TEMP_PATH_BASE)
-    util.ensure_dir(s.OUTPUT_PATH_BASE)
+    util.ensure_dir(c.TEMP_PATH_BASE)
+    util.ensure_dir(c.OUTPUT_PATH_BASE)
 
     return args
 
@@ -172,14 +172,14 @@ def parse_args(args):
     ### SHARED PARAMETERS ###
 
     # Common Parameters
-    common_parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print useful debug info and save all rejected segments.')
+    common_parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print useful debug info.')
 
     # Video Common Parameters
-    video_parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output ' + s.MUSIC_VIDEO_NAME_DEFAULT + '_0' + s.VIDEO_OUTPUT_EXTENSION + ', ' + s.MUSIC_VIDEO_NAME_DEFAULT + '_1' + s.VIDEO_OUTPUT_EXTENSION + ', etc...')
-    video_parser.add_argument('-crf', '--crf', dest='crf', type=int, default=s.music_video_crf, help='The crf quality value for the music video. Takes an integer from 0 (lossless) to 51 (lossy). Defaults to 18.')
+    video_parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output ' + c.MUSIC_VIDEO_NAME_DEFAULT + '_0' + c.VIDEO_OUTPUT_EXTENSION + ', ' + c.MUSIC_VIDEO_NAME_DEFAULT + '_1' + c.VIDEO_OUTPUT_EXTENSION + ', etc...')
+    video_parser.add_argument('-crf', '--crf', dest='crf', type=int, default=c.DEFAULT_VIDEO_CRF, help='The crf quality value for the music video. Takes an integer from 0 (lossless) to 51 (lossy). Defaults to 18.')
     video_parser.add_argument('-vd', '--video-dimensions', dest='video_dimensions', type=int, nargs=2, help='Pass in this argument to manually set the pixel dimensions for the music video, width and height. All video segments will be resized (cropped and/or scaled) appropriately to match these dimensions. Otherwise, the best dimensions for the music video are calculated automatically. Takes width then height integer values separated by spaces e.g., 1920 1080')
     video_parser.add_argument('-pvd', '--preserve-video-dimensions', dest='preserve_video_dimensions', action='store_true', default=False, help='Pass in this argument to preserve the various screen dimensions of the videos, and not perform any resizing.')
-    video_parser.add_argument('-ar', '--allow-repeats', dest='allow_repeats', action='store_true', default=s.allow_repeats, help='Pass in this argument to allow repeat segments in the music video (segments that overlap in any way).')
+    video_parser.add_argument('-ar', '--allow-repeats', dest='allow_repeats', action='store_true', default=False, help='Pass in this argument to allow repeat segments in the music video (segments that overlap in any way).')
     video_parser.add_argument('-ss', '--save-segments', dest='save_segments', action='store_true', default=False, help='Pass in this argument to save all the individual segments that compose the music video.')
 
     # Audio Common Parameters

@@ -1,51 +1,18 @@
+from enum import Enum
 import logging
 
 # Project modules
 from mugen.video import utility as v_util
-import mugen.settings as s
+import mugen.constants as c
 
-def resize_video_segments(video_segments):
+class AspectRatio(float, Enum):
+    FULLSCREEN = (4, 3)
+    WIDESCREEN = (16, 9)
+    ULTRAWIDE = (21, 9)
+
+def largest_dimensions_for_aspect_ratio(video_files, desired_aspect_ratio):
     """
-    Crop and/or resize video segments as necessary
-    to reach chosen dimensions of music video
-    """
-    resized_video_segments = []
-
-    music_video_aspect_ratio = s.music_video_dimensions[0]/float(s.music_video_dimensions[1])
-
-    for video_segment in video_segments:
-        resized_video_segment = None
-        width = video_segment.size[0]
-        height = video_segment.size[1]
-        aspect_ratio = width/float(height)
-
-        # Crop video segment if needed, to match aspect ratio of music video dimensions
-        if aspect_ratio > music_video_aspect_ratio:
-            # Crop sides
-            cropped_width = int(music_video_aspect_ratio * height)
-            width_difference = width - cropped_width
-            video_segment = video_segment.crop(x1 = width_difference/2, x2 = width - width_difference/2)
-        elif aspect_ratio < music_video_aspect_ratio:
-            # Crop top & bottom
-            cropped_height = int(width/music_video_aspect_ratio)
-            height_difference = height - cropped_height
-            video_segment = video_segment.crop(y1 = height_difference/2, y2 = height - height_difference/2)
-
-        # Resize video if needed, to match music video dimensions
-        if tuple(video_segment.size) != s.music_video_dimensions:
-            # Video needs resize
-            resized_video_segment = video_segment.resize(s.music_video_dimensions)
-        else:
-            # Video is already correct size
-            resized_video_segment = video_segment
-            
-        resized_video_segments.append(resized_video_segment)
-
-    return resized_video_segments
-
-def calculate_largest_widescreen_dimensions(video_files):
-    """
-    Returns the largest widescreen (16:9) dimensions possible for a group of videos
+    Returns the largest dimensions possible for a group of videos and the specified aspect ratio
     """
     # Get videos
     music_video_dimensions = None
@@ -57,24 +24,21 @@ def calculate_largest_widescreen_dimensions(video_files):
 
     for video in videos:
         closest_widescreen_dimensions = None
-        width = video.size[0]
-        height = video.size[1]
-        aspect_ratio = width/float(height)
-        unique_dimensions.add((width, height))
+        unique_dimensions.add((video.w, video.h))
 
         logging.debug(video.src_video_file)
         logging.debug("dimensions: {}".format(video.size))
 
         # Crop sides
-        if aspect_ratio > s.WIDESCREEN_ASPECT_RATIO:
-            cropped_width = int(s.WIDESCREEN_ASPECT_RATIO * height)
-            closest_widescreen_dimensions = (cropped_width, height)
+        if video.aspect_ratio > desired_aspect_ratio:
+            cropped_width = int(desired_aspect_ratio * video.h)
+            closest_widescreen_dimensions = (cropped_width, video.h)
         # Crop top & bottom
-        elif aspect_ratio < s.WIDESCREEN_ASPECT_RATIO:
-            cropped_height = int(width/s.WIDESCREEN_ASPECT_RATIO)
-            closest_widescreen_dimensions = (width, cropped_height)
+        elif video.aspect_ratio < desired_aspect_ratio:
+            cropped_height = int(video.w/desired_aspect_ratio)
+            closest_widescreen_dimensions = (video.w, cropped_height)
         else:
-            closest_widescreen_dimensions = (width, height)
+            closest_widescreen_dimensions = (video.w, video.h)
 
         logging.debug("closest_widescreen_dimensions: {}\n".format(closest_widescreen_dimensions))
 

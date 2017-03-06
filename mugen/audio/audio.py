@@ -8,7 +8,7 @@ import essentia.standard
 # Project modules
 import mugen.audio.utility as a_util
 import mugen.exceptions as ex
-import mugen.settings as s
+import mugen.constants as c
 import mugen.utility as util
 
 def get_beat_stats(audio_file):
@@ -152,7 +152,7 @@ def get_marked_audio_file(audio_file, beat_locations):
     # Load audio
     audio = a_util.load_audio(audio_file)
     onsets_marker = essentia.standard.AudioOnsetsMarker(onsets = beat_locations)
-    mono_writer = essentia.standard.MonoWriter(filename = output_path, bitrate = s.ESSENTIA_BITRATE)
+    mono_writer = essentia.standard.MonoWriter(filename = output_path, bitrate = c.ESSENTIA_BITRATE)
 
     # Create preview audio file
     marked_audio = onsets_marker(audio)

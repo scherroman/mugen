@@ -6,7 +6,7 @@ from collections import OrderedDict
 import mugen.audio.audio as audio
 import mugen.utility as util
 import mugen.exceptions as ex
-import mugen.settings as s
+import mugen.constants as c
 
 def save_video_segments(video_segments):
     """
@@ -15,14 +15,14 @@ def save_video_segments(video_segments):
     print("Saving video segments...")
 
     # Create music video's segments directory (overwrite if exists)
-    segments_dir = util.get_segments_dir(s.music_video_name)
+    segments_dir = util.get_segments_dir(c.music_video_name)
     util.recreate_dir(segments_dir)
 
     count = 0
     for video_segment in video_segments:
-        segment_path = segments_dir + "%s" % count + s.VIDEO_OUTPUT_EXTENSION
-        video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                      ffmpeg_params=['-crf', s.music_video_crf])
+        segment_path = segments_dir + "%s" % count + c.VIDEO_OUTPUT_EXTENSION
+        video_segment.write_videofile(segment_path, fps=c.MOVIEPY_FPS, codec=c.MOVIEPY_CODEC,
+                                      ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF)
         count += 1
 
 def save_rejected_segments(rejected_segments):
@@ -32,59 +32,33 @@ def save_rejected_segments(rejected_segments):
     print("Saving rejected segments...")
 
     # Create rejected segments directories (overwrite if exists)
-    util.recreate_dir(*[s.RS_PATH_BASE, s.RS_PATH_REPEAT, s.RS_PATH_SCENE_CHANGE, s.RS_PATH_TEXT_DETECTED, 
-                        s.RS_PATH_SOLID_COLOR])
+    util.recreate_dir(*[c.RS_PATH_BASE, c.RS_PATH_REPEAT, c.RS_PATH_SCENE_CHANGE, c.RS_PATH_TEXT_DETECTED,
+                        c.RS_PATH_SOLID_COLOR])
 
     rs_repeat_count = 0
     rs_scene_change_count = 0
     rs_text_detected_count = 0
     rs_solid_color_count = 0
-<<<<<<< HEAD
     for segment in rejected_segments:
-        if segment.reject_type == s.RS_TYPE_REPEAT:
-            segment_path = s.RS_PATH_REPEAT + "%s" % rs_repeat_count + s.OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
-                                    ffmpeg_params=['-crf', s.music_video_crf])
+        if segment.reject_type == c.VideoTrait.IS_REPEAT:
+            segment_path = c.RS_PATH_REPEAT + "%s" % rs_repeat_count + c.VIDEO_OUTPUT_EXTENSION
+            segment.write_videofile(segment_path, fps=c.MOVIEPY_FPS, codec=c.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF)
             rs_repeat_count += 1
-        elif segment.reject_type == s.RS_TYPE_SCENE_CHANGE:
-            segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
-                                    ffmpeg_params=['-crf', s.music_video_crf])
+        elif segment.reject_type == c.VideoTrait.HAS_SCENE_CHANGE:
+            segment_path = c.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + c.VIDEO_OUTPUT_EXTENSION
+            segment.write_videofile(segment_path, fps=c.MOVIEPY_FPS, codec=c.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF)
             rs_scene_change_count += 1
-        elif segment.reject_type == s.RS_TYPE_TEXT_DETECTED:
-            segment_path =  s.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + s.OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
-                                    ffmpeg_params=['-crf', s.music_video_crf])
+        elif segment.reject_type == c.VideoTrait.HAS_TEXT:
+            segment_path =  c.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + c.VIDEO_OUTPUT_EXTENSION
+            segment.write_videofile(segment_path, fps=c.MOVIEPY_FPS, codec=c.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF)
             rs_text_detected_count += 1
         else:
-            segment_path = s.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + s.OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC,
-                                    ffmpeg_params=['-crf', s.music_video_crf])
-=======
-    for rejected_segment in rejected_segments:
-        reject_type = rejected_segment['reject_type']
-        video_segment = rejected_segment['video_segment']
-
-        if reject_type == s.RS_TYPE_REPEAT:
-            segment_path = s.RS_PATH_REPEAT + "%s" % rs_repeat_count + s.VIDEO_OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
-            rs_repeat_count += 1
-        elif reject_type == s.RS_TYPE_SCENE_CHANGE:
-            segment_path = s.RS_PATH_SCENE_CHANGE + "%s" % rs_scene_change_count + s.VIDEO_OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
-            rs_scene_change_count += 1
-        elif reject_type == s.RS_TYPE_TEXT_DETECTED:
-            segment_path =  s.RS_PATH_TEXT_DETECTED + "%s" % rs_text_detected_count + s.VIDEO_OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
-            rs_text_detected_count += 1
-        else:
-            segment_path = s.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + s.VIDEO_OUTPUT_EXTENSION
-            video_segment.write_videofile(segment_path, fps=s.MOVIEPY_FPS, codec=s.MOVIEPY_CODEC, 
-                                          ffmpeg_params=['-crf', s.music_video_crf])
->>>>>>> master
+            segment_path = c.RS_PATH_SOLID_COLOR + "%s" % rs_solid_color_count + c.VIDEO_OUTPUT_EXTENSION
+            segment.write_videofile(segment_path, fps=c.MOVIEPY_FPS, codec=c.MOVIEPY_CODEC,
+                                    ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF)
             rs_solid_color_count += 1
 
 ### SPEC FILES ###
@@ -100,7 +74,7 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
     # Video duration is sum of video segment durations
     video_duration = sum(video_segment.duration for video_segment in video_segments) 
 
-    spec = OrderedDict([('version', s.VERSION),
+    spec = OrderedDict([('version', c.VERSION),
                         ('video_duration', video_duration),
                         ('speed_multiplier', float(speed_multiplier)),
                         ('speed_multiplier_offset', speed_multiplier_offset),
@@ -129,7 +103,7 @@ def save_music_video_spec(audio_file, video_files, speed_multiplier,
         segment_spec = video_segment.to_spec()
         spec['video_segments'].append(segment_spec)
 
-    spec_path = util.get_spec_path(s.music_video_name)
+    spec_path = util.get_spec_path(c.music_video_name)
     with open(spec_path, 'w') as outfile:
         json.dump(spec, outfile, indent=2, ensure_ascii=False)
 
@@ -147,7 +121,7 @@ def save_regenerated_music_video_spec(spec, regen_video_segments):
         segment_spec = video_segment.to_spec()
         spec['video_segments'].append(segment_spec)
 
-    spec_path = util.get_spec_path(s.music_video_name)
+    spec_path = util.get_spec_path(c.music_video_name)
     with open(spec_path, 'w') as outfile:
         json.dump(spec, outfile, indent=2, ensure_ascii=False)
 
@@ -159,16 +133,16 @@ def add_auxiliary_tracks(video_file, spec):
     """
     Add metadata subtitle tracks to music video
     """
-    print("Writing final video {} with auxiliary tracks...".format(util.get_output_path(s.music_video_name)))
+    print("Writing final video {} with auxiliary tracks...".format(util.get_music_video_output_path(c.music_video_name)))
     
-    output_path = util.get_output_path(s.music_video_name)
+    output_path = util.get_music_video_output_path(c.music_video_name)
 
     # Audio Tracks
     audio_track_beat_locations = audio.get_marked_audio_file(spec['audio_file']['file_path'], spec['beat_locations'])
 
     # Subtitle Tracks
-    subtitle_track_segment_numbers = create_subtitle_track(spec, s.SUBS_TRACK_SEGMENT_NUMBERS)
-    subtitle_track_segment_durations = create_subtitle_track(spec, s.SUBS_TRACK_SEGMENT_DURATIONS)
+    subtitle_track_segment_numbers = create_subtitle_track(spec, c.SubtitlesTrack.SEGMENT_NUMBERS)
+    subtitle_track_segment_durations = create_subtitle_track(spec, c.SubtitlesTrack.SEGMENT_DURATIONS)
 
     # Create new music video with auxiliary audio & subtitle tracks mixed in
     ffmpeg_cmd = [
@@ -181,11 +155,11 @@ def add_auxiliary_tracks(video_file, spec):
             '-map', '0',
             '-c', 'copy',
             '-map', '1',
-            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(s.AUDIO_TRACK_BEAT_LOCATIONS),
+            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(c.AudioTrack.CUT_LOCATIONS),
             '-map', '2',
-            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(s.SUBS_TRACK_SEGMENT_NUMBERS),
+            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(c.SubtitlesTrack.SEGMENT_NUMBERS),
             '-map', '3',
-            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(s.SUBS_TRACK_SEGMENT_DURATIONS),
+            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(c.SubtitlesTrack.SEGMENT_DURATIONS),
             output_path
           ]
 
@@ -195,7 +169,7 @@ def add_auxiliary_tracks(video_file, spec):
         print("Failed to add subtitles to music video. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(e.return_code, e.stderr))
 
 def create_subtitle_track(spec, track_type):
-    subtitle_path = util.get_temp_subtitle_path(s.music_video_name, track_type)
+    subtitle_path = util.get_temp_subtitle_path(c.music_video_name, track_type)
 
     util.touch(subtitle_path)
     subs = pysrt.open(subtitle_path, encoding='utf-8')
@@ -206,9 +180,9 @@ def create_subtitle_track(spec, track_type):
         end_time = start_time + pysrt.SubRipTime.from_ordinal(video_segment['duration'] * 1000)
         next_sub = pysrt.SubRipItem(index=index, start=start_time, end=end_time)
 
-        if track_type == s.SUBS_TRACK_SEGMENT_NUMBERS:
+        if track_type == c.SubtitlesTrack.SEGMENT_NUMBERS:
             next_sub.text = video_segment['sequence_number']
-        elif track_type == s.SUBS_TRACK_SEGMENT_DURATIONS:
+        elif track_type == c.SubtitlesTrack.SEGMENT_DURATIONS:
             next_sub.text = video_segment['duration']
 
         running_time += video_segment['duration']
