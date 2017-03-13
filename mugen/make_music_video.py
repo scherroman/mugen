@@ -9,38 +9,42 @@ from fractions import Fraction
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Project modules
+import mugen.constants as c
+import mugen.paths as paths
+import mugen.clu as clu
+import mugen.utility as util
 import mugen.audio.audio as audio
 from mugen.video import video, sizing as v_sizing, io as v_io, utility as v_util
-import mugen.utility as util
-import mugen.constants as c
 
-def create_music_video(args):
+def create_music_video(output_name, crf, video_dimensions, preserve_video_dimensions):
     output_name = args.output_name
-    c.music_video_crf = str(args.crf)
-    video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
+    c.music_video_crf = args.crf
+    video_dimensions = args.video_dimensions
     preserve_video_dimensions = args.preserve_video_dimensions
     c.allow_repeats = args.allow_repeats
     save_segments = args.save_segments
     save_rejected_segments = args.save_rejected_segments
     audio_src = args.audio_src
-    video_src = args.video_src if args.video_src else []
+    video_src = args.video_src
     speed_multiplier = args.speed_multiplier
     speed_multiplier_offset = args.speed_multiplier_offset
 
     # Prepare Inputs
-    output_name = util.sanitize_filename(output_name)
-    c.music_video_name = util.get_music_video_name(output_name, False)
-    speed_multiplier, speed_multiplier_offset = util.parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
-    audio_file = util.get_file(c.FileType.AUDIO, audio_src)
-    video_files = util.get_files(c.FileType.VIDEO, *video_src)
+    music_video_name = output_name if output_name else clu.get_music_video_name()
+    audio_file = audio_src if audio_src else clu.prompt_file_selection(c.FileType.AUDIO)
+    video_files = util.get_files(video_src) if video_src else clu.prompt_files_selection(c.FileType.VIDEO)
+
+    print("Preparing {}...".format(music_video_name))
+    logging.debug("Audio File {}".format(audio_file))
+    logging.debug("Video Files {}".format(video_files))
 
     # Reserve file for music video
-    v_util.reserve_music_video_file(c.music_video_name)
+    v_util.reserve_music_video_file(music_video_name)
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
         c.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.largest_dimensions_for_aspect_ratio(video_files)
+                                   else v_sizing.largest_dimensions_with_aspect_ratio(video_files)
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
@@ -54,8 +58,8 @@ def create_music_video(args):
 
     # Save reusable spec for the music video
     spec = v_io.save_music_video_spec(audio_file, video_files, speed_multiplier, 
-                                speed_multiplier_offset, beat_stats, beat_interval_groups, 
-                                video_segments)
+                                      speed_multiplier_offset, beat_stats, beat_interval_groups,
+                                      video_segments)
 
     # Compile music video from video segments and audio
     video.create_music_video(video_segments, audio_file, spec)
@@ -65,44 +69,47 @@ def create_music_video(args):
 
     # Save the individual segments if asked to do so
     if save_segments:
+        print("Saving video segments...")
         v_io.save_video_segments(video_segments)
 
-    # Save the video segments that were rejected if in debug mode
+    # Save the video segments that were rejected
     if save_rejected_segments:
+        print("Saving rejected segments...")
         v_io.save_rejected_segments(rejected_segments)
 
 def recreate_music_video(args):
     output_name = args.output_name
-    c.music_video_crf = str(args.crf)
-    video_dimensions = (args.video_dimensions[0], args.video_dimensions[1]) if args.video_dimensions else None
+    c.music_video_crf = args.crf
+    video_dimensions = args.video_dimensions
     preserve_video_dimensions = args.preserve_video_dimensions
     c.allow_repeats = args.allow_repeats
     save_segments = args.save_segments
     spec_src = args.spec_src
-    replace_segments = args.replace_segments if args.replace_segments else []
+    replace_segments = args.replace_segments
 
     # Prepare Inputs
-    output_name = util.sanitize_filename(output_name)
-    c.music_video_name = util.get_music_video_name(output_name, True)
-    spec_file = util.get_file(c.FileType.SPEC, spec_src)
+    music_video_name = output_name if output_name else clu.get_music_video_name(True)
+    spec_file = spec_src if spec_src else clu.prompt_file_selection(c.FileType.SPEC)
     spec = util.parse_spec_file(spec_file)
-    util.validate_replace_segments(replace_segments, spec['video_segments'])
+    if replace_segments:
+        clu.validate_replace_segments(replace_segments, spec['video_segments'])
     video_files = [video_file['file_path'] for video_file in spec['video_files']]
     audio_src = spec['audio_file']['file_path']
     audio_offset = spec['audio_file']['offset']
-    audio_file = util.get_file(c.FileType.AUDIO, audio_src)
+    audio_file = audio_src if audio_src else clu.prompt_file_selection(c.FileType.AUDIO)
     
     # Reserve file for music video
-    v_util.reserve_music_video_file(c.music_video_name)
+    v_util.reserve_music_video_file(music_video_name)
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
         c.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.largest_dimensions_for_aspect_ratio(video_files)
+                                   else v_sizing.largest_dimensions_with_aspect_ratio(video_files)
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
-        audio_file = audio.get_offset_audio_file(audio_file, audio_offset)
+        print("Creating temporary audio file with specified offset {}...".format(audio_offset))
+        audio_file = audio.create_temp_offset_audio_file(audio_file, audio_offset)
 
     # Regenerate the video segments from the spec file
     regen_video_segments = video.regenerate_video_segments(spec, replace_segments)
@@ -115,6 +122,7 @@ def recreate_music_video(args):
 
     # Save the individual segments if asked to do so
     if save_segments:
+        print("Saving video segments...")
         v_io.save_video_segments(regen_video_segments)
 
 def preview_audio(args):
@@ -122,9 +130,10 @@ def preview_audio(args):
     speed_multiplier = args.speed_multiplier
     speed_multiplier_offset = args.speed_multiplier_offset
 
+    print("Creating audio preview...")
+
     # Prepare Inputs
-    speed_multiplier, speed_multiplier_offset = util.parse_speed_multiplier(speed_multiplier, speed_multiplier_offset)
-    audio_file = util.get_file(c.FileType.AUDIO, audio_src)
+    audio_file = audio_src if audio_src else clu.prompt_file_selection(c.FileType.AUDIO)
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
@@ -140,25 +149,31 @@ def preview_audio(args):
     audio.preview_audio_beats(audio_file, preview_beat_locations)
 
 def exit_handler():
-    # Cleanup reserved music video file if empty
+    # Cleanup reserved music video folder if empty
     if c.music_video_name:
-        reserved_music_video_file = util.get_music_video_output_path(c.music_video_name)
+        reserved_music_video_file = paths.music_video_output_path(c.music_video_name)
         if os.path.exists(reserved_music_video_file) and os.stat(reserved_music_video_file).st_size == 0:
             os.remove(reserved_music_video_file)
-    # Cleanup temp folder
-    util.delete_dir(c.TEMP_PATH_BASE)
 
-def prepare_args(args):
-    c.debug = args.debug
-    
+def setup():
     # Configuration
+    c.debug = args.debug
     if c.debug:
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     atexit.register(exit_handler)
 
-    # Create temp and output folders are created
-    util.ensure_dir(c.TEMP_PATH_BASE)
-    util.ensure_dir(c.OUTPUT_PATH_BASE)
+    # Make sure output folder is created
+    util.ensure_dir(paths.OUTPUT_PATH_BASE)
+
+def prepare_args(args):
+    """
+    Formats and validates program inputs
+    """
+    clu.validate_path(*[args.audio_src, args.video_src, args.spec_src])
+
+    args.video_dimensions = tuple(args.video_dimensions) if args.video_dimensions else None
+    if args.speed_multiplier:
+        clu.validate_speed_multiplier(args.speed_multiplier, args.speed_multiplier_offset)
 
     return args
 
@@ -169,7 +184,7 @@ def parse_args(args):
     audio_parser = argparse.ArgumentParser(add_help=False)
     subparsers = parser.add_subparsers()
 
-    ### SHARED PARAMETERS ###
+    """ SHARED PARAMETERS """
 
     # Common Parameters
     common_parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print useful debug info.')
@@ -187,7 +202,7 @@ def parse_args(args):
     audio_parser.add_argument('-sm', '--speed-multiplier', dest='speed_multiplier', type=Fraction, default=1, help='Pass in this argument to speed up or slow down the scene changes in the music video. Should be of the form x or 1/x, where x is a natural number. (e.g.) 2 for double speed, or 1/2 for half speed.')
     audio_parser.add_argument('-smo', '--speed-multiplier-offset', dest='speed_multiplier_offset', type=int, help='Pass in this argument alongside a slowdown speed multiplier to offset the grouping of beat intervals by a specified amount. Takes an integer, with a max offset of x - 1 for a slowdown of 1/x.')
 
-    ### COMMANDS ###
+    """ COMMANDS """
  
     # Create Command Parameters
     create_parser = subparsers.add_parser('create', parents = [common_parser, audio_parser, video_parser], help="Create a new music video.")
@@ -210,6 +225,7 @@ def parse_args(args):
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])
     args = prepare_args(args)
+    setup(args)
     args.func(args)
 
     print("All Done!")

@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 # Project modules
 from mugen.video import detect as v_detect, sizing as v_sizing, io as v_io, utility as v_util
-import mugen.utility as util
+import mugen.paths as paths
 import mugen.constants as c
 
 def create_music_video(video_segments, audio_file, spec):
@@ -14,14 +14,15 @@ def create_music_video(video_segments, audio_file, spec):
     print("Generating music video from video segments and audio...")
     
     # Get output path for file
-    temp_output_path = util.get_temp_music_video_output_path(c.music_video_name)
+    temp_output_path = paths.generate_temp_file_path(paths.VIDEO_OUTPUT_EXTENSION)
+    temp_audio_file_path = paths.generate_temp_file_path(paths.file_extension_from_path(audio_file))
 
     audio = moviepy.AudioFileClip(audio_file)
     music_video = moviepy.concatenate_videoclips(video_segments, method="compose")
     music_video = music_video.set_audio(audio)
-    music_video.write_videofile(temp_output_path, fps=c.MOVIEPY_FPS, codec=c.MOVIEPY_CODEC,
-                                audio_bitrate=c.MOVIEPY_AUDIO_BITRATE, ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF,
-                                temp_audiofile=c.TEMP_MOVIEPY_AUDIOFILE)
+    music_video.write_videofile(temp_output_path, fps=c.DEFAULT_VIDEO_FPS, codec=c.DEFAULT_VIDEO_CODEC,
+                                audio_bitrate=str(c.DEFAULT_AUDIO_BITRATE) + 'K', temp_audiofile=temp_audio_file_path,
+                                ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF])
     v_io.add_auxiliary_tracks(temp_output_path, spec)
 
 def generate_video_segments(video_files, beat_interval_groups):
@@ -49,7 +50,7 @@ def generate_video_segments(video_files, beat_interval_groups):
             rejected_segments.extend(new_rejected_segments)
 
     if c.music_video_dimensions:
-        video_segments = [segment.resize(c.music_video_dimensions) for segment in video_segments]
+        video_segments = [segment.crop_scale(c.music_video_dimensions) for segment in video_segments]
     
     return video_segments, rejected_segments
 
@@ -95,11 +96,11 @@ def regenerate_video_segments(spec, replace_segments):
         regen_video_segments.insert(index, replacement_video_segment)
 
     if c.music_video_dimensions:
-        regen_video_segments = [segment.resize(c.music_video_dimensions) for segment in regen_video_segments]
+        regen_video_segments = [segment.crop_scale(c.music_video_dimensions) for segment in regen_video_segments]
     
     return regen_video_segments
 
-### HELPER FUNCTIONS ###
+""" HELPER FUNCTIONS """
 
 def generate_video_segment(videos, duration, video_segments_used):
     """

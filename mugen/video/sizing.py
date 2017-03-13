@@ -1,61 +1,68 @@
 from enum import Enum
-import logging
+from typing import List, Optional, NamedTuple
 
-# Project modules
-from mugen.video import utility as v_util
-import mugen.constants as c
 
 class AspectRatio(float, Enum):
-    FULLSCREEN = (4, 3)
-    WIDESCREEN = (16, 9)
-    ULTRAWIDE = (21, 9)
+    FULLSCREEN = 4 / 3
+    WIDESCREEN = 16 / 9
+    ULTRAWIDE = 21 / 9
 
-def largest_dimensions_for_aspect_ratio(video_files, desired_aspect_ratio):
+
+class DimensionsBase(NamedTuple):
+    width: int
+    height: int
+
+
+class Dimensions(DimensionsBase):
+    __slots__ = ()
+
+    @property
+    def aspect_ratio(self):
+        return self.width / self.height
+
+def crop_dimensions_to_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio: float) -> Dimensions:
     """
-    Returns the largest dimensions possible for a group of videos and the specified aspect ratio
+    Returns: dimensions cropped to reach desired aspect ratio
     """
-    # Get videos
-    music_video_dimensions = None
-    largest_widescreen_dimensions = None
-    videos = v_util.get_videos(video_files)
-    logging.debug("\n")
+    nearest_dimensions_to_aspect_ratio = dimensions
 
-    unique_dimensions = set()
-
-    for video in videos:
-        closest_widescreen_dimensions = None
-        unique_dimensions.add((video.w, video.h))
-
-        logging.debug(video.src_video_file)
-        logging.debug("dimensions: {}".format(video.size))
-
+    if dimensions.aspect_ratio > desired_aspect_ratio:
         # Crop sides
-        if video.aspect_ratio > desired_aspect_ratio:
-            cropped_width = int(desired_aspect_ratio * video.h)
-            closest_widescreen_dimensions = (cropped_width, video.h)
+        cropped_width = int(desired_aspect_ratio * dimensions.height)
+        nearest_dimensions_to_aspect_ratio = Dimensions(cropped_width, dimensions.height)
+    elif dimensions.aspect_ratio < desired_aspect_ratio:
         # Crop top & bottom
-        elif video.aspect_ratio < desired_aspect_ratio:
-            cropped_height = int(video.w/desired_aspect_ratio)
-            closest_widescreen_dimensions = (video.w, cropped_height)
-        else:
-            closest_widescreen_dimensions = (video.w, video.h)
+        cropped_height = int(dimensions.width / desired_aspect_ratio)
+        nearest_dimensions_to_aspect_ratio = Dimensions(dimensions.width, cropped_height)
 
-        logging.debug("closest_widescreen_dimensions: {}\n".format(closest_widescreen_dimensions))
+    return nearest_dimensions_to_aspect_ratio
 
-        # Check if the closest_widescreen_dimensions are the largest so far
-        if not largest_widescreen_dimensions:
-            largest_widescreen_dimensions = closest_widescreen_dimensions
-        elif closest_widescreen_dimensions[0] * closest_widescreen_dimensions[1] > \
-             largest_widescreen_dimensions[0] * largest_widescreen_dimensions[1]:
-            largest_widescreen_dimensions = closest_widescreen_dimensions
 
-    # Only one set of dimensions, use those
-    if len(unique_dimensions) == 1:
-        music_video_dimensions = next(iter(unique_dimensions))
-        print("Using video dimensions: {}".format(music_video_dimensions))
-    # Multiple sets of dimensions, use the largest widescreen dimensions calculated
+def largest_dimensions_for_aspect_ratio(dimensions_list: List[Dimensions],
+                                        desired_aspect_ratio: Optional[float]) -> Dimensions:
+    """
+    Returns: largest dimensions after cropping each dimensions to reach desired aspect ratio
+    """
+    largest_dimensions = None
+
+    if not dimensions_list:
+        raise ValueError(f"{dimensions_list} must not be empty.")
+
+    if desired_aspect_ratio:
+        # Find largest dimensions among video segments after resizing each to reach desired aspect ratio
+        for dimensions in dimensions_list:
+            nearest_dimensions_to_aspect_ratio = crop_dimensions_to_aspect_ratio(dimensions, desired_aspect_ratio)
+
+            if not largest_dimensions:
+                largest_dimensions = nearest_dimensions_to_aspect_ratio
+            elif nearest_dimensions_to_aspect_ratio.width * nearest_dimensions_to_aspect_ratio.height > \
+                                                largest_dimensions.width * largest_dimensions.height:
+                largest_dimensions = nearest_dimensions_to_aspect_ratio
     else:
-        music_video_dimensions = largest_widescreen_dimensions
-        print("Multiple video sizes detected. Using largest widescreen dimensions possible: {}".format(music_video_dimensions))
+        # Find largest width and height among all dimensions
+        largest_width = max((dimensions.width for dimensions in dimensions_list))
+        largest_height = max((dimensions.height for dimensions in dimensions_list))
 
-    return music_video_dimensions
+        largest_dimensions = largest_height, largest_width
+
+    return largest_dimensions

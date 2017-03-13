@@ -1,12 +1,13 @@
 import sys
 
 # Project modules
-from mugen.video.VideoSegment import VideoSegment
-import mugen.utility as util
 import mugen.constants as c
+import mugen.utility as util
+import mugen.paths as paths
+from mugen.video.VideoSegment import VideoSegment
 
 def reserve_music_video_file(music_video_name):
-    util.touch(util.get_music_video_output_path(music_video_name))
+    util.touch(paths.music_video_output_path(music_video_name))
 
 def get_videos(video_files):
     """

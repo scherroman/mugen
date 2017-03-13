@@ -6,9 +6,10 @@ import essentia
 import essentia.standard
 
 # Project modules
-import mugen.audio.utility as a_util
-import mugen.exceptions as ex
 import mugen.constants as c
+import mugen.exceptions as ex
+import mugen.paths as paths
+import mugen.audio.utility as a_util
 import mugen.utility as util
 
 def get_beat_stats(audio_file):
@@ -69,7 +70,7 @@ def get_beat_interval_groups(beat_intervals, speed_multiplier, speed_multiplier_
 
     return beat_interval_groups
 
-### HELPER FUNCTIONS ###
+""" HELPER FUNCTIONS """
 
 def get_beat_interval_group(beat_interval, index, beat_intervals, 
                             speed_multiplier, speed_multiplier_offset):
@@ -120,15 +121,11 @@ def flatten_beat_interval_groups(beat_interval_groups):
 
     return flattened_beat_locations
 
-def get_offset_audio_file(audio_file, offset):
+def create_temp_offset_audio_file(audio_file, offset):
     """
     Create a temporary new audio file with the given offset to use for the music video
     """
-    print("Creating temporary audio file with specified offset {}...".format(offset))
-    offset_audio_path = None
-
-    # Get path to temporary offset audio file
-    temp_offset_audio_path = util.get_temp_audio_offset_path(audio_file)
+    output_path = paths.generate_temp_file_path(paths.file_extension_from_path(audio_file))
 
     # Generate new temporary audio file with offset
     ffmpeg_cmd = [
@@ -136,23 +133,23 @@ def get_offset_audio_file(audio_file, offset):
             '-i', audio_file,
             '-ss', str(offset),
             '-acodec', 'copy',
-            temp_offset_audio_path
+            output_path
           ]
           
     try:
         util.execute_ffmpeg_command(ffmpeg_cmd)
     except ex.FFMPEGError as e:
-        print("Failed to create temporary audio file with specified offset {}. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(offset, e.return_code, e.stderr))
-    
-    return temp_offset_audio_path
+        print(f"Failed to create temporary audio file with specified offset {offset}. Error: {e}")
 
-def get_marked_audio_file(audio_file, beat_locations):
-    output_path = util.get_temp_audio_onsets_path(audio_file)
+    return output_path
+
+def create_temp_marked_audio_file(audio_file, beat_locations):
+    output_path = paths.generate_temp_file_path(paths.ESSENTIA_ONSETS_AUDIO_EXTENSION)
 
     # Load audio
     audio = a_util.load_audio(audio_file)
     onsets_marker = essentia.standard.AudioOnsetsMarker(onsets = beat_locations)
-    mono_writer = essentia.standard.MonoWriter(filename = output_path, bitrate = c.ESSENTIA_BITRATE)
+    mono_writer = essentia.standard.MonoWriter(filename = output_path, bitrate = c.DEFAULT_AUDIO_BITRATE)
 
     # Create preview audio file
     marked_audio = onsets_marker(audio)
@@ -161,7 +158,5 @@ def get_marked_audio_file(audio_file, beat_locations):
     return output_path
 
 def preview_audio_beats(audio_file, beat_locations):
-    print("Creating audio preview...")
-
-    marked_audio_file = get_marked_audio_file(audio_file, beat_locations)
-    shutil.move(marked_audio_file, util.get_audio_preview_path(audio_file))
+    marked_audio_file = create_temp_marked_audio_file(audio_file, beat_locations)
+    shutil.move(marked_audio_file, paths.audio_preview_path(audio_file))
