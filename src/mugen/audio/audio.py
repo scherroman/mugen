@@ -1,16 +1,17 @@
-import shutil
-import pprint
 import logging
-import numpy as np
+import pprint
+import shutil
+
 import essentia
 import essentia.standard
+import numpy as np
 
-# Project modules
+import mugen.audio.utility as a_util
 import mugen.constants as c
 import mugen.exceptions as ex
 import mugen.paths as paths
-import mugen.audio.utility as a_util
 import mugen.utility as util
+
 
 def get_beat_stats(audio_file):
     """
@@ -77,9 +78,6 @@ def get_beat_interval_group(beat_interval, index, beat_intervals,
     """
     Assign beat intervals to groups based on speed_multiplier
     """
-    beat_interval_group = None
-    num_beat_intervals_covered = 0
-
     # Combine adjacent beat intervals
     if speed_multiplier < 1:
         desired_num_intervals = speed_multiplier.denominator
@@ -94,7 +92,6 @@ def get_beat_interval_group(beat_interval, index, beat_intervals,
         interval_combo = sum(beat_intervals[index:index + desired_num_intervals])
         interval_combo_numbers = range(index, index + desired_num_intervals)
         beat_interval_group = {'intervals':[interval_combo], 'beat_interval_numbers':interval_combo_numbers}
-
         num_beat_intervals_covered = desired_num_intervals
     # Split up the beat interval
     elif speed_multiplier > 1:
@@ -139,7 +136,9 @@ def create_temp_offset_audio_file(audio_file, offset):
     try:
         util.execute_ffmpeg_command(ffmpeg_cmd)
     except ex.FFMPEGError as e:
-        print(f"Failed to create temporary audio file with specified offset {offset}. Error: {e}")
+        print(f"Failed to create temporary audio file with specified offset {offset}. Error Code: {e.return_code}, "
+              f"Error: {e}")
+        raise
 
     return output_path
 

@@ -1,21 +1,21 @@
+import Tkinter as tk
+import logging
 import os
 import sys
-import logging
-import Tkinter as tk
+
 import tkFileDialog
 
-# Project modules
 import mugen.constants as c
+import mugen.paths as paths
+
+HELP = " Please review supported inputs and values on the help menu via --help"
 
 """ COMMAND LINE UTILITY FUNCTIONS """
 
-def get_music_video_name(is_regenerated=False):
-    music_video_name = None
-
+def get_music_video_name(basename: str = ""):
     count = 0
     while True:
-        music_video_name = 'regenerated_' if is_regenerated else ""
-        music_video_name += c.MUSIC_VIDEO_NAME_DEFAULT + "_%s" % count
+        music_video_name = basename + c.DEFAULT_MUSIC_VIDEO_NAME + "_%s" % count
 
         if not os.path.exists(paths.music_video_output_path(music_video_name)):
             break
@@ -83,13 +83,13 @@ def validate_replace_segments(replace_segments, video_segments):
 
 def validate_speed_multiplier(speed_multiplier, speed_multiplier_offset):
     if speed_multiplier == 0 or (speed_multiplier.numerator != 1 and speed_multiplier.denominator != 1):
-        print("Improper speed multiplier provided." + c.HELP)
+        print("Improper speed multiplier provided." + HELP)
         sys.exit(1)
 
     if speed_multiplier_offset:
         if speed_multiplier >= 1:
-            print("Speed multiplier offsets may only be used with slowdown speed multipliers." + c.HELP)
+            print("Speed multiplier offsets may only be used with slowdown speed multipliers." + HELP)
             sys.exit(1)
         elif speed_multiplier_offset > speed_multiplier.denominator - 1:
-            print("Speed multiplier offset may not be greater than x - 1 for a slowdown of 1/x." + c.HELP)
+            print("Speed multiplier offset may not be greater than x - 1 for a slowdown of 1/x." + HELP)
             sys.exit(1)

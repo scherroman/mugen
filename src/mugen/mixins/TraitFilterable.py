@@ -1,4 +1,5 @@
-from typing import List, NamedTuple, Callable
+from typing import List, NamedTuple, Callable, Optional as Opt
+
 
 class TraitFilter(NamedTuple):
     """
@@ -8,29 +9,27 @@ class TraitFilter(NamedTuple):
     trait: str
     filter: Callable[..., bool]
 
+
 class TraitFilterable:
     """
-    Mixin for filtering and caching the results
+    Mixin for running filters against an object and caching the results
     """
-    def __init__(self):
-        self.has_been_trait_filtered = False
-        self.passed_trait_filters = []
-        self.failed_trait_filters = []
+    passed_trait_filters: List[TraitFilter]
+    failed_trait_filters: List[TraitFilter]
 
-    @property
-    def has_passed_all_trait_filters(self):
-        return not self.failed_trait_filters
+    def __init__(self, passed_trait_filters: Opt[List[TraitFilter]] = None,
+                 failed_trait_filters: Opt[List[TraitFilter]] = None):
+        self.passed_trait_filters = passed_trait_filters or []
+        self.failed_trait_filters = failed_trait_filters or []
 
-    def passes_trait_filters(self, trait_filters: List[TraitFilter], exit_early: bool = True):
+    def passes_trait_filters(self, trait_filters: List[TraitFilter], exit_on_fail: bool = True) -> bool:
         """
         Args:
-            trait_filters: List of trait filters to test
+            trait_filters: Trait filters to test
             exit_early: Whether or not the function should exit early on a trait filter failure
 
         Returns: True if all trait_filters passed, false otherwise
         """
-        self.has_been_trait_filtered = True
-
         passed_trait_filters = []
         failed_trait_filters = []
         for trait_filter in trait_filters:
@@ -39,7 +38,7 @@ class TraitFilterable:
             else:
                 failed_trait_filters.append(trait_filter)
 
-                if exit_early:
+                if exit_on_fail:
                     break
 
         self.passed_trait_filters.extend(passed_trait_filters)
@@ -50,4 +49,3 @@ class TraitFilterable:
     def clear_trait_filter_results(self):
         self.passed_trait_filters.clear()
         self.failed_trait_filters.clear()
-        self.has_been_trait_filtered = False

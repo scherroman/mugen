@@ -1,36 +1,20 @@
 import sys
 
-# Project modules
 import mugen.constants as c
-import mugen.utility as util
 import mugen.paths as paths
-from mugen.video.VideoSegment import VideoSegment
+import mugen.utility as util
+
 
 def reserve_music_video_file(music_video_name):
     util.touch(paths.music_video_output_path(music_video_name))
 
-def get_videos(video_files):
-    """
-    Returns a list of videoFileClips from a list of video file names,
-    excluding those that could not be properly read
-    """
-    # Remove improper video files
-    videos = []
-    for video_file in video_files:
-        try:
-            video = VideoSegment(video_file)
-        except Exception as e:
-            print("Error reading video file '{}'. Will be excluded from the music video. Error: {}".format(video_file, e))
-            continue
-        else:
-            videos.append(video)
 
-    # If no video files to work with, exit
-    if len(videos) == 0:
-        print("No more video files left to work with. I can't continue :(")
-        sys.exit(1)
+def seconds_to_time_code(seconds: float) -> str:
+    ms = 1000 * round(seconds - int(seconds), 3)
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return "%02d:%02d:%02d.%03d" % (h, m, s, ms)
 
-    return videos
 
 def print_rejected_segment_stats(rejected_segments):
     print("# rejected segment repeats: {}"

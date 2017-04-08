@@ -1,11 +1,7 @@
 *.pyc
 .idea
+.cache
 
-mugen/testing.py
+tests/testing.py
 
 output/
-segments/
-rejected_segments/
-temp/
-.idea
-testing.py

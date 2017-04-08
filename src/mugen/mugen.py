@@ -1,20 +1,24 @@
-import os
-import sys
+import argparse
 import atexit
 import logging
-import argparse
+import os
+import sys
 from fractions import Fraction
 
 # Add base project module to python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Project modules
 import mugen.constants as c
 import mugen.paths as paths
-import mugen.clu as clu
+import mugen as clu
 import mugen.utility as util
 import mugen.audio.audio as audio
-from mugen.video import video, sizing as v_sizing, io as v_io, utility as v_util
+from mugen.video import sizing as v_sizing, io as v_io, utility as v_util
+from mugen.video import video
+
+
+debug = False
+
 
 def create_music_video(output_name, crf, video_dimensions, preserve_video_dimensions):
     output_name = args.output_name
@@ -43,14 +47,14 @@ def create_music_video(output_name, crf, video_dimensions, preserve_video_dimens
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
-        c.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.largest_dimensions_with_aspect_ratio(video_files)
+        c.music_video_dimensions = (video_dimensions if video_dimensions
+                                    else v_sizing.largest_dimensions_with_aspect_ratio(video_files))
 
     # Get beat intervals & other stats from audio file
     beat_stats = audio.get_beat_stats(audio_file)
 
     # Assign beat intervals to groups based on speed_multiplier
-    beat_interval_groups = audio.get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier, 
+    beat_interval_groups = audio.get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier,
                                                           speed_multiplier_offset)
     
     # Generate random video segments according to beat intervals
@@ -77,6 +81,7 @@ def create_music_video(output_name, crf, video_dimensions, preserve_video_dimens
         print("Saving rejected segments...")
         v_io.save_rejected_segments(rejected_segments)
 
+
 def recreate_music_video(args):
     output_name = args.output_name
     c.music_video_crf = args.crf
@@ -88,7 +93,7 @@ def recreate_music_video(args):
     replace_segments = args.replace_segments
 
     # Prepare Inputs
-    music_video_name = output_name if output_name else clu.get_music_video_name(True)
+    music_video_name = output_name if output_name else clu.get_music_video_name("regenerated_")
     spec_file = spec_src if spec_src else clu.prompt_file_selection(c.FileType.SPEC)
     spec = util.parse_spec_file(spec_file)
     if replace_segments:
@@ -103,8 +108,8 @@ def recreate_music_video(args):
 
     # Set dimensions for music video
     if not preserve_video_dimensions:
-        c.music_video_dimensions = video_dimensions if video_dimensions \
-                                   else v_sizing.largest_dimensions_with_aspect_ratio(video_files)
+        c.music_video_dimensions = (video_dimensions if video_dimensions
+                                    else v_sizing.largest_dimensions_with_aspect_ratio(video_files))
 
     # Offset the audio if specified in spec
     if audio_offset and audio_offset > 0:
@@ -125,6 +130,7 @@ def recreate_music_video(args):
         print("Saving video segments...")
         v_io.save_video_segments(regen_video_segments)
 
+
 def preview_audio(args):
     audio_src = args.audio_src
     speed_multiplier = args.speed_multiplier
@@ -139,7 +145,7 @@ def preview_audio(args):
     beat_stats = audio.get_beat_stats(audio_file)
 
     # Assign beat intervals to groups based on speed_multiplier
-    beat_interval_groups = audio.get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier, 
+    beat_interval_groups = audio.get_beat_interval_groups(beat_stats['beat_intervals'], speed_multiplier,
                                                           speed_multiplier_offset)
 
     # Prepare preview beat locations
@@ -148,6 +154,7 @@ def preview_audio(args):
     # Create preview audio file
     audio.preview_audio_beats(audio_file, preview_beat_locations)
 
+
 def exit_handler():
     # Cleanup reserved music video folder if empty
     if c.music_video_name:
@@ -155,15 +162,18 @@ def exit_handler():
         if os.path.exists(reserved_music_video_file) and os.stat(reserved_music_video_file).st_size == 0:
             os.remove(reserved_music_video_file)
 
+
 def setup():
     # Configuration
-    c.debug = args.debug
-    if c.debug:
+    global debug
+    debug = args.debug
+    if debug:
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     atexit.register(exit_handler)
 
     # Make sure output folder is created
     util.ensure_dir(paths.OUTPUT_PATH_BASE)
+
 
 def prepare_args(args):
     """
@@ -176,6 +186,7 @@ def prepare_args(args):
         clu.validate_speed_multiplier(args.speed_multiplier, args.speed_multiplier_offset)
 
     return args
+
 
 def parse_args(args):
     parser = argparse.ArgumentParser()
@@ -190,7 +201,7 @@ def parse_args(args):
     common_parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False, help='Pass in this argument to print useful debug info.')
 
     # Video Common Parameters
-    video_parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output ' + c.MUSIC_VIDEO_NAME_DEFAULT + '_0' + c.VIDEO_OUTPUT_EXTENSION + ', ' + c.MUSIC_VIDEO_NAME_DEFAULT + '_1' + c.VIDEO_OUTPUT_EXTENSION + ', etc...')
+    video_parser.add_argument('-o', '--output-name', dest='output_name', help='The name for the music video. Otherwise will output ' + c.DEFAULT_MUSIC_VIDEO_NAME + '_0' + c.VIDEO_OUTPUT_EXTENSION + ', ' + c.DEFAULT_MUSIC_VIDEO_NAME + '_1' + c.VIDEO_OUTPUT_EXTENSION + ', etc...')
     video_parser.add_argument('-crf', '--crf', dest='crf', type=int, default=c.DEFAULT_VIDEO_CRF, help='The crf quality value for the music video. Takes an integer from 0 (lossless) to 51 (lossy). Defaults to 18.')
     video_parser.add_argument('-vd', '--video-dimensions', dest='video_dimensions', type=int, nargs=2, help='Pass in this argument to manually set the pixel dimensions for the music video, width and height. All video segments will be resized (cropped and/or scaled) appropriately to match these dimensions. Otherwise, the best dimensions for the music video are calculated automatically. Takes width then height integer values separated by spaces e.g., 1920 1080')
     video_parser.add_argument('-pvd', '--preserve-video-dimensions', dest='preserve_video_dimensions', action='store_true', default=False, help='Pass in this argument to preserve the various screen dimensions of the videos, and not perform any resizing.')
@@ -221,6 +232,7 @@ def parse_args(args):
     preview_parser.set_defaults(func=preview_audio)
 
     return parser.parse_args(args)
+
 
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])

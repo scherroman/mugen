@@ -19,7 +19,7 @@ Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy]
 
 2 - Perform rhythm analysis and extract beat intervals from the audio.
 
-3 - Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace repeat segments, as well as segments with scene changes, solid colors, very dark scenes, or detectable text (e.g. credits).
+3 - Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace repeat segments, as well as segments with scene changes, low contrast (solid colors, very dark scenes), or detectable text (e.g. credits).
 
 4 - Combine all the segments in order, overlay the audio, and output the resulting music video.
 

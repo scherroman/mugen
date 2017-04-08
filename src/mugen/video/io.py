@@ -1,13 +1,16 @@
 import json
-import pysrt
 from collections import OrderedDict
 
-# Project modules
+import pysrt
+
+import mugen.audio.audio as audio
 import mugen.constants as c
+import mugen.video.constants as vc
+import mugen.audio.constants as ac
 import mugen.exceptions as ex
 import mugen.paths as paths
 import mugen.utility as util
-import mugen.audio.audio as audio
+
 
 def save_rejected_segments(rejected_segments):
     """
@@ -26,22 +29,22 @@ def save_rejected_segments(rejected_segments):
     for segment in rejected_segments:
         if segment.reject_type == c.VideoTrait.IS_REPEAT:
             segment_path = paths.SR_PATH_IS_REPEAT + "%s" % rs_repeat_count + paths.VIDEO_OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=c.DEFAULT_VIDEO_FPS, codec=c.DEFAULT_VIDEO_CODEC,
+            segment.write_videofile(segment_path, codec=c.DEFAULT_VIDEO_CODEC,
                                     ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF])
             rs_repeat_count += 1
         elif segment.reject_type == c.VideoTrait.HAS_SCENE_CHANGE:
             segment_path = paths.SR_PATH_HAS_SCENE_CHANGE + "%s" % rs_scene_change_count + paths.VIDEO_OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=c.DEFAULT_VIDEO_FPS, codec=c.DEFAULT_VIDEO_CODEC,
+            segment.write_videofile(segment_path, codec=c.DEFAULT_VIDEO_CODEC,
                                     ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF])
             rs_scene_change_count += 1
         elif segment.reject_type == c.VideoTrait.HAS_TEXT:
             segment_path = paths.SR_PATH_HAS_TEXT + "%s" % rs_text_detected_count + paths.VIDEO_OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=c.DEFAULT_VIDEO_FPS, codec=c.DEFAULT_VIDEO_CODEC,
+            segment.write_videofile(segment_path, codec=c.DEFAULT_VIDEO_CODEC,
                                     ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF])
             rs_text_detected_count += 1
         else:
             segment_path = paths.SR_PATH_HAS_SOLID_COLOR + "%s" % rs_solid_color_count + paths.VIDEO_OUTPUT_EXTENSION
-            segment.write_videofile(segment_path, fps=c.DEFAULT_VIDEO_FPS, codec=c.DEFAULT_VIDEO_CODEC,
+            segment.write_videofile(segment_path, codec=c.DEFAULT_VIDEO_CODEC,
                                     ffmpeg_params=['-crf', c.DEFAULT_VIDEO_CRF])
             rs_solid_color_count += 1
 
@@ -125,8 +128,8 @@ def add_auxiliary_tracks(video_file, spec):
     audio_track_beat_locations = audio.create_temp_marked_audio_file(spec['audio_file']['file_path'], spec['beat_locations'])
 
     # Subtitle Tracks
-    subtitle_track_segment_numbers = create_subtitle_track(spec, c.SubtitlesTrack.SEGMENT_NUMBERS)
-    subtitle_track_segment_durations = create_subtitle_track(spec, c.SubtitlesTrack.SEGMENT_DURATIONS)
+    subtitle_track_segment_numbers = create_subtitle_track(spec, vc.SubtitlesTrack.SEGMENT_NUMBERS)
+    subtitle_track_segment_durations = create_subtitle_track(spec, vc.SubtitlesTrack.SEGMENT_DURATIONS)
 
     # Create new music video with auxiliary audio & subtitle tracks mixed in
     ffmpeg_cmd = [
@@ -139,18 +142,20 @@ def add_auxiliary_tracks(video_file, spec):
             '-map', '0',
             '-c', 'copy',
             '-map', '1',
-            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(c.AudioTrack.CUT_LOCATIONS),
+            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(ac.AudioTrack.CUT_LOCATIONS),
             '-map', '2',
-            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(c.SubtitlesTrack.SEGMENT_NUMBERS),
+            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(vc.SubtitlesTrack.SEGMENT_NUMBERS),
             '-map', '3',
-            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(c.SubtitlesTrack.SEGMENT_DURATIONS),
+            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(vc.SubtitlesTrack.SEGMENT_DURATIONS),
             output_path
           ]
 
     try:
         util.execute_ffmpeg_command(ffmpeg_cmd)
     except ex.FFMPEGError as e:
-        print("Failed to add subtitles to music video. ffmpeg returned error code: {}\n\nOutput from ffmpeg:\n\n{}".format(e.return_code, e.stderr))
+        print(f"Failed to add subtitles to music video. Error Code: {e.return_code}, "
+              f"Error: {e}")
+        raise
 
 def create_subtitle_track(spec, track_type):
     subtitle_path = paths.generate_temp_file_path(paths.SUBTITLES_EXTENSION)
