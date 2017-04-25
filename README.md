@@ -11,7 +11,7 @@ A music video generator based on beat patterns
 
 Use it to brainstorm AMVs, montages, what have you. [Check it out](https://youtu.be/ZlTR6XULe5M).
 
-Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [tesseract](https://github.com/tesseract-ocr/tesseract) OCR
+Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [librosa](https://github.com/librosa/librosa) audio analysis.
 
 ## Strategy
 
@@ -27,11 +27,13 @@ Built with [essentia](https://github.com/MTG/essentia) audio analysis, [moviepy]
 
 ## Requirements
 
-You'll need a python virtual environment with Python 2.7 and the pip packages listed in the conda [environment](environment.yml) for this repository. I recommend using [miniconda](http://conda.pydata.org/miniconda.html) as shown in the installation walkthrough below.
+- Python 3.6+ virtual environment
 
-You'll also need to install the python bindings for [essentia](https://github.com/MTG/essentia) >= 2.1, my fork of moviepy [scherroman/moviepy](https://github.com/scherroman/moviepy), and [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04.
+- pip package dependencies listed in the conda [environment](environment.yml) for this repository. I recommend using [miniconda](http://conda.pydata.org/miniconda.html) as shown in the installation walkthrough below.
 
-Recommended install order: tesseract -> conda virtual environment -> essentia -> moviepy 
+- Optional: Install [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04 and `pip install tesserocr>=2.1.3` for text detection features.
+
+Recommended install order: tesseract -> conda virtual environment 
 
 Below, an installation walthrough is provided for Mac OS X to give you a better idea of the installation process. This project has not been tested on Windows or Linux, but it should work on these systems provided the dependencies are compiled and installed properly.
 
@@ -39,17 +41,7 @@ Below, an installation walthrough is provided for Mac OS X to give you a better 
 
 **1 - [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
 
-**2 - [Install Miniconda 3.5](http://conda.pydata.org/miniconda.html) (A Python virtual environment and package manager)**
-
-**3 - Ensure Homebrew & Miniconda are at top of path by appending below text to `~/.bash_profile`**
-
-```
-#Miniconda
-export PATH="~/miniconda/bin:$PATH"
-
-#Homebrew
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH
-```
+**2 - [Install Miniconda 3.5](http://conda.pydata.org/miniconda.html) (Python virtual environment and package manager)**
 
 **4 - [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
 
@@ -63,56 +55,45 @@ export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 
 `source activate mugen`
 
-**7 - Ensure most recent version of Xcode**
-
-**8 - [Install essentia >= 2.1](https://github.com/MTG/essentia) via Homebrew**
-
-```
-brew tap MTG/essentia
-brew install essentia 
-```
-
-**9 - Move essentia package from Homebrew to your mugen conda environment**
-
-`cp -r /usr/local/lib/python2.7/site-packages/essentia ~/miniconda/envs/mugen/lib/python2.7/site-packages/essentia`
-
-**10 - [Fix matplotlib](http://stackoverflow.com/questions/21784641/installation-issue-with-matplotlib-python)**
-
-`echo "backend : TkAgg" > ~/.matplotlib/matplotlibrc`
-
-**11 - Download [scherroman/moviepy](https://github.com/scherroman/moviepy) from github (forked from [Zulko/moviepy](https://github.com/Zulko/moviepy) with added fix [#225](https://github.com/Zulko/moviepy/pull/225)).**
-
-**12 - Install moviepy into mugen conda environment (from downloaded moviepy directory)**
-
-`pip install .`
-
 ## Examples
 
-**Get Help Menu**
+###Help Menu
 
 ```
-python make_music_video.py --help
-python make_music_video.py create --help
-python make_music_video.py recreate --help
-python make_music_video.py preview --help
+python cli.py --help
+python cli.py create --help
+python cli.py recreate --help
+python cli.py preview --help
 ```
 
-**Create a music video**
+###Create a music video
 
-`python make_music_video.py create`
+`python cli.py create`
 
-`python make_music_video.py create -a ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 -v /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
+`python cli.py create --audio-source ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 --video-source /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
 
-**Recreate a music video**
+###Recreate a music video
 
-`python make_music_video.py recreate`
+`python cli.py recreate`
 
-`python make_music_video.py recreate -s ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
-
-**Preview beat locations in a song**
-
-`python make_music_video.py preview -a ~/Documents/mp3s/Spazzkid\ -\ Goodbye.mp3`
+`python cli.py recreate --spec-source ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
 
 **Slow down scene changes to every other beat**
 
-`python make_music_video.py create -sm 1/2`
+`python cli.py create --speed-multiplier 1/2`
+
+###Preview event locations in a song
+
+`python cli.py preview --audio-source ~/Documents/mp3s/Spazzkid\ -\ Goodbye.mp3`
+
+**Input event locations manually**
+
+`python cli.py preview --event-locations 2 4 6 10 11 12`
+
+**This gets interesting!**
+
+`python cli.py preview --method onsets --speed-multiplier 1/2 --speed-multiplier-offset 1`
+
+
+
+

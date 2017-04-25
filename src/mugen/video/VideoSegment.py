@@ -1,20 +1,21 @@
 import random
 from typing import Optional as Opt, List, Tuple
 
-from moviepy.decorators import convert_to_seconds
 from moviepy.editor import VideoFileClip
 
 import mugen.video.constants as vc
 import mugen.video.utility as v_util
 import mugen.video.sizing as v_sizing
+from mugen.utility import convert_time_to_seconds
 from mugen.video.sizing import Dimensions
-from mugen.video.constants import TIME_FORMAT, LIST_3D
+from mugen.constants import TIME_FORMAT
+from mugen.video.constants import LIST_3D
 from mugen.mixins.Taggable import Taggable
-from mugen.mixins.TraitFilterable import TraitFilterable
+from mugen.mixins.Filterable import Filterable
 from mugen.mixins.Weightable import Weightable
 
 
-class VideoSegment(Taggable, Weightable, TraitFilterable, VideoFileClip):
+class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     """
     A segment of video from a video file
 
@@ -78,7 +79,7 @@ class VideoSegment(Taggable, Weightable, TraitFilterable, VideoFileClip):
 
     """ METHODS """
 
-    @convert_to_seconds(['start_time', 'end_time'])
+    @convert_time_to_seconds(['start_time', 'end_time'])
     def subclip(self, start_time: TIME_FORMAT = 0, end_time: Opt[TIME_FORMAT] = None) -> 'VideoSegment':
         """
         Args:
@@ -101,7 +102,7 @@ class VideoSegment(Taggable, Weightable, TraitFilterable, VideoFileClip):
 
         return subclip
 
-    @convert_to_seconds(['duration'])
+    @convert_time_to_seconds(['duration'])
     def random_subclip(self, duration: TIME_FORMAT) -> 'VideoSegment':
         start_time = random.uniform(0, self.duration - duration)
         end_time = start_time + duration
@@ -110,7 +111,7 @@ class VideoSegment(Taggable, Weightable, TraitFilterable, VideoFileClip):
 
     def crop_scale(self, desired_dimensions: Tuple[int, int]) -> 'VideoSegment':
         """
-        Returns: New video segment, cropped and/or scaled as necessary to reach desired dimensions
+        Returns: A new VideoSegment, cropped and/or scaled as necessary to reach desired dimensions
         """
         desired_dimensions = Dimensions(*desired_dimensions)
         segment = self.copy()
@@ -131,9 +132,13 @@ class VideoSegment(Taggable, Weightable, TraitFilterable, VideoFileClip):
         if not self.filename == segment.filename:
             return False
 
-        fully_contains_segment = (self.source_start_time <= segment.source_start_time and
-                                  self.source_end_time >= segment.source_end_time)
-        start_overlaps = segment.source_start_time <= self.source_start_time < segment.source_end_time
-        end_overlaps = segment.source_start_time < self.source_end_time <= segment.source_end_time
+        return v_util.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
+                                     segment.source_end_time)
 
-        return start_overlaps or end_overlaps or fully_contains_segment
+    def to_spec(self):
+        return
+
+
+    @classmethod
+    def from_spec(cls, spec):
+        return

@@ -1,10 +1,9 @@
-import math
 from typing import List
 
 from numpy.random import choice
-from moviepy.decorators import convert_to_seconds
 
-from mugen.video.constants import TIME_FORMAT
+from mugen.utility import convert_time_to_seconds
+from mugen.constants import TIME_FORMAT
 from mugen.video.VideoSegment import VideoSegment
 from mugen.mixins.Weightable import Weightable
 
@@ -22,7 +21,7 @@ class VideoSegmentSampler:
     def weights(self):
         return [video_segment.weight for video_segment in self.video_segments]
 
-    @convert_to_seconds(['duration'])
+    @convert_time_to_seconds('duration')
     def sample(self, duration: TIME_FORMAT) -> VideoSegment:
         """
         Args:

@@ -1,220 +1,234 @@
-from typing import List, Optional as Opt, Tuple
+import os
 
+from typing import List, Optional as Opt, Tuple, Union
+
+import moviepy.editor as moviepy
 from moviepy.editor import AudioFileClip, VideoClip
 
-import mugen.video.constants as vc
-import mugen.paths as paths
 import mugen.utility as util
+import mugen.audio.constants as ac
+import mugen.video.constants as vc
 import mugen.video.sizing as v_sizing
-from mugen.utility import sanitize_directory_name, ensure_json_serializable
+
+from mugen.utility import ensure_json_serializable, temp_file_enabled
 from mugen.mixins.Taggable import Taggable
-from mugen.mixins.TraitFilterable import TraitFilter
+from mugen.mixins.Filterable import Filter
 from mugen.video.VideoSegment import VideoSegment
 from mugen.video.sizing import Dimensions
 
 
 class MusicVideo(Taggable):
     """
-    A music video composed of video segments and audio.
+    A video composed of video segments and overlaid audio.
 
     Attributes:
+        video_segments: Video segments composing the music video
+        
+        audio_file: Audio for the music video. If None, audio from video_segments will be used instead.
+        
         source_videos: Videos used to sample video segments from
-        music_video_segments: Video segments composing the music video
-        audio: Audio for the music video
-        rejected_music_video_segments: Video segments rejected from the music video
-        _dimensions: Width and height for the music video
-        _aspect_ratio: Aspect ratio for the music video (Overruled by _dimensions)
-        _fps: frames per second for the music video
-        codec: video codec to use when writing the music video to file
-        crf: constant rate factor (quality) for the music video (0 - 51)
+        rejected_video_segments: Video segments rejected from the music video
+        video_segment_trait_filters: 
         meta: Json serializable dictionary with metadata describing the music video
+        
+    If audio_file is given, its existing audio codec and bitrate will be used.
     """
-    music_video_segments: List[VideoSegment]
-    audio: AudioFileClip
+    video_segments: List[VideoSegment]
 
-    _dimensions: Opt[Dimensions] = None
-    _aspect_ratio: Opt[float] = None
-    _fps: int = None
-    codec: str = vc.DEFAULT_VIDEO_CODEC
-    crf: int = vc.DEFAULT_VIDEO_CRF
+    audio_file: Opt[str] = None
 
     source_videos: List[VideoSegment]
-    rejected_music_video_segments: List[VideoSegment]
-    video_segment_trait_filters: List[TraitFilter]
+    rejected_video_segments: List[VideoSegment]
+    video_segment_filters: List[Filter]
     meta: dict
 
     @ensure_json_serializable('meta')
-    def __init__(self, music_video_segments: List[VideoSegment], audio_file: str,
-                 dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None, fps: Opt[int] = None,
-                 codec: Opt[str] = None, crf: Opt[int] = None, source_videos: Opt[List[VideoSegment]] = None,
-                 rejected_music_video_segments: Opt[List[VideoSegment]] = None,
-                 video_segment_trait_filters: Opt[List[TraitFilter]] = None, meta: Opt[dict] = None, *args, **kwargs):
+    def __init__(self, video_segments: List[VideoSegment], audio_file: Opt[str] = None,
+                 source_videos: Opt[List[VideoSegment]] = None, rejected_video_segments: Opt[List[VideoSegment]] = None,
+                 video_segment_filters: Opt[List[Filter]] = None, meta: Opt[dict] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Required Parameters
-        self.music_video_segments = music_video_segments
-        self.audio = AudioFileClip(audio_file)
+        self.video_segments = video_segments
 
         # Optional Parameters
-        if dimensions:
-            self._dimensions = Dimensions(*dimensions)
-        if aspect_ratio:
-            self._aspect_ratio = aspect_ratio
-        if fps:
-            self._fps = fps
-        if codec:
-            self.codec = codec
-        if crf is not None:
-            self.crf = crf
+        self.audio_file = audio_file
         self.source_videos = source_videos or []
-        self.rejected_music_video_segments = rejected_music_video_segments or []
-        self.video_segment_trait_filters = video_segment_trait_filters or []
+        self.rejected_video_segments = rejected_video_segments or []
+        self.video_segment_filters = video_segment_filters or []
         self.meta = meta or {}
 
     """ PROPERTIES """
+
+    @property
+    def duration(self) -> float:
+        return sum([segment.duration for segment in self.video_segments])
 
     @property
     def dimensions(self) -> Opt[Dimensions]:
         """
         Returns: _dimensions if set, or calculates them from dimensions of video segments and _aspect_ratio
         """
-        if self._dimensions:
-            dimensions = self._dimensions
-        elif self._aspect_ratio:
-            dimensions = v_sizing.largest_dimensions_for_aspect_ratio(
-                            [segment.dimensions for segment in self.music_video_segments],
-                            self._aspect_ratio, default=None)
-        else:
-            dimensions = v_sizing.largest_width_and_height_for_dimensions(
-                            [segment.dimensions for segment in self.music_video_segments], default=None)
-
-        return dimensions
-
-    @dimensions.setter
-    def dimensions(self, value: Tuple[int, int]):
-        self._dimensions = Dimensions(*value)
+        return v_sizing.largest_width_and_height_for_dimensions([segment.dimensions for segment in self.video_segments],
+                                                                default=None)
 
     @property
     def aspect_ratio(self) -> float:
-        dimensions = self.dimensions
-        return dimensions.aspect_ratio if dimensions else self._aspect_ratio
-
-    @aspect_ratio.setter
-    def aspect_ratio(self, value: float):
-        self._aspect_ratio = value
+        return self.dimensions.aspect_ratio
 
     @property
     def fps(self) -> int:
-        return self._fps if self._fps else max([video_segment.fps for video_segment in self.music_video_segments])
-
-    @fps.setter
-    def fps(self, value: int):
-        self._fps = value
-
-    @property
-    def duration(self) -> float:
-        """
-        Returns: Duration of the music video, calculated from durations of video segments
-        """
-        return sum([segment.duration for segment in self.music_video_segments])
+        return max([segment.fps for segment in self.video_segments])
 
     @property
     def cut_locations(self) -> List[float]:
         """
-        (list of float): Locations in the music video where a change between video segments occurs (sec)
+        Returns: Locations in the music video where a cut between video segments occurs (sec)
         """
-        cut_locations = []
-        running_duration = 0
-        for index, segment in enumerate(self.music_video_segments):
-            if index != len(self.music_video_segments) - 1:
-                cut_locations.append(segment.duration + running_duration)
-                running_duration += segment.duration
-
-        return cut_locations
+        return util.locations_from_intervals(self.cut_intervals)
 
     @property
     def cut_intervals(self) -> List[float]:
         """
-        (list of float): Intervals between each cut location (sec)
+        Returns: Intervals between each cut location (sec)
         """
-        cut_intervals = []
-        for segment in self.music_video_segments:
-            cut_intervals.append(segment.duration)
-
-        return cut_intervals
+        return [segment.duration for segment in self.video_segments]
 
     """ METHODS """
 
-    def compose(self) -> VideoClip:
+    def _determine_dimensions(self, dimensions: Opt[Tuple[int, int]] = None,
+                              aspect_ratio: Opt[float] = None) -> Dimensions:
+        if dimensions:
+            dimensions = Dimensions(*dimensions)
+        elif aspect_ratio:
+            dimensions = v_sizing.largest_dimensions_for_aspect_ratio(
+                [segment.dimensions for segment in self.video_segments],
+                aspect_ratio, default=None)
+        else:
+            dimensions = self.dimensions
+
+        return dimensions
+
+    def compose(self, dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None) -> VideoClip:
         """
         Returns a composed VideoClip of the music video
+        
+        Attributes:
+            dimensions: Width and height for the music video
+            aspect_ratio: Aspect ratio for the music video (Overruled by dimensions)
         """
-        # segments = resize videoSegments
-        # concatenate_videoclips
-        # Return VideoClip
+        dimensions = self._determine_dimensions(dimensions, aspect_ratio)
 
+        video_segments = [segment.crop_scale(dimensions) for segment in self.video_segments]
+        music_video = moviepy.concatenate_videoclips(video_segments, method="compose")
+        if self.audio_file:
+            music_video.set_audio(AudioFileClip(self.audio_file))
 
-    def write_to_video_file(self, filename, composed_music_video: Opt[VideoClip] = None, *args, **kwargs):
+        return music_video
+
+    def write_to_video_file(self, output_path: str, composed_music_video: Opt[VideoClip] = None,
+                            dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None,
+                            codec: Opt[str] = None, crf: Opt[int] = None, audio_codec: Opt[str] = None,
+                            audio_bitrate: Opt[str] = None, ffmpeg_params: Opt[List[str]] = None):
         """
         Args:
-            filename: Name for the video file
-            composed_music_video: A composed music video to
+            output_path: Path for the video file
+            composed_music_video: A pre-composed music video to write
+            dimensions: Width and height for the music video
+            aspect_ratio: Aspect ratio for the music video (overruled by dimensions)
+            codec: video codec to use when writing the music video to file. Default libx264
+            crf: constant rate factor (quality) for the music video (0 - 51)
+            audio_codec: audio codec to use if no audio_file is provided 
+            audio_bitrate: audio bitrate to use if no audio_file is provided
+            ffmpeg_params: Any additional ffmpeg parameters you would like to pass, as a list
+                           of terms, like ['-option1', 'value1', '-option2', 'value2']
 
+        Use this method over moviepy's write_videofile to preserve the audio file's codec and bitrate.
         """
-        if not composed_music_video:
-            # compose
-        composed_music_video.write_videofile()
-        # if mp3, find audio bitrate via ffprobe
-        # add_auxiliary_tracks
+        audio = self.audio_file or True
 
+        if not composed_music_video:
+            composed_music_video = self.compose(dimensions=dimensions, aspect_ratio=aspect_ratio)
+        self._write_video_clip_to_file(composed_music_video, output_path, audio=audio, codec=codec, crf=crf,
+                                       audio_codec=audio_codec, audio_bitrate=audio_bitrate)
 
     def write_to_spec_file(self, filename):
+        return
 
-
-    def _write_video_segment_files_to_directory(self, video_segments, directory):
-        """
-        Writes a list of video segments to video files in the specified directory
-
-        Args:
-            video_segments (list of VideoSegment): Video Segments to write to video files
-            directory (str): Directory to save the video files in
-        """
-        for index, segment in enumerate(video_segments):
-            segment.write_videofile(paths.video_file_output_path(str(index), directory), fps=self.fps,
-                                    codec=self.codec, ffmpeg_params=['-crf', self.crf])
-
-
-    @sanitize_directory_name('directory')
-    def save_video_segments(self, directory=paths.OUTPUT_PATH_BASE):
+    def save_video_segments(self, directory: str, *, audio: Union[str, bool] = True,
+                            dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None,
+                            codec: Opt[str] = None, crf: Opt[int] = None, audio_codec: Opt[str] = None,
+                            audio_bitrate: Opt[str] = None, ffmpeg_params: Opt[List[str]] = None):
         """
         Saves video_segments to video files in the specified directory
-
-        Args:
-            directory (str): Directory to save the video files in
+        
+        See write_to_video_file for descriptions of optional parameters
         """
-        segments_dir = paths.segments_dir(self.name, directory)
-        util.ensure_dir(paths.segments_basedir(directory))
-        util.recreate_dir(segments_dir)
-        self._write_video_segment_files_to_directory(self.music_video_segments, segments_dir)
+        directory = os.path.join(directory, vc.SEGMENTS_DIRECTORY)
+        util.recreate_dir(directory)
+        self._write_video_segments_to_directory(self.video_segments, directory, audio=audio, dimensions=dimensions,
+                                                aspect_ratio=aspect_ratio, codec=codec, crf=crf,
+                                                audio_codec=audio_codec, audio_bitrate=audio_bitrate,
+                                                ffmpeg_params=ffmpeg_params)
 
-
-    @sanitize_directory_name('directory')
-    def save_video_segment_rejects(self, directory=paths.OUTPUT_PATH_BASE):
+    def save_rejected_video_segments(self, directory: str, *, audio: Union[str, bool] = True,
+                                     dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None,
+                                     codec: Opt[str] = None, crf: Opt[int] = None, audio_codec: Opt[str] = None,
+                                     audio_bitrate: Opt[str] = None, ffmpeg_params: Opt[List[str]] = None):
         """
         Saves video_segment_rejects to video files in the specified directory
-
-        Args:
-            directory (str): Directory to save the video files in
+        
+        See write_to_video_file for descriptions of optional parameters
         """
-        util.ensure_dir(paths.sr_dir(self.name, directory))
-        # for VideoTraitFilter, ensure sr_trait_dir
-        # self._write_video_segment_files_to_directory(self.video_segment_rejects, paths.dir_for_sr_trait)
+        directory = os.path.join(directory, vc.RS_DIRECTORY)
+        util.recreate_dir(directory)
+        self._write_video_segments_to_directory(self.rejected_video_segments, directory, audio=audio,
+                                                dimensions=dimensions, aspect_ratio=aspect_ratio, codec=codec, crf=crf,
+                                                audio_codec=audio_codec, audio_bitrate=audio_bitrate,
+                                                ffmpeg_params=ffmpeg_params)
 
+    def _write_video_segments_to_directory(self, video_segments: List[VideoSegment], directory: str, *,
+                                           dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None,
+                                           **kwargs):
+        """
+        Writes a list of video segments to files in the specified directory
+        """
+        for index, segment in enumerate(video_segments):
+            dimensions = self._determine_dimensions(dimensions, aspect_ratio)
+            segment = segment.crop_scale(dimensions)
+
+            output_path = os.path.join(directory, str(index) + vc.VIDEO_OUTPUT_EXTENSION)
+            self._write_video_clip_to_file(segment, output_path, **kwargs)
+
+    @staticmethod
+    def _write_video_clip_to_file(video_clip: VideoClip, output_path: str, *, audio: Union[str, bool] = True,
+                                  codec: Opt[str] = None, crf: Opt[int] = None, audio_codec: Opt[str] = None,
+                                  audio_bitrate: Opt[str] = None, ffmpeg_params: Opt[List[str]] = None):
+        """
+        Writes a video clip to file in the specified directory
+        """
+        if codec is None:
+            codec = vc.DEFAULT_VIDEO_CODEC
+        if crf is None:
+            crf = vc.DEFAULT_VIDEO_CRF
+        if audio_codec is None:
+            audio_codec = ac.DEFAULT_AUDIO_CODEC
+        if audio_bitrate is None:
+            audio_bitrate = ac.DEFAULT_AUDIO_BITRATE
+        if ffmpeg_params is None:
+            ffmpeg_params = []
+
+        # Prepend crf to ffmpeg_params
+        ffmpeg_params[:0] = ['-crf', crf]
+
+        video_clip.write_videofile(output_path, audio=audio, codec=codec, audio_codec=audio_codec,
+                                   audio_bitrate=audio_bitrate, ffmpeg_params=ffmpeg_params)
 
     def to_spec(self):
-
+        return
 
     @classmethod
     def from_spec(cls, spec):
+        return
 
 

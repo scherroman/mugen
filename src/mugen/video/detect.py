@@ -1,11 +1,16 @@
-import tesserocr
 from typing import List, Optional as Opt
 
 from PIL import Image
 from moviepy.video.tools.cuts import detect_scenes
+try:
+    import tesserocr
+    text_detection_available = True
+except ImportError:
+    tesserocr = None
+    text_detection_available = False
 
 from mugen.video.constants import LIST_3D
-import mugen.video.VideoSegment as VideoSegment
+from mugen.video.VideoSegment import VideoSegment
 
 DEFAULT_CONTRAST_THRESHOLD = 30
 
