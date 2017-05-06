@@ -57,7 +57,7 @@ Below, an installation walthrough is provided for Mac OS X to give you a better 
 
 ## Examples
 
-###Help Menu
+### Help Menu
 
 ```
 python cli.py --help
@@ -66,13 +66,13 @@ python cli.py recreate --help
 python cli.py preview --help
 ```
 
-###Create a music video
+### Create a music video
 
 `python cli.py create`
 
 `python cli.py create --audio-source ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 --video-source /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
 
-###Recreate a music video
+### Recreate a music video
 
 `python cli.py recreate`
 
@@ -82,7 +82,7 @@ python cli.py preview --help
 
 `python cli.py create --speed-multiplier 1/2`
 
-###Preview event locations in a song
+### Preview event locations in a song
 
 `python cli.py preview --audio-source ~/Documents/mp3s/Spazzkid\ -\ Goodbye.mp3`
 
