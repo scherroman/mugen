@@ -67,7 +67,7 @@ python cli.py preview --help
 ```
 
 ### Create a music video
-
+---
 `python cli.py create`
 
 `python cli.py create --audio-source ~/media/music/MACINTOSH\ PLUS\ 420.mp3 --video-sources ~/media/movies/TimeScapes.mkv`
@@ -76,13 +76,13 @@ python cli.py preview --help
 
 `python cli.py create --video-sources ~/media/movies/TimeScapes.mkv ~/media/series/FLCL/`
 
-**Slow down scene changes to every other beat**
-
-`python cli.py create --speed-multiplier 1/2`
-
 **Use a series 60% of the time and a movie 40% of the time**
 
 `python cli.py create --video-sources ~/media/movies/Neon_Genesis_Evangelion/ ~/media/movies/The_End_of_Evangelion.mkv --video-source-weights .6 .4 `
+
+**Slow down scene changes to every other beat**
+
+`python cli.py create --speed-multiplier 1/2`
 
 **Allow clips with cuts and repeat clips**
 
@@ -93,12 +93,14 @@ python cli.py preview --help
 `python cli.py create --video-filters has_text`
 
 ### Recreate a music video
+---
 
 `python cli.py recreate`
 
 `python cli.py recreate --spec-source ~/music_videos/vaporwave_timescapes_spec.json`
 
 ### Preview event locations in a song
+---
 
 `python cli.py preview`
 
