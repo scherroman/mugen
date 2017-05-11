@@ -1,24 +1,26 @@
 from enum import Enum
+from typing import Any
 
 import mugen.video.detect as v_detect
+from mugen.video.VideoSegment import VideoSegment
 from mugen.mixins.Filterable import Filter, ContextFilter
 
 """ FILTER FUNCTIONS """
 
 
-def is_repeat(segment, memory):
+def is_repeat(segment: VideoSegment, memory: Any) -> bool:
     return v_detect.video_segment_is_repeat(segment, video_segments_used=memory)
 
 
-def has_text(segment):
+def has_text(segment: VideoSegment) -> bool:
     return v_detect.video_segment_has_text(segment)
 
 
-def has_cut(segment):
+def has_cut(segment: VideoSegment) -> bool:
     return v_detect.video_segment_has_cut(segment)
 
 
-def has_low_contrast(segment):
+def has_low_contrast(segment: VideoSegment) -> bool:
     return v_detect.video_segment_has_low_contrast(segment)
 
 
@@ -42,6 +44,22 @@ def not_has_cut(*args, **kwargs):
 
 
 class VideoFilter(Enum):
+    """
+    Attributes
+    ----------
+    has_text
+        video segment has detectable text (letters, words, numbers, etc...). 
+        Supports foreign langauges
+        
+    has_cut
+        video segment has a detectable cut between shots
+        
+    has_low_contrast
+        video segment has low contrast (solid color, dark scene, etc...)
+        
+    is_repeat
+        video segment is a repeat of a video segment already used
+    """
     # Content Filters
     has_text = Filter(has_text)
     has_cut = Filter(has_cut)
@@ -58,11 +76,11 @@ class VideoFilter(Enum):
 
 
 # Order is significant when short-circuiting. Order filters from least expensive to most expensive.
-VIDEO_FILTERS_STANDARD = [VideoFilter.not_is_repeat, VideoFilter.not_has_low_contrast, VideoFilter.not_has_text,
-                          VideoFilter.not_has_cut]
+VIDEO_FILTERS_DEFAULT = [VideoFilter.not_is_repeat.name, VideoFilter.not_has_low_contrast.name,
+                         VideoFilter.not_has_text.name, VideoFilter.not_has_cut.name]
 
 # Remove unavailable filters
 if not v_detect.text_detection_available:
-    VIDEO_FILTERS_STANDARD.remove(VideoFilter.not_has_text)
+    VIDEO_FILTERS_DEFAULT.remove(VideoFilter.not_has_text.name)
 
 

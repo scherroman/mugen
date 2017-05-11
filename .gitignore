@@ -1,6 +1,7 @@
 *.pyc
 .idea
 .cache
+.coverage
 
 tests/testing.py
 

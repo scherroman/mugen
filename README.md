@@ -7,7 +7,7 @@
                   |___/            
 ```
 
-A music video generator based on beat patterns
+A music video generator based on rhythm analysis
 
 Use it to brainstorm AMVs, montages, what have you. [Check it out](https://youtu.be/ZlTR6XULe5M).
 
@@ -70,19 +70,37 @@ python cli.py preview --help
 
 `python cli.py create`
 
-`python cli.py create --audio-source ~/Documents/mp3s/MACINTOSH\ PLUS\ -\ リサフランク420\ -\ 現代のコンピュー.mp3 --video-source /Volumes/Media_Drive/Movies/Timescapes/TimeScapes.2012.1080p.mkv /Volumes/Media_Drive/Series/FLCL/`
+`python cli.py create --audio-source ~/media/music/MACINTOSH\ PLUS\ 420.mp3 --video-sources ~/media/movies/TimeScapes.mkv`
 
-###Recreate a music video
+**Use multiple video sources**
 
-`python cli.py recreate`
-
-`python cli.py recreate --spec-source ~/Documents/music_video_specs/vaporwave_timescapes_spec.json`
+`python cli.py create --video-sources ~/media/movies/TimeScapes.mkv ~/media/series/FLCL/`
 
 **Slow down scene changes to every other beat**
 
 `python cli.py create --speed-multiplier 1/2`
 
+**Use a series 60% of the time and a movie 40% of the time**
+
+`python cli.py create --video-sources ~/media/movies/Neon_Genesis_Evangelion/ ~/media/movies/The_End_of_Evangelion.mkv --video-source-weights .6 .4 `
+
+**Allow clips with cuts and repeat clips**
+
+`python cli.py create --exclude-video-filters not_has_cut not_is_repeat`
+
+**Use only clips that have text**
+
+`python cli.py create --video-filters has_text`
+
+###Recreate a music video
+
+`python cli.py recreate`
+
+`python cli.py recreate --spec-source ~/music_videos/vaporwave_timescapes_spec.json`
+
 ###Preview event locations in a song
+
+`python cli.py preview`
 
 `python cli.py preview --audio-source ~/Documents/mp3s/Spazzkid\ -\ Goodbye.mp3`
 
@@ -92,7 +110,7 @@ python cli.py preview --help
 
 **This gets interesting!**
 
-`python cli.py preview --method onsets --speed-multiplier 1/2 --speed-multiplier-offset 1`
+`python cli.py preview --audio-events-mode onsets --speed-multiplier 1/2 --speed-multiplier-offset 1`
 
 
 

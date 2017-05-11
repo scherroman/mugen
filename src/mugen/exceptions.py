@@ -4,13 +4,15 @@ class MugenError(Exception):
     """
     pass
 
+
 class ParameterError(MugenError):
     """
     Exception class for mal-formed inputs
     """
     pass
 
-class FFMPEGError(Exception):
+
+class FFMPEGError(MugenError):
     """
     Exception class for ffmpeg errors
     """

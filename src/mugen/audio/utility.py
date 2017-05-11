@@ -1,85 +1,28 @@
-import sys
-from fractions import Fraction
-from functools import wraps
+from typing import List, Optional as Opt, Tuple
 
-from typing import List
+import librosa
+import numpy as np
 
-from mugen import paths
+from mugen.utility import temp_file_enabled
 
-def validate_speed_multiplier(func):
-    """
-    Decorator validates speed multiplier and speed_multiplier_offset values
-    """
-
-    @wraps(func)
-    def _validate_speed_multiplier(*args, **kwargs):
-        speed_multiplier = kwargs.get('speed_multiplier')
-        speed_multiplier_offset = kwargs.get('speed_multiplier_offset')
-
-        speed_multiplier = Fraction(speed_multiplier).limit_denominator()
-
-        if speed_multiplier:
-            if speed_multiplier == 0 or (speed_multiplier.numerator != 1 and speed_multiplier.denominator != 1):
-                raise ValueError(f"""Improper speed multiplier {speed_multiplier}. 
-                                     Speed multipliers must be of the form x or 1/x, where x is a natural number.""")
-
-        if speed_multiplier_offset:
-            if speed_multiplier >= 1:
-                raise ValueError(f"""Improper speed multiplier offset {speed_multiplier_offset} for speed multiplier
-                                     {speed_multiplier}. Speed multiplier offsets may only be used with slowdown speed
-                                     multipliers.""")
-            elif speed_multiplier_offset > speed_multiplier.denominator - 1:
-                raise ValueError(f"""Improper speed multiplier offset {speed_multiplier_offset} for speed multiplier
-                                     {speed_multiplier}. Speed multiplier offset may not be greater than x - 1 for a 
-                                     slowdown of 1/x.""")
-
-        func(*args, **kwargs)
-
-    return _validate_speed_multiplier
+MARKED_AUDIO_EXTENSION = '.wav'
 
 
-
-def create_temp_offset_audio_file(audio_file, offset):
-    """
-    Create a temporary new audio file with the given offset to use for the music video
-    """
-    output_path = paths.generate_temp_file_path(paths.file_extension_from_path(audio_file))
-
-    # Generate new temporary audio file with offset
-    ffmpeg_cmd = [
-        util.get_ffmpeg_binary(),
-        '-i', audio_file,
-        '-ss', str(offset),
-        '-acodec', 'copy',
-        output_path
-    ]
-
-    try:
-        util.execute_ffmpeg_command(ffmpeg_cmd)
-    except ex.FFMPEGError as e:
-        print(f"Failed to create temporary audio file with specified offset {offset}. Error Code: {e.return_code}, "
-              f"Error: {e}")
-        raise
+@temp_file_enabled('output_path', MARKED_AUDIO_EXTENSION)
+def create_marked_audio_file(audio_file: str, mark_locations: List[float], output_path: Opt[str] = None):
+    marked_audio, sr = _get_marked_audio(audio_file, mark_locations)
+    librosa.output.write_wav(path=output_path, y=marked_audio, sr=sr)
 
     return output_path
 
 
-def create_temp_marked_audio_file(audio_file, beat_locations):
-    output_path = paths.generate_temp_file_path(paths.ESSENTIA_ONSETS_AUDIO_EXTENSION)
+def _get_marked_audio(audio_file: str, mark_locations: List[float]) -> Tuple[np.ndarray, int]:
+    y, sr = librosa.load(audio_file)
+    clicks = librosa.core.clicks(times=mark_locations, sr=sr, length=len(y))
+    marked_audio = y + clicks
 
-    # Load audio
-    audio = a_util.load_audio(audio_file)
-    onsets_marker = essentia.standard.AudioOnsetsMarker(onsets=beat_locations)
-    mono_writer = essentia.standard.MonoWriter(filename=output_path, bitrate=c.DEFAULT_AUDIO_BITRATE)
-
-    # Create preview audio file
-    marked_audio = onsets_marker(audio)
-    mono_writer(marked_audio)
-
-    return output_path
+    return marked_audio, sr
 
 
-def preview_audio_beats(audio_file, beat_locations):
-    marked_audio_file = create_temp_marked_audio_file(audio_file, beat_locations)
-    shutil.move(marked_audio_file, paths.audio_preview_path(audio_file))
+
 

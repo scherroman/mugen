@@ -1,3 +1,4 @@
+import operator
 from enum import Enum
 from typing import List, NamedTuple, Union, Any, Tuple
 
@@ -29,7 +30,9 @@ class Dimensions(DimensionsBase):
 
 def crop_dimensions_to_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio: float) -> Dimensions:
     """
-    Returns: dimensions cropped to reach desired aspect ratio
+    Returns
+    -------
+    Dimensions cropped to reach desired aspect ratio
     """
     nearest_dimensions_to_aspect_ratio = dimensions
 
@@ -47,8 +50,10 @@ def crop_dimensions_to_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio
 
 def crop_coordinates_for_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio: float) -> Tuple[int, int, int, int]:
     """
-    Returns: Coordinates at which to crop the given dimensions to reach the desired aspect ratio 
-             x1, y1, x2, y2 -> (x1, y1) for the top left corner, (x2, y2) for the bottom right corner 
+    Returns
+    -------
+    Coordinates at which to crop the given dimensions to reach the desired aspect ratio. 
+    x1, y1, x2, y2 -> (x1, y1) for the top left corner, (x2, y2) for the bottom right corner 
     """
     x1 = 0
     y1 = 0
@@ -71,26 +76,27 @@ def crop_coordinates_for_aspect_ratio(dimensions: Dimensions, desired_aspect_rat
     return x1, y1, x2, y2
 
 
-def largest_width_and_height_for_dimensions(dimensions_list: List[Dimensions], default: Any = _sentinel) \
+def largest_dimensions(dimensions_list: List[Dimensions], default: Any = _sentinel) \
                                             -> Union[Dimensions, Any]:
     """
-    Returns: Largest width and height among all dimensions
+    Returns
+    -------
+    The largest width and height among all dimensions
     """
     if not dimensions_list:
         if default is not _sentinel:
             return default
         raise ValueError(f"{dimensions_list} must not be empty.")
 
-    largest_width = max([dimensions.width for dimensions in dimensions_list])
-    largest_height = max([dimensions.height for dimensions in dimensions_list])
-
-    return Dimensions(largest_width, largest_height)
+    return max(dimensions_list, key=operator.attrgetter('resolution'))
 
 
 def largest_dimensions_for_aspect_ratio(dimensions_list: List[Dimensions], desired_aspect_ratio: float,
                                         default: Any = _sentinel) -> Union[Dimensions, Any]:
     """
-    Returns: largest dimensions after cropping each dimensions to reach desired aspect ratio
+    Returns
+    -------
+    The largest dimensions after cropping each dimensions to reach desired aspect ratio
     """
     if not dimensions_list:
         if default is not _sentinel:

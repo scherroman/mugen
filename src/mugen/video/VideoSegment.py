@@ -1,10 +1,10 @@
 import random
-from typing import Optional as Opt, List, Tuple
+from typing import Optional as Opt, List, Tuple, Union
 
 from moviepy.editor import VideoFileClip
 
-import mugen.video.constants as vc
 import mugen.video.utility as v_util
+import mugen.utility as util
 import mugen.video.sizing as v_sizing
 from mugen.utility import convert_time_to_seconds
 from mugen.video.sizing import Dimensions
@@ -14,30 +14,46 @@ from mugen.mixins.Taggable import Taggable
 from mugen.mixins.Filterable import Filterable
 from mugen.mixins.Weightable import Weightable
 
+DEFAULT_VIDEO_FPS = 24
+
 
 class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     """
     A segment of video from a video file
 
-    Attributes:
-        source_start_time: Start time of the video segment in the source video (sec.mil)
-        source_end_time: End time of the video segment in the source video (sec.mil)
+    Attributes
+    ----------
+    source_start_time
+        Start time of the video segment in the source video (sec.mil)
+        
+    source_end_time
+        End time of the video segment in the source video (sec.mil)
     """
     source_start_time: float
     source_end_time: float
 
-    def __init__(self, filename: str, audio: bool = False, *args, **kwargs):
+    def __init__(self, filename: str, *, audio: bool = True, **kwargs):
         """
-        Args:
-            source_video_file (str): A path to a video file. Can have any extension supported by ffmpeg.
-            audio (bool): Enables or disables audio from the source video file
+        A segment of video from a video file
+
+        Parameters
+        ----------
+        source_video_file
+            A path to a video file. 
+            Supports any extension supported by ffmpeg
+            
+        audio
+            Enables or disables audio
         """
-        super().__init__(filename, audio=audio, *args, **kwargs)
+        super().__init__(**kwargs)
+        VideoFileClip.__init__(self, filename, audio=audio, **kwargs)
 
         self.source_start_time = 0
         self.source_end_time = self.duration
+
+        # Parent VideFileClip will not always be able to properly read an fps value
         if not self.fps:
-            self.fps = vc.DEFAULT_VIDEO_FPS
+            self.fps = DEFAULT_VIDEO_FPS
 
     """ PROPERTIES """
 
@@ -82,11 +98,17 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     @convert_time_to_seconds(['start_time', 'end_time'])
     def subclip(self, start_time: TIME_FORMAT = 0, end_time: Opt[TIME_FORMAT] = None) -> 'VideoSegment':
         """
-        Args:
-            start_time: Start time of the video segment in the source video file
-            end_time: End time of the video segment in the source video file
+        Parameters
+        ----------
+        start_time
+            Start time of the video segment in the source video file
+            
+        end_time
+            End time of the video segment in the source video file
 
-        Returns: A subclip of the original video file, starting and ending at the specified times
+        Returns
+        -------
+        A subclip of the original video file, starting and ending at the specified times
         """
         subclip = super().subclip(start_time, end_time)
 
@@ -111,7 +133,9 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
 
     def crop_scale(self, desired_dimensions: Tuple[int, int]) -> 'VideoSegment':
         """
-        Returns: A new VideoSegment, cropped and/or scaled as necessary to reach desired dimensions
+        Returns
+        -------
+        A new VideoSegment, cropped and/or scaled as necessary to reach desired dimensions
         """
         desired_dimensions = Dimensions(*desired_dimensions)
         segment = self.copy()
@@ -132,7 +156,7 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
         if not self.filename == segment.filename:
             return False
 
-        return v_util.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
+        return util.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
                                      segment.source_end_time)
 
     def to_spec(self):
@@ -142,3 +166,19 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     @classmethod
     def from_spec(cls, spec):
         return
+
+    @staticmethod
+    def video_segments_from_irregular_source_list(video_sources: List[Union[str, List[str]]]) -> List['VideoSegment']:
+        """
+        Converts an arbitrarily nested irregular list of video sources to VideoSegments
+        """
+        video_segments = []
+
+        for video_source in video_sources:
+            if type(video_source) is list:
+                video_segments.append(VideoSegment.video_segments_from_irregular_source_list(video_source))
+            else:
+                video_segments.append(VideoSegment(video_source))
+
+        return video_segments
+

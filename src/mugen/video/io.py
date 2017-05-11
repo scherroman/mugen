@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from enum import Enum
 from typing import List, Tuple, NamedTuple, Optional as Opt, Any
 
 import pysrt
@@ -8,8 +9,9 @@ import mugen.constants as c
 import mugen.exceptions as ex
 import mugen.paths as paths
 import mugen.utility as util
+import mugen.location_utility as loc_util
 import mugen.video.constants as vc
-import mugen.audio.librosa as librosa
+import mugen.audio.analysis as librosa
 import mugen.audio.constants as ac
 from mugen.utility import temp_file_enabled
 from mugen.video.MusicVideo import MusicVideo
@@ -135,6 +137,21 @@ class Subtitle(NamedTuple):
     end_time: float
 
 
+class TrackType(str, Enum):
+    pass
+
+
+class AudioTrackType(TrackType):
+    CUT_LOCATIONS = 'cut_locations'
+    # EVENT_LOCATIONS = 'event_locations'
+
+
+class SubtitleTrackType(TrackType):
+    SEGMENT_NUMBERS = 'segment_numbers'
+    SEGMENT_DURATIONS = 'segment_durations'
+    SPEC = 'spec'
+
+
 def add_auxiliary_tracks(music_video: MusicVideo, video_file: str, output_path: str):
     """
     Add metadata subtitle tracks to a music video
@@ -160,11 +177,11 @@ def add_auxiliary_tracks(music_video: MusicVideo, video_file: str, output_path: 
             '-map', '0',
             '-c', 'copy',
             '-map', '1',
-            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(ac.AudioTrack.CUT_LOCATIONS),
+            '-c', 'copy', '-metadata:s:a:1', 'title={}'.format(AudioTrackType.CUT_LOCATIONS),
             '-map', '2',
-            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(vc.SubtitleTrack.SEGMENT_NUMBERS),
+            '-c:s:0', 'srt', '-metadata:s:s:0', 'title={}'.format(SubtitleTrackType.SEGMENT_NUMBERS),
             '-map', '3',
-            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(vc.SubtitleTrack.SEGMENT_DURATIONS),
+            '-c:s:1', 'srt', '-metadata:s:s:1', 'title={}'.format(SubtitleTrackType.SEGMENT_DURATIONS),
             output_path
           ]
 
@@ -199,7 +216,7 @@ def write_subtitles_to_file(subs: List[Subtitle], output_path: str):
 
 def generate_subtitles(texts: List[Any], durations: List[float]) -> List[Subtitle]:
     subtitles = []
-    start_times, end_times = util.start_end_locations_from_intervals(durations)
+    start_times, end_times = loc_util.start_end_locations_from_intervals(durations)
     for index, (text, start_time, end_time) in enumerate(zip(texts, start_times, end_times)):
         subtitle = Subtitle(text, start_time, end_time)
         subtitles.append(subtitle)

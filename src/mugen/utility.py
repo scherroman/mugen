@@ -5,10 +5,11 @@ import shutil
 import subprocess as sp
 from collections import OrderedDict
 from fractions import Fraction
+from functools import wraps
 
-from typing import List, Callable, Optional as Opt, Union
+from typing import List, Callable, Any, Union
 
-import numpy as np
+import collections
 import decorator
 
 from mugen.constants import TIME_FORMAT
@@ -18,6 +19,7 @@ import mugen.paths as paths
 
 
 """ SYSTEM """
+
 
 def touch(filename):
     """
@@ -87,11 +89,9 @@ def delete_dir(*directories):
 
 
 def listdir_nohidden(path):
-    # Make sure path has trailing slash
-    path = os.path.join(path, '')
     for file in os.listdir(path):
         if not file.startswith('.'):
-            yield path + file
+            yield os.path.join(path, file)
 
 
 def parse_json_file(json_file: str) -> dict:
@@ -104,11 +104,26 @@ def parse_json_file(json_file: str) -> dict:
 """ MISC """
 
 
+def flatten(l: List[Union[Any, List[Any]]]) -> List[Any]:
+    """
+    Flattens an arbitrarily nested irregular list of objects
+    """
+    l_flattened = []
+
+    for el in l:
+        if isinstance(el, collections.Iterable) and not isinstance(el, (str, bytes)):
+            l_flattened.extend(flatten(el))
+        else:
+            l_flattened.append(el)
+
+    return l_flattened
+
+
 def ranges_overlap(a_start, a_end, b_start, b_end) -> bool:
     return max(a_start, b_start) < min(a_end, b_end)
 
 
-def float_to_fraction(float_var):
+def float_to_fraction(float_var) -> Fraction:
     return Fraction(float_var).limit_denominator()
 
 
@@ -164,13 +179,38 @@ def preprocess_args(fun: Callable, varnames: List[str]):
     return decorator.decorator(wrapper)
 
 
+def convert_to_fraction(*varnames: str):
+    """
+    Decorator to convert varnames from floats to fractions
+    """
+    return preprocess_args(float_to_fraction, *varnames)
+
+
+def convert_time_to_seconds(*varnames: str):
+    """
+    Decorator to convert varnames from TIME_FORMAT to seconds
+    """
+    return preprocess_args(time_to_seconds, *varnames)
+
+
+def convert_time_list_to_seconds(*varnames: str):
+    """
+    Decorator to convert varnames from TIME_FORMAT to seconds
+    """
+    return preprocess_args(time_list_to_seconds, *varnames)
+
+
 def temp_file_enabled(path_var: str, extension: str):
     """
     Decorator to set path_var to a temporary file path if it is None. Does not create the file.
-
-    Args:
-        path_var: A variable expecting a file path
-        extension: extension for the temporary file
+    
+    Parameters
+    ----------
+    path_var
+        A variable expecting a file path
+        
+    extension
+        extension for the temporary file
     """
     def _use_temp_file_path(path_variable):
         return path_variable or paths.generate_temp_file_path(extension)
@@ -194,146 +234,32 @@ def ensure_json_serializable(*dicts: dict):
     return preprocess_args(_ensure_json_serializable, *dicts)
 
 
-def convert_to_fraction(*varnames: str):
+def validate_speed_multiplier(func):
     """
-    Decorator to convert varnames from floats to fractions
+    Decorator validates speed multiplier and speed_multiplier_offset values
     """
-    return preprocess_args(float_to_fraction, *varnames)
 
+    @wraps(func)
+    def _validate_speed_multiplier(*args, **kwargs):
+        speed_multiplier = kwargs.get('speed_multiplier')
+        speed_multiplier_offset = kwargs.get('speed_multiplier_offset')
 
-def convert_time_to_seconds(*varnames: str):
-    """
-    Decorator to convert varnames from TIME_FORMAT to seconds
-    """
-    return preprocess_args(time_to_seconds, *varnames)
+        if speed_multiplier:
+            speed_multiplier = Fraction(speed_multiplier).limit_denominator()
+            if speed_multiplier == 0 or (speed_multiplier.numerator != 1 and speed_multiplier.denominator != 1):
+                raise ValueError(f"""Improper speed multiplier {speed_multiplier}. 
+                                     Speed multipliers must be of the form x or 1/x, where x is a natural number.""")
 
+        if speed_multiplier_offset:
+            if speed_multiplier >= 1:
+                raise ValueError(f"""Improper speed multiplier offset {speed_multiplier_offset} for speed multiplier
+                                     {speed_multiplier}. Speed multiplier offsets may only be used with slowdown speed
+                                     multipliers.""")
+            elif speed_multiplier_offset > speed_multiplier.denominator - 1:
+                raise ValueError(f"""Improper speed multiplier offset {speed_multiplier_offset} for speed multiplier
+                                     {speed_multiplier}. Speed multiplier offset may not be greater than x - 1 for a 
+                                     slowdown of 1/x.""")
 
-def convert_time_list_to_seconds(*varnames: str):
-    """
-    Decorator to convert varnames from TIME_FORMAT to seconds
-    """
-    return preprocess_args(time_list_to_seconds, *varnames)
+        return func(*args, **kwargs)
 
-
-""" LOCATIONS & INTERVALS """
-
-def offset_locations(locations: List[float], offset: float) -> List[float]:
-    return [location + offset for location in locations]
-
-
-def intervals_from_locations(locations: List[float]) -> List[float]:
-    intervals = []
-
-    previous_location = None
-    for index, location in enumerate(locations):
-        if index == 0:
-            intervals.append(location)
-        else:
-            intervals.append(location - previous_location)
-        previous_location = location
-
-    return intervals
-
-
-def locations_from_intervals(intervals: List[float]) -> List[float]:
-    locations = []
-    running_duration = 0
-    for index, interval in enumerate(intervals):
-        if index < len(intervals):
-            running_duration += interval
-            locations.append(running_duration)
-
-    return locations
-
-
-def split_locations(locations: List[float], pieces_per_split: int) -> List[float]:
-    """
-    Splits locations up to form shorter intervals
-
-    Args:
-        locations
-        pieces_per_split: Number of pieces to split each location into
-
-    Returns: Split locations
-    """
-    splintered_locations = []
-
-    for index, location in enumerate(locations):
-        splintered_locations.append(location)
-
-        if index == len(locations) - 1:
-            continue
-
-        next_location = locations[index + 1]
-        interval = next_location - location
-        interval_piece = interval / pieces_per_split
-
-        for _ in range(pieces_per_split - 1):
-            location += interval_piece
-            splintered_locations.append(location)
-
-    return splintered_locations
-
-
-def merge_locations(locations: List[float], pieces_per_merge: int, offset: Opt[int] = None) -> List[float]:
-    """
-        Merges adjacent locations to form longer intervals
-    
-        Args:
-            locations
-            pieces_per_merge: Number of adjacent locations to merge at a time
-            offset: Offset for the merging of locations
-    
-        Returns: Merged locations
-    """
-    if offset is None:
-        offset = 0
-
-    combined_locations = []
-
-    for index, location in enumerate(locations):
-        if (index - offset) % pieces_per_merge == 0:
-            combined_locations.append(location)
-
-    return combined_locations
-
-
-@convert_to_fraction('speed_multiplier')
-def locations_after_speed_multiplier(locations: Union[List[float], np.ndarray],
-                                     speed_multiplier: Union[float, Fraction],
-                                     speed_multiplier_offset: Opt[int] = None) -> List[float]:
-    if speed_multiplier > 1:
-        locations = split_locations(locations, speed_multiplier.numerator)
-    elif speed_multiplier < 1:
-        locations = merge_locations(locations, speed_multiplier.denominator,
-                                    speed_multiplier_offset)
-
-    return locations
-
-
-def start_end_locations_from_intervals(intervals: List[float]):
-    start_locations = []
-    end_locations = []
-
-    running_duration = 0
-    for index, duration in enumerate(intervals):
-        start_time = running_duration
-        end_time = start_time + duration
-
-        start_locations.append(start_time)
-        end_locations.append(end_time)
-
-        running_duration += duration
-
-    return start_locations, end_locations
-
-
-
-
-
-
-
-
-
-
-
+    return _validate_speed_multiplier

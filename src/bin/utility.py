@@ -1,3 +1,5 @@
+from fractions import Fraction
+from typing import Optional as Opt, List
 import tkinter as tk
 import logging
 import os
@@ -5,26 +7,23 @@ import sys
 
 from tkinter import filedialog
 
+import mugen.paths as paths
 import mugen.utility as util
-from mugen.audio.librosa import MARKED_AUDIO_EXTENSION
+from mugen import VideoSegment
 from mugen.constants import FileType
+from mugen.mixins.Weightable import Weightable
+from mugen.video import MusicVideoGenerator
 from mugen.video.MusicVideo import MusicVideo
 
-""" PATHS """
-
-OUTPUT_PATH_BASE = os.path.join(os.path.dirname(__file__), 'output/')
-
-
-def audio_preview_path(basedir: str, filename: str) -> str:
-    return os.path.join(basedir, filename + "_marked_audio_preview" + MARKED_AUDIO_EXTENSION)
-
+import bin.constants as cli_c
 
 """ COMMAND LINE UTILITY FUNCTIONS """
 
-DEFAULT_MUSIC_VIDEO_NAME = 'music_video'
 
+def get_music_video_name(directory: str, name: Opt[str] = None):
+    if not name:
+        name = cli_c.DEFAULT_MUSIC_VIDEO_NAME
 
-def get_music_video_name(directory: str, name: str = DEFAULT_MUSIC_VIDEO_NAME):
     count = 0
     while True:
         music_video_name = name + "_%s" % count
@@ -41,6 +40,7 @@ def get_music_video_name(directory: str, name: str = DEFAULT_MUSIC_VIDEO_NAME):
 def prompt_file_selection(file_type: FileType):
     # Select via file selection dialog
     root = tk.Tk()
+    root.lift()
     root.withdraw()
     file = tk.filedialog.askopenfilename(message="Select {} file".format(file_type))
     root.update()
@@ -48,9 +48,6 @@ def prompt_file_selection(file_type: FileType):
     if file == "":
         print("No {} file was selected.".format(file_type))
         sys.exit(1)
-
-    # # Properly encode file name
-    # file = source.encode('utf-8')
 
     logging.debug("{}_file {}".format(file_type, file))
 
@@ -65,6 +62,7 @@ def prompt_files_selection(file_type: FileType):
     while True:
         root = tk.Tk()
         root.withdraw()
+
         source = tk.filedialog.askopenfilename(message=message, multiple=True)
         message = "Select more {} files, or press cancel if done".format(file_type)
         root.update()
@@ -73,7 +71,7 @@ def prompt_files_selection(file_type: FileType):
             break
 
         # Properly encode file names
-        files.extend([file.encode('utf-8') for file in source])
+        files.append(list(source))
 
     if len(files) == 0:
         print("No {} files were selected.".format(file_type))
@@ -85,22 +83,103 @@ def prompt_files_selection(file_type: FileType):
     return files
 
 
-def get_files(sources):
+def files_from_source(source: str) -> List[str]:
     """
-    Returns list of file paths from a given list of sources,
+    Parameters
+    ----------
+    source
+        A file source.
+        Accepts a file or directory
+
+    Returns
+    -------
+    A list of all file paths extracted from source
+    """
+    files = []
+    source_is_dir = os.path.isdir(source)
+
+    # Check if source is file or directory
+    if source_is_dir:
+        files.append([file for file in util.listdir_nohidden(source) if os.path.isfile(file)])
+    else:
+        files.append(source)
+
+    return files
+
+
+def files_from_sources(sources: List[str]) -> List[str]:
+    """
+    Parameters
+    ----------
+    sources
+        A list of file sources.
+        Accepts both files and directories
+
+    Returns
+    -------
+    A list of all file paths extracted from sources
     """
     files = []
 
     for source in sources:
-        source_is_dir = os.path.isdir(source)
-
-        # Check if source is file or directory
-        if source_is_dir:
-            files.extend([file for file in util.listdir_nohidden(source) if os.path.isfile(file)])
-        else:
-            files.append(source)
+        files.extend(files_from_source(source))
 
     return files
+
+
+def video_files_from_source(source: str) -> List[str]:
+    """
+    Parameters
+    ----------
+    source
+        A file source.
+        Accepts a file or directory
+
+    Returns
+    -------
+    A list of all video file paths extracted from source
+    """
+    video_files = []
+    source_is_dir = os.path.isdir(source)
+
+    # Check if source is file or directory
+    if source_is_dir:
+        new_video_files = []
+        files = [file for file in util.listdir_nohidden(source) if os.path.isfile(file)]
+
+        for file in files:
+            try:
+                VideoSegment(file)
+            except IOError:
+                continue
+            else:
+                new_video_files.append(file)
+
+        video_files.append(new_video_files)
+    else:
+        video_files.append(source)
+
+    return video_files
+
+
+def video_files_from_sources(sources: List[str]) -> List[str]:
+    """
+    Parameters
+    ----------
+    sources
+        A list of file sources.
+        Accepts both files and directories
+
+    Returns
+    -------
+    A list of all video file paths extracted from sources
+    """
+    video_files = []
+
+    for source in sources:
+        video_files.extend(video_files_from_source(source))
+
+    return video_files
 
 
 def validate_path(*paths):
@@ -117,10 +196,18 @@ def validate_replace_segments(replace_segments, video_segments):
             sys.exit(1)
 
 
+def print_weight_stats(music_video_generator: MusicVideoGenerator):
+    print("\nVideo Source Weights:")
+    weight_percentages = Weightable.weight_percentages([video.weight for video in music_video_generator.video_sources])
+    for video_segment, weight in zip(music_video_generator.video_sources, weight_percentages):
+        print(f"{paths.filename_from_path(video_segment.filename)}: {weight}%")
+
+
 def print_rejected_segment_stats(music_video: MusicVideo):
-    for trait_filter in music_video.video_segment_filters:
-        rejected_segments_for_trait_filter = [segment for segment in music_video.rejected_video_segments if
-                                              trait_filter in segment.failed_trait_filters]
-        num_failing = len(rejected_segments_for_trait_filter)
-        print(f"# rejected segments that failed filter '{trait_filter.trait}': {num_failing}")
+    print("\nFilter results:")
+    for video_filter in music_video.video_filters:
+        rejected_segments_for_video_filter = [segment for segment in music_video.rejected_video_segments if
+                                              video_filter in segment.failed_filters]
+        num_failing = len(rejected_segments_for_video_filter)
+        print(f"{num_failing} segments failed filter '{video_filter.name}'")
 

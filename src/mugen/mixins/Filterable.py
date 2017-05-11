@@ -5,12 +5,19 @@ class Filter:
     """
     A function used to filter an object based its content
     
-    Attributes:
-        function: The function to filter with
+    Attributes
+    ----------
+    name
+        Name of the filter function
+        
+    function
+        The function to filter with
     """
+    name: str
     function: Callable[..., bool]
 
     def __init__(self, function: Callable[..., bool]):
+        self.name = function.__name__
         self.function = function
 
     def __call__(self, *args, **kwargs) -> bool:
@@ -20,16 +27,18 @@ class Filter:
 class ContextFilter(Filter):
     """
     A Filter which keeps a running memory of objects to pass to the filter function
-    
-    Attributes:
-        memory: A list of objects to use as memory for the given filter
-    
+
+    Attributes
+    ----------
+    memory
+        A list of objects to use as memory for the given filter
+        
     Requires the filter function to take a 'memory' parameter
     """
     memory: List[Any] = None
 
-    def __init__(self, function, *args, memory: Opt[List[Any]] = None, **kwargs):
-        super().__init__(function, *args, **kwargs)
+    def __init__(self, function, memory: Opt[List[Any]] = None):
+        super().__init__(function)
 
         if memory:
             self.memory = memory
@@ -45,18 +54,23 @@ class Filterable:
     passed_filters: List[Filter]
     failed_filters: List[Filter]
 
-    def __init__(self, passed_filters: Opt[List[Filter]] = None,
-                 failed_filters: Opt[List[Filter]] = None):
-        self.passed_filters = passed_filters or []
-        self.failed_filters = failed_filters or []
+    def __init__(self, *args, **kwargs):
+        self.passed_filters = []
+        self.failed_filters = []
 
     def apply_filters(self, filters: List[Filter], short_circuit: bool = True) -> Tuple[List[Filter], List[Filter]]:
         """
-        Args:
-            filters: Trait filters to test
-            short_circuit: Whether or not the function should exit early on a trait filter failure
+        Parameters
+        ----------
+        filters
+            Filters to test
+            
+        short_circuit
+            Whether or not the function should exit early on a trait filter failure
 
-        Returns: True if all trait_filters passed, false otherwise
+        Returns
+        -------
+        True if all trait_filters passed, false otherwise
         """
         passed_filters = []
         failed_filters = []
