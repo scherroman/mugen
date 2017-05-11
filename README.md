@@ -57,7 +57,7 @@ Below, an installation walthrough is provided for Mac OS X to give you a better 
 
 ## Examples
 
-###Help Menu
+### Help Menu
 
 ```
 python cli.py --help
@@ -66,7 +66,7 @@ python cli.py recreate --help
 python cli.py preview --help
 ```
 
-###Create a music video
+### Create a music video
 
 `python cli.py create`
 
@@ -92,13 +92,13 @@ python cli.py preview --help
 
 `python cli.py create --video-filters has_text`
 
-###Recreate a music video
+### Recreate a music video
 
 `python cli.py recreate`
 
 `python cli.py recreate --spec-source ~/music_videos/vaporwave_timescapes_spec.json`
 
-###Preview event locations in a song
+### Preview event locations in a song
 
 `python cli.py preview`
 
