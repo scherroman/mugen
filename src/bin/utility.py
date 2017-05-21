@@ -198,8 +198,8 @@ def validate_replace_segments(replace_segments, video_segments):
 
 def print_weight_stats(music_video_generator: MusicVideoGenerator):
     print("\nVideo Source Weights:")
-    weight_percentages = Weightable.weight_percentages([video.weight for video in music_video_generator.video_sources])
-    for video_segment, weight in zip(music_video_generator.video_sources, weight_percentages):
+    for video_segment, weight in zip(music_video_generator.video_sources,
+                                     music_video_generator.video_sources.weight_percentages):
         print(f"{paths.filename_from_path(video_segment.filename)}: {weight}%")
 
 

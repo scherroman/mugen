@@ -1,6 +1,6 @@
 import os
 
-from typing import List, Optional as Opt, Tuple, Union
+from typing import List, Optional as Opt, Tuple
 
 import moviepy.editor as moviepy
 from moviepy.editor import AudioFileClip, VideoClip
@@ -11,7 +11,7 @@ import mugen.video.sizing as v_sizing
 
 from mugen.utility import ensure_json_serializable
 from mugen.mixins.Filterable import Filter
-from mugen.video.VideoSegment import VideoSegment
+from mugen.video.VideoSegment import VideoSegmentList
 from mugen.video.VideoWriter import VideoWriter
 from mugen.video.sizing import Dimensions
 
@@ -44,25 +44,26 @@ class MusicVideo:
         Json serializable dictionary with metadata describing the music video
     """
     audio_file: str
-    video_segments: List[VideoSegment]
+    video_segments: VideoSegmentList
     writer: VideoWriter
 
-    source_videos: List[VideoSegment]
-    rejected_video_segments: List[VideoSegment]
+    source_videos: VideoSegmentList
+    rejected_video_segments: VideoSegmentList
     video_filters: List[Filter]
     meta: dict
 
     @ensure_json_serializable('meta')
-    def __init__(self, audio_file: str, video_segments: List[VideoSegment], *,
-                 source_videos: Opt[List[VideoSegment]] = None, rejected_video_segments: Opt[List[VideoSegment]] = None,
+    def __init__(self, audio_file: str, video_segments: VideoSegmentList, *,
+                 source_videos: VideoSegmentList = None, rejected_video_segments: VideoSegmentList = None,
                  video_filters: Opt[List[Filter]] = None, meta: Opt[dict] = None):
         # Required Parameters
         self.audio_file = audio_file
         self.video_segments = video_segments
         self.writer = VideoWriter()
 
-        self.source_videos = source_videos or []
-        self.rejected_video_segments = rejected_video_segments or []
+        # Optional Parameters
+        self.source_videos = source_videos or VideoSegmentList()
+        self.rejected_video_segments = rejected_video_segments or VideoSegmentList()
         self.video_filters = video_filters or []
         self.meta = meta or {}
 
@@ -70,7 +71,7 @@ class MusicVideo:
 
     @property
     def duration(self) -> float:
-        return sum([segment.duration for segment in self.video_segments])
+        return sum(self.video_segments.durations)
 
     @property
     def dimensions(self) -> Opt[Dimensions]:
@@ -79,9 +80,7 @@ class MusicVideo:
         -------
         The largest dimensions from video_segments
         """
-        dimensions_list = [segment.dimensions for segment in self.video_segments]
-
-        return v_sizing.largest_dimensions(dimensions_list, default=None)
+        return v_sizing.largest_dimensions(self.video_segments.dimensions, default=None)
 
     @property
     def aspect_ratio(self) -> float:
@@ -89,7 +88,7 @@ class MusicVideo:
 
     @property
     def fps(self) -> int:
-        return max([segment.fps for segment in self.video_segments])
+        return max(self.video_segments.fpses)
 
     @property
     def cut_locations(self) -> List[float]:
@@ -107,7 +106,7 @@ class MusicVideo:
         -------
         Intervals between each cut location (sec)
         """
-        return [segment.duration for segment in self.video_segments]
+        return self.video_segments.durations
 
     """ METHODS """
 
@@ -116,9 +115,8 @@ class MusicVideo:
         if dimensions:
             dimensions = Dimensions(*dimensions)
         elif aspect_ratio:
-            dimensions = v_sizing.largest_dimensions_for_aspect_ratio(
-                [segment.dimensions for segment in self.video_segments],
-                aspect_ratio, default=None)
+            dimensions = v_sizing.largest_dimensions_for_aspect_ratio(self.video_segments.dimensions, aspect_ratio,
+                                                                      default=None)
         else:
             dimensions = self.dimensions
 
@@ -159,7 +157,7 @@ class MusicVideo:
             Path for the video file
                 
         dimensions 
-            Width and height for the music video
+            Width and height for the music video.
             
         aspect_ratio
             Aspect ratio for the music video (overruled by dimensions)
@@ -169,6 +167,9 @@ class MusicVideo:
             
         precomposed_music_video 
             A pre-composed music video to write
+            
+        If no dimensions or aspect ratio are specified, 
+        the largest dimensions found among the video segments will be used.
         
         Use this method over moviepy's write_videofile to preserve the audio file's codec and bitrate.
         """
@@ -182,10 +183,27 @@ class MusicVideo:
 
         self.writer.write_video_clip_to_file(composed_music_video, output_path, audio=audio, verbose=False)
 
-    def save_video_segments(self, directory: str, *, rejected=False, audio: Union[str, bool] = True,
-                            dimensions: Opt[Tuple[int, int]] = None, aspect_ratio: Opt[float] = None):
+    def save_video_segments(self, directory: str, *, rejected=False, dimensions: Opt[Tuple[int, int]] = None,
+                            aspect_ratio: Opt[float] = None):
         """
         Saves video_segments or video_segment_rejects to video files in the specified directory
+        
+        Parameters
+        ----------
+        directory
+            location to save video segments
+            
+        rejected
+            False saves the music video's segments, True saves the music video's rejected segments
+                        
+        dimensions 
+            Width and height for the video segments.
+            
+        aspect_ratio
+            Aspect ratio for the video segments (overruled by dimensions)
+            
+        If no dimensions or aspect ratio are specified, 
+        the largest dimensions found among the video segments will be used.
         """
         if rejected:
             video_segments = self.rejected_video_segments
@@ -199,7 +217,7 @@ class MusicVideo:
         dimensions = self._determine_dimensions(dimensions, aspect_ratio)
         video_segments = [segment.crop_scale(dimensions) for segment in video_segments]
 
-        self.writer.write_video_clips_to_directory(video_segments, directory, audio=audio)
+        self.writer.write_video_clips_to_directory(video_segments, directory)
 
     def write_to_spec_file(self, filename):
         return

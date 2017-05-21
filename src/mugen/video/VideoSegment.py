@@ -1,5 +1,5 @@
 import random
-from typing import Optional as Opt, List, Tuple, Union
+from typing import Optional as Opt, List, Tuple, Union, Any
 
 from moviepy.editor import VideoFileClip
 
@@ -12,7 +12,7 @@ from mugen.constants import TIME_FORMAT
 from mugen.video.constants import LIST_3D
 from mugen.mixins.Taggable import Taggable
 from mugen.mixins.Filterable import Filterable
-from mugen.mixins.Weightable import Weightable
+from mugen.mixins.Weightable import Weightable, WeightableList
 
 DEFAULT_VIDEO_FPS = 24
 
@@ -182,3 +182,34 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
 
         return video_segments
 
+
+class VideoSegmentList(WeightableList):
+    """
+    A list of Video Segments with some extra helpful properties
+    """
+
+    def __init__(self, video_segments: Opt[List[Union[VideoSegment, List[Any]]]] = None,
+                 weights: Opt[List[float]] = None):
+        """
+        Parameters
+        ----------
+        video_segments
+            An arbitrarily nested irregular list of VideoSegments and lists of VideoSegments.
+            e.g. [W1, W2, [W3, W4]]
+
+        weights
+            Weights to distribute across the video_segments
+        """
+        super().__init__(video_segments, weights)
+
+    @property
+    def durations(self) -> List[float]:
+        return [segment.duration for segment in self]
+
+    @property
+    def dimensions(self) -> List[Dimensions]:
+        return [segment.dimensions for segment in self]
+
+    @property
+    def fpses(self) -> List[int]:
+        return [segment.fps for segment in self]

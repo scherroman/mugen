@@ -1,13 +1,11 @@
-from typing import Tuple, Optional as Opt, List, Callable, Union
+from typing import Tuple, Optional as Opt, List, Union
 
 from tqdm import tqdm
 
 import mugen.audio.analysis as librosa
 import mugen.video.video_filters as vf
-import mugen.utility as util
 import mugen.location_utility as loc_util
 import mugen.video.events as v_events
-from mugen.mixins.Weightable import Weightable
 from mugen.utility import convert_time_list_to_seconds
 from mugen.audio import events as a_events
 from mugen.mixins.Filterable import Filter, ContextFilter
@@ -15,7 +13,7 @@ from mugen.events import Event, EventList
 from mugen.audio.events import AudioEventsMode
 from mugen.video.events import VideoEventType, VideoEventsMode
 from mugen.video.MusicVideo import MusicVideo
-from mugen.video.VideoSegment import VideoSegment
+from mugen.video.VideoSegment import VideoSegment, VideoSegmentList
 from mugen.video.VideoSegmentSampler import VideoSegmentSampler
 from mugen.constants import TIME_FORMAT
 from mugen.exceptions import ParameterError, MugenError
@@ -42,7 +40,7 @@ class MusicVideoGenerator:
         :class:`~mugen.mixins.Filterable.ContextFilter`
     """
     audio_file: str
-    video_sources: List[VideoSegment]
+    video_sources: VideoSegmentList
     video_filters: List[str]
     custom_video_filters: List[Filter]
 
@@ -89,12 +87,7 @@ class MusicVideoGenerator:
         elif video_source_files is not None:
             video_sources = VideoSegment.video_segments_from_irregular_source_list(video_source_files)
 
-        # Default weights to 1 for each video source
-        video_source_weights = video_source_weights if video_source_weights else [1] * len(video_sources)
-        for video_source, weight in zip(video_sources, video_source_weights):
-            Weightable.set_weight(video_source, weight)
-        # Flatten video sources
-        self.video_sources = util.flatten(video_sources)
+        self.video_sources = VideoSegmentList(video_sources, video_source_weights)
 
         # Compile list of video filters
         self.video_filters = video_filters if video_filters is not None else vf.VIDEO_FILTERS_DEFAULT
@@ -143,6 +136,8 @@ class MusicVideoGenerator:
         music_video_segments, rejected_music_video_segments = self._generate_video_segments(video_segment_sampler,
                                                                                             cut_intervals,
                                                                                             video_filters)
+        music_video_segments = VideoSegmentList(music_video_segments)
+        rejected_music_video_segments = VideoSegmentList(rejected_music_video_segments)
 
         # Assemble music video from music video segments and audio
         music_video = MusicVideo(self.audio_file, music_video_segments, source_videos=self.video_sources,
