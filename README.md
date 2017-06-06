@@ -89,18 +89,6 @@ python cli.py create --video-sources Neon_Genesis_Evangelion/ The_End_of_Evangel
 python cli.py create --events-speed 1/2
 ```
 
-**Allow clips with cuts and repeat clips**
-
-```
-python cli.py create --exclude-video-filters not_has_cut not_is_repeat
-```
-
-**Use only clips that have text**
-
-```
-python cli.py create --video-filters has_text
-```
-
 **Slow down scene changes for weak beats at the beginning and end**
 
 ```
@@ -111,6 +99,18 @@ python cli.py create --beats-mode weak_beats --group-events-by-type --group-spee
 
 ```
 python cli.py create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --target-groups primary --group-speeds 1/2 0 1/4 1/2 1/2 1/4
+```
+
+**Allow clips with cuts and repeat clips**
+
+```
+python cli.py create --exclude-video-filters not_has_cut not_is_repeat
+```
+
+**Use only clips that have text**
+
+```
+python cli.py create --video-filters has_text
 ```
 
 ### Preview events in a song
