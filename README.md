@@ -167,9 +167,3 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 >>> music_video = generator.generate_from_audio_events(beats)
 >>> music_video.write_to_video_file("flowers.mkv")
 ```
-
-
-
-
-
-
