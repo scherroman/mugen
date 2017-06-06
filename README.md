@@ -89,7 +89,7 @@ python cli.py create --video-sources Neon_Genesis_Evangelion/ The_End_of_Evangel
 python cli.py create --events-speed 1/2
 ```
 
-**Slow down scene changes for weak beats at the beginning and end**
+**Slow down scene changes for leading and trailing weak beats**
 
 ```
 python cli.py create --beats-mode weak_beats --group-events-by-type --group-speeds 1/2 1 1/4
