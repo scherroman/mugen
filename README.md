@@ -141,7 +141,7 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 
 ## Python Examples
 
-### Create a Preview
+### Create a preview
 ---
 
 ```
@@ -153,7 +153,7 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 >>> generator.preview_events(beats, "forget.mkv")
 ```
 
-### Create a Music Video
+### Create a music video
 ---
 ```
 >>> from mugen import MusicVideoGenerator
