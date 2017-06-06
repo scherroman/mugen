@@ -2,8 +2,10 @@ from typing import List, Optional as Opt
 
 from PIL import Image
 from moviepy.video.tools.cuts import detect_scenes
+
 try:
     import tesserocr
+
     text_detection_available = True
 except ImportError:
     tesserocr = None

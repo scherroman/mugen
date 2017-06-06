@@ -7,55 +7,59 @@
                   |___/            
 ```
 
-A music video generator based on rhythm analysis
+A music video generator based on rhythm
 
-Use it to brainstorm AMVs, montages, what have you. [Check it out](https://youtu.be/ZlTR6XULe5M).
+Use it to brainstorm AMVs, montages, and more! [Check it out](https://youtu.be/lHgFYo37CaU).
 
 Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [librosa](https://github.com/librosa/librosa) audio analysis.
 
-## Strategy
+## Basic Strategy
 
-1 - Provide an audio file and a set of video files.
+1. Provide an audio file and a set of video files.
 
-2 - Perform rhythm analysis and extract beat intervals from the audio.
+2. Perform rhythm analysis and extract beat locations from the audio.
 
-3 - Generate a set of random video segments from the video files, with durations corresponding to the durations of the beat intervals. Discard and replace repeat segments, as well as segments with scene changes, low contrast (solid colors, very dark scenes), or detectable text (e.g. credits).
+3. Generate a set of random video segments from the video files, with durations corresponding to the durations of beat intervals. 
 
-4 - Combine all the segments in order, overlay the audio, and output the resulting music video.
+4. Discard and replace segments with scene changes, detectable text (e.g. credits), or low contrast (i.e. solid colors, very dark scenes).
 
-5 - Save a reusable spec file detailing the structure of the music video. 
+5. Combine the segments in order, overlay the audio, and output the resulting music video.
+
+6. Save a reusable spec file detailing the structure of the music video. 
 
 ## Requirements
 
-- Python 3.6+ virtual environment
+1. A Python 3.6+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
 
-- pip package dependencies listed in the conda [environment](environment.yml) for this repository. I recommend using [miniconda](http://conda.pydata.org/miniconda.html) as shown in the installation walkthrough below.
+2. The pip dependencies listed in mugen's [conda environment](environment.yml). 
 
-- Optional: Install [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04 and `pip install tesserocr>=2.1.3` for text detection features.
+**Optional:** 
 
-Recommended install order: tesseract -> conda virtual environment 
+- Install [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04 and `pip install tesserocr>=2.2.1` for text detection features.
 
-Below, an installation walthrough is provided for Mac OS X to give you a better idea of the installation process. This project has not been tested on Windows or Linux, but it should work on these systems provided the dependencies are compiled and installed properly.
+Mugen has not been tested on Linux or Windows, but should work on these systems provided the dependencies are compiled and installed properly.
 
-## Installation Walkthrough (Mac OS X)
+## Full Install  (Mac OS X)
 
-**1 - [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
+**1. [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
 
-**2 - [Install Miniconda 3.5](http://conda.pydata.org/miniconda.html) (Python virtual environment and package manager)**
+**2. [Install Miniconda 3.6](http://conda.pydata.org/miniconda.html) (Python virtual environment and package manager)**
 
-**4 - [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
+**4. [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
 
 `brew install tesseract --with-all-languages`
 
-**5 - Create mugen virtual environment**
+**5. Create mugen virtual environment**
 
-`conda env create -f environment.yml`
+`conda env create -f environment_full.yml`
 
-**6 - Activate mugen environment**
+**6. Activate mugen environment**
 
 `source activate mugen`
 
 ## Examples
+
+**Warning: Recreate is still in the works, and is currently unavailable**
 
 ### Help Menu
 
@@ -68,51 +72,103 @@ python cli.py preview --help
 
 ### Create a music video
 ---
-`python cli.py create`
 
-`python cli.py create --audio-source ~/media/music/MACINTOSH\ PLUS\ 420.mp3 --video-sources ~/media/movies/TimeScapes.mkv`
-
-**Use multiple video sources**
-
-`python cli.py create --video-sources ~/media/movies/TimeScapes.mkv ~/media/series/FLCL/`
+```
+python cli.py create --audio-source MACINTOSH_PLUS_420.mp3 --video-sources TimeScapes.mkv
+```
 
 **Use a series 60% of the time and a movie 40% of the time**
 
-`python cli.py create --video-sources ~/media/movies/Neon_Genesis_Evangelion/ ~/media/movies/The_End_of_Evangelion.mkv --video-source-weights .6 .4 `
+```
+python cli.py create --video-sources Neon_Genesis_Evangelion/ The_End_of_Evangelion.mkv --video-source-weights .6 .4
+```
 
 **Slow down scene changes to every other beat**
 
-`python cli.py create --speed-multiplier 1/2`
+```
+python cli.py create --events-speed 1/2
+```
 
 **Allow clips with cuts and repeat clips**
 
-`python cli.py create --exclude-video-filters not_has_cut not_is_repeat`
+```
+python cli.py create --exclude-video-filters not_has_cut not_is_repeat
+```
 
 **Use only clips that have text**
 
-`python cli.py create --video-filters has_text`
+```
+python cli.py create --video-filters has_text
+```
 
-### Recreate a music video
+**Slow down scene changes for weak beats at the beginning and end**
+
+```
+python cli.py create --beats-mode weak_beats --group-events-by-type --group-speeds 1/2 1 1/4
+```
+
+**Control the speed of scene changes at specific sections**
+
+```
+python cli.py create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --target-groups primary --group-speeds 1/2 0 1/4 1/2 1/2 1/4
+```
+
+### Preview events in a song
 ---
 
-`python cli.py recreate`
-
-`python cli.py recreate --spec-source ~/music_videos/vaporwave_timescapes_spec.json`
-
-### Preview event locations in a song
----
-
-`python cli.py preview`
-
-`python cli.py preview --audio-source ~/Documents/mp3s/Spazzkid\ -\ Goodbye.mp3`
+```
+python cli.py preview --audio-source Spazzkid_Goodbye.mp3
+```
 
 **Input event locations manually**
 
-`python cli.py preview --event-locations 2 4 6 10 11 12`
+```
+python cli.py preview --event-locations 2 4 6 10 11 12
+```
 
 **This gets interesting!**
 
-`python cli.py preview --audio-events-mode onsets --speed-multiplier 1/2 --speed-multiplier-offset 1`
+```
+python cli.py preview --audio-events-mode onsets --events-speed 1/2 --events-speed-offset 1
+```
+
+### Recreate a music video (currently unavailable)
+---
+
+```
+python cli.py recreate --spec-source vaporwave_timescapes_spec.json
+```
+
+## Python Examples
+
+### Create a Preview
+---
+
+```
+>>> from mugen import MusicVideoGenerator
+>>>
+>>> generator = MusicVideoGenerator("Pogo - Forget.mp3")
+>>> beats = generator.audio.beats()
+>>> beats.speed_multiply(1/2)
+>>> generator.preview_events(beats, "forget.mkv")
+```
+
+### Create a Music Video
+---
+```
+>>> from mugen import MusicVideoGenerator
+>>> generator = MusicVideoGenerator("in love with a ghost - flowers feat. nori.mp3", ["wolf children ame & yuki.mkv"])
+
+>>> beats = generator.audio.beats()
+>>> beat_groups = beats.group_by_slices([(0, 23), (23, 32), (32, 95), (160, 225), (289,331), (331, 415)])
+>>> beat_groups.primary_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
+>>> beats = beat_groups.flatten()
+
+>>> music_video = generator.generate_from_audio_events(beats)
+>>> music_video.write_to_video_file("flowers.mkv")
+```
+
+
 
 
 

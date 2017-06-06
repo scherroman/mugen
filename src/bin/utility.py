@@ -1,32 +1,23 @@
-from fractions import Fraction
-from typing import Optional as Opt, List
-import tkinter as tk
 import logging
 import os
 import sys
-
+import tkinter as tk
 from tkinter import filedialog
+from typing import List
 
 import mugen.paths as paths
 import mugen.utility as util
 from mugen import VideoSegment
 from mugen.constants import FileType
-from mugen.mixins.Weightable import Weightable
 from mugen.video import MusicVideoGenerator
-from mugen.video.MusicVideo import MusicVideo
-
-import bin.constants as cli_c
 
 """ COMMAND LINE UTILITY FUNCTIONS """
 
 
-def get_music_video_name(directory: str, name: Opt[str] = None):
-    if not name:
-        name = cli_c.DEFAULT_MUSIC_VIDEO_NAME
-
+def get_music_video_name(directory: str, basename: str):
     count = 0
     while True:
-        music_video_name = name + "_%s" % count
+        music_video_name = basename + f"_{count}"
         music_video_path = os.path.join(directory, music_video_name)
 
         if not os.path.exists(music_video_path):
@@ -38,15 +29,17 @@ def get_music_video_name(directory: str, name: Opt[str] = None):
 
 
 def prompt_file_selection(file_type: FileType):
+    print("\nPlease select a file via the popup dialog.")
+
     # Select via file selection dialog
     root = tk.Tk()
-    root.lift()
     root.withdraw()
-    file = tk.filedialog.askopenfilename(message="Select {} file".format(file_type))
+
+    file = tk.filedialog.askopenfilename(message=f"Select {file_type} file")
     root.update()
 
     if file == "":
-        print("No {} file was selected.".format(file_type))
+        print("\nNo {} file was selected.".format(file_type))
         sys.exit(1)
 
     logging.debug("{}_file {}".format(file_type, file))
@@ -55,6 +48,8 @@ def prompt_file_selection(file_type: FileType):
 
 
 def prompt_files_selection(file_type: FileType):
+    print("\nPlease select one or more files via the popup dialog.")
+
     files = []
 
     # Select files via file selection dialog
@@ -64,7 +59,7 @@ def prompt_files_selection(file_type: FileType):
         root.withdraw()
 
         source = tk.filedialog.askopenfilename(message=message, multiple=True)
-        message = "Select more {} files, or press cancel if done".format(file_type)
+        message = f"Select more {file_type} files, or press cancel if done"
         root.update()
 
         if not source:
@@ -74,11 +69,11 @@ def prompt_files_selection(file_type: FileType):
         files.append(list(source))
 
     if len(files) == 0:
-        print("No {} files were selected.".format(file_type))
+        print(f"\nNo {file_type} files were selected.")
         sys.exit(1)
 
     for file in files:
-        logging.debug("{}_file: {}".format(file_type, file))
+        logging.debug(f"{file_type}_file: {file}")
 
     return files
 
@@ -185,29 +180,34 @@ def video_files_from_sources(sources: List[str]) -> List[str]:
 def validate_path(*paths):
     for path in paths:
         if path and not os.path.exists(path):
-            print("Path {} does not exist.".format(path))
+            print(f"\nPath {path} does not exist.")
             sys.exit(1)
 
 
 def validate_replace_segments(replace_segments, video_segments):
     for segment in replace_segments:
         if segment < 0 or segment > (len(video_segments) - 1):
-            print("No segment {} exists in spec for music video".format(segment))
+            print(f"\nNo segment {segment} exists in spec for music video")
             sys.exit(1)
 
 
-def print_weight_stats(music_video_generator: MusicVideoGenerator):
+def print_weight_stats(generator: MusicVideoGenerator):
     print("\nVideo Source Weights:")
-    for video_segment, weight in zip(music_video_generator.video_sources,
-                                     music_video_generator.video_sources.weight_percentages):
+    for video_segment, weight in zip(generator.video_sources,
+                                     generator.video_sources.weight_percentages):
         print(f"{paths.filename_from_path(video_segment.filename)}: {weight}%")
 
 
-def print_rejected_segment_stats(music_video: MusicVideo):
+def print_rejected_segment_stats(generator: MusicVideoGenerator):
     print("\nFilter results:")
-    for video_filter in music_video.video_filters:
-        rejected_segments_for_video_filter = [segment for segment in music_video.rejected_video_segments if
-                                              video_filter in segment.failed_filters]
-        num_failing = len(rejected_segments_for_video_filter)
+    for video_filter in generator.video_filters:
+        rejected_segments = [segment for segment in generator.meta[generator.Meta.REJECTED_SEGMENT_STATS]]
+        rejected_segments_failed_filter_names = [[failed_filter.name for failed_filter in segment['failed_filters']]
+                                                 for segment in rejected_segments]
+        num_failing = 0
+        for names in rejected_segments_failed_filter_names:
+            if video_filter.name in names:
+                num_failing += 1
+
         print(f"{num_failing} segments failed filter '{video_filter.name}'")
 

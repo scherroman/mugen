@@ -1,3 +1,5 @@
+from typing import List
+
 from numpy.random import choice
 
 from mugen.utility import convert_time_to_seconds
@@ -11,8 +13,8 @@ class VideoSegmentSampler:
     """
     video_sources: VideoSegmentList
 
-    def __init__(self, video_segments: VideoSegmentList):
-        self.video_sources = video_segments
+    def __init__(self, video_segments: List[VideoSegment]):
+        self.video_sources = VideoSegmentList(video_segments)
 
     @convert_time_to_seconds('duration')
     def sample(self, duration: TIME_FORMAT) -> VideoSegment:

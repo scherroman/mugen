@@ -1,4 +1,5 @@
 import json
+import operator
 import os
 import re
 import shutil
@@ -7,9 +8,8 @@ from collections import OrderedDict
 from fractions import Fraction
 from functools import wraps
 
-from typing import List, Callable, Any, Union
+from typing import List, Callable, Any, Type
 
-import collections
 import decorator
 
 from mugen.constants import TIME_FORMAT
@@ -63,7 +63,8 @@ def execute_ffmpeg_command(cmd):
     p_out, p_err = p.communicate()
 
     if p.returncode != 0:
-        raise ex.FFMPEGError(f"Error executing ffmpeg command. Error code: {p.returncode}, Error: {p_err}")
+        raise ex.FFMPEGError(f"Error executing ffmpeg command. Error code: {p.returncode}, Error: {p_err}",
+                             p.returncode, p_out, p_err)
 
 
 """ FILESYSTEM  """
@@ -104,27 +105,53 @@ def parse_json_file(json_file: str) -> dict:
 """ MISC """
 
 
-def flatten(l: List[Union[Any, List[Any]]]) -> List[Any]:
-    """
-    Flattens an arbitrarily nested irregular list of objects
-    """
-    l_flattened = []
-
-    for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, (str, bytes)):
-            l_flattened.extend(flatten(el))
-        else:
-            l_flattened.append(el)
-
-    return l_flattened
-
-
 def ranges_overlap(a_start, a_end, b_start, b_end) -> bool:
     return max(a_start, b_start) < min(a_end, b_end)
 
 
-def float_to_fraction(float_var) -> Fraction:
+def float_to_fraction(float_var: float) -> Fraction:
     return Fraction(float_var).limit_denominator()
+
+
+def fill_slices(slices: List[slice], length) -> List[slice]:
+    """
+    Completes the list of slices for a list, given a list of slices and the list's length.
+    """
+    all_slices = []
+
+    # Sort by start element
+    slices_sorted = sorted(slices, key=operator.attrgetter('start'))
+
+    # If any ranges overlap, throw an error
+    for index, sl in enumerate(slices_sorted):
+        if index == len(slices_sorted) - 1:
+            continue
+
+        next_sl = slices_sorted[index + 1]
+        if ranges_overlap(sl.start, sl.stop, next_sl.start, next_sl.stop):
+            raise ParameterError(f"Slice ranges may not overlap. "
+                                 f"Found overlapping slices {sl}, {next_sl}.")
+
+    for index, sl in enumerate(slices_sorted):
+        if index == 0:
+            if 0 < sl.start:
+                first_sl = slice(0, sl.start)
+                all_slices.insert(0, first_sl)
+
+        all_slices.append(sl)
+
+        if index == len(slices_sorted) - 1:
+            if sl.stop < length:
+                last_sl = slice(sl.stop, length)
+                all_slices.append(last_sl)
+            continue
+
+        next_sl = slices_sorted[index + 1]
+        if sl.stop < next_sl.start:
+            new_sl = slice(sl.stop, next_sl.start)
+            all_slices.append(new_sl)
+
+    return all_slices
 
 
 def time_to_seconds(time: TIME_FORMAT) -> float:
@@ -159,6 +186,17 @@ def time_list_to_seconds(times: List[TIME_FORMAT]) -> List[float]:
     return [time_to_seconds(time) for time in times]
 
 
+def seconds_to_time_code(seconds: float) -> str:
+    ms = 1000 * round(seconds - int(seconds), 3)
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return "%02d:%02d:%02d.%03d" % (h, m, s, ms)
+
+
+def list_to_subclass(l: List[Any], subclass: Type[list]):
+    return subclass(l)
+
+
 """ DECORATORS """
 
 
@@ -179,7 +217,7 @@ def preprocess_args(fun: Callable, varnames: List[str]):
     return decorator.decorator(wrapper)
 
 
-def convert_to_fraction(*varnames: str):
+def convert_float_to_fraction(*varnames: str):
     """
     Decorator to convert varnames from floats to fractions
     """
@@ -198,6 +236,10 @@ def convert_time_list_to_seconds(*varnames: str):
     Decorator to convert varnames from TIME_FORMAT to seconds
     """
     return preprocess_args(time_list_to_seconds, *varnames)
+
+
+def convert_list_to_subclass(*varnames: str, subclass: Type[list]):
+    return preprocess_args(lambda x: list_to_subclass(x, subclass=subclass), *varnames)
 
 
 def temp_file_enabled(path_var: str, extension: str):

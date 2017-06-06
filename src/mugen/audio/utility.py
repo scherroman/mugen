@@ -1,4 +1,4 @@
-from typing import List, Optional as Opt, Tuple
+from typing import List, Optional as Opt, Tuple, Union
 
 import librosa
 import numpy as np
@@ -16,7 +16,7 @@ def create_marked_audio_file(audio_file: str, mark_locations: List[float], outpu
     return output_path
 
 
-def _get_marked_audio(audio_file: str, mark_locations: List[float]) -> Tuple[np.ndarray, int]:
+def _get_marked_audio(audio_file: str, mark_locations: Union[List[float], np.ndarray]) -> Tuple[np.ndarray, int]:
     y, sr = librosa.load(audio_file)
     clicks = librosa.core.clicks(times=mark_locations, sr=sr, length=len(y))
     marked_audio = y + clicks

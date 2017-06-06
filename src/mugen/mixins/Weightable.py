@@ -2,6 +2,7 @@ from fractions import Fraction
 from typing import Optional as Opt, Union, List, Any
 
 from mugen import utility as util
+from mugen.lists import MugenList
 
 
 class Weightable:
@@ -15,9 +16,9 @@ class Weightable:
             self.weight = weight
 
 
-class WeightableList(list):
+class WeightableList(MugenList):
     """
-    A list of Weightables with some extra helpful properties
+    A list of Weightables with extended functionality
     """
 
     def __init__(self, weightables: Opt[List[Union[Weightable, List[Any]]]] = None, weights: Opt[List[float]] = None):
@@ -26,15 +27,20 @@ class WeightableList(list):
         ----------
         weightables
             An arbitrarily nested irregular list of Weightables and lists of Weightables.
-            e.g. [W1, W2, [W3, W4]]
+            Weightables will be flattened.
+            e.g. [W1, W2, [W3, W4]] -> [W1, W2, W3, W4]
              
         weights
             Weights to distribute across the weightables
         """
-        super().__init__()
+        if weightables is None:
+            weightables = []
 
-        if weightables is not None:
+        super().__init__(weightables)
+
+        if weightables:
             if weights is None:
+                # Default all weights to 1
                 weights = [1] * len(weightables)
 
             # Distribute the weights for each weightable
@@ -45,8 +51,7 @@ class WeightableList(list):
                     weightable.weight = weight
 
             # Flatten weightables
-            flattened_weightables = util.flatten(weightables)
-            self.extend(flattened_weightables)
+            self.flatten()
 
     @property
     def weights(self) -> List[float]:

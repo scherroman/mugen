@@ -42,14 +42,6 @@ def test_crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio, exp
     assert v_sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio) == expected_coordinates
 
 
-@pytest.mark.parametrize("dimensions_list, default, expected_dimensions", [
-    (list_of_dimensions(), None, (1920, 1080)),
-    ([], "default", "default")
-])
-def test_largest_dimensions(dimensions_list, default, expected_dimensions):
-    assert v_sizing.largest_dimensions(dimensions_list, default) == expected_dimensions
-
-
 @pytest.mark.parametrize("dimensions_list, desired_aspect_ratio, default, expected_dimensions", [
     ([], 16/9, "default", "default"),
     (list_of_dimensions(), 4/3, None, (1440, 1080)),

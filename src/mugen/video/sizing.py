@@ -1,4 +1,3 @@
-import operator
 from enum import Enum
 from typing import List, NamedTuple, Union, Any, Tuple
 
@@ -74,21 +73,6 @@ def crop_coordinates_for_aspect_ratio(dimensions: Dimensions, desired_aspect_rat
         y2 = dimensions.height - height_difference / 2
 
     return x1, y1, x2, y2
-
-
-def largest_dimensions(dimensions_list: List[Dimensions], default: Any = _sentinel) \
-                                            -> Union[Dimensions, Any]:
-    """
-    Returns
-    -------
-    The largest width and height among all dimensions
-    """
-    if not dimensions_list:
-        if default is not _sentinel:
-            return default
-        raise ValueError(f"{dimensions_list} must not be empty.")
-
-    return max(dimensions_list, key=operator.attrgetter('resolution'))
 
 
 def largest_dimensions_for_aspect_ratio(dimensions_list: List[Dimensions], desired_aspect_ratio: float,

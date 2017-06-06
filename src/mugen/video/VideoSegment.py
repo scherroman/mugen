@@ -1,11 +1,12 @@
+import json
 import random
 from typing import Optional as Opt, List, Tuple, Union, Any
 
 from moviepy.editor import VideoFileClip
 
-import mugen.video.utility as v_util
 import mugen.utility as util
 import mugen.video.sizing as v_sizing
+from mugen import paths
 from mugen.utility import convert_time_to_seconds
 from mugen.video.sizing import Dimensions
 from mugen.constants import TIME_FORMAT
@@ -24,22 +25,16 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     Attributes
     ----------
     source_start_time
-        Start time of the video segment in the source video (sec.mil)
-        
-    source_end_time
-        End time of the video segment in the source video (sec.mil)
+        Start time of the video segment in the video file (seconds)
     """
     source_start_time: float
-    source_end_time: float
 
     def __init__(self, filename: str, *, audio: bool = True, **kwargs):
         """
-        A segment of video from a video file
-
         Parameters
         ----------
-        source_video_file
-            A path to a video file. 
+        filename
+            The name of the video file.
             Supports any extension supported by ffmpeg
             
         audio
@@ -49,17 +44,29 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
         VideoFileClip.__init__(self, filename, audio=audio, **kwargs)
 
         self.source_start_time = 0
-        self.source_end_time = self.duration
 
         # Parent VideFileClip will not always be able to properly read an fps value
         if not self.fps:
             self.fps = DEFAULT_VIDEO_FPS
 
+    def __repr__(self):
+        filename = paths.filename_from_path(self.video_file)
+        return f"<VideoSegment, file: {filename}, source_start_time:{self.source_start_time}, " \
+               f"duration: {self.duration}>"
+
     """ PROPERTIES """
 
     @property
+    def video_file(self):
+        return self.filename
+
+    @property
+    def source_end_time(self):
+        return self.source_start_time + self.duration
+
+    @property
     def duration_time_code(self):
-        return v_util.seconds_to_time_code(self.duration)
+        return util.seconds_to_time_code(self.duration)
 
     @property
     def dimensions(self) -> Dimensions:
@@ -95,41 +102,36 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
 
     """ METHODS """
 
-    @convert_time_to_seconds(['start_time', 'end_time'])
-    def subclip(self, start_time: TIME_FORMAT = 0, end_time: Opt[TIME_FORMAT] = None) -> 'VideoSegment':
+    @convert_time_to_seconds(['start_time', 'duration'])
+    def subclip(self, start_time: TIME_FORMAT = 0, duration: TIME_FORMAT = None) -> 'VideoSegment':
         """
         Parameters
         ----------
         start_time
             Start time of the video segment in the source video file
             
-        end_time
-            End time of the video segment in the source video file
+        duration
+            Duration of the subclip
 
         Returns
         -------
-        A subclip of the original video file, starting and ending at the specified times
+        A subclip of the original video file, starting at 'start_time' and lasting for 'duration'
         """
-        subclip = super().subclip(start_time, end_time)
+        subclip = super().subclip(start_time, start_time + duration)
 
         if start_time < 0:
+            # Set relative to end
             start_time = self.duration + start_time
-        if not end_time:
-            end_time = self.duration
-        elif end_time < 0:
-            end_time = self.duration + end_time
 
         subclip.source_start_time += start_time
-        subclip.source_end_time -= (self.duration - end_time)
 
         return subclip
 
     @convert_time_to_seconds(['duration'])
     def random_subclip(self, duration: TIME_FORMAT) -> 'VideoSegment':
         start_time = random.uniform(0, self.duration - duration)
-        end_time = start_time + duration
 
-        return self.subclip(start_time, end_time)
+        return self.subclip(start_time, duration)
 
     def crop_scale(self, desired_dimensions: Tuple[int, int]) -> 'VideoSegment':
         """
@@ -157,15 +159,21 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
             return False
 
         return util.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
-                                     segment.source_end_time)
+                                   segment.source_end_time)
 
-    def to_spec(self):
-        return
+    def to_spec(self) -> str:
+        spec = {'source_video': self.filename,
+                'source_start_time': self.source_start_time,
+                'duration': self.duration}
 
+        return json.dumps(spec)
 
     @classmethod
-    def from_spec(cls, spec):
-        return
+    def from_spec(cls, spec: dict) -> 'VideoSegment':
+        video_segment = cls(spec['source_video'])
+        video_segment = video_segment.subclip(spec['source_start_time'], spec['duration'])
+
+        return video_segment
 
     @staticmethod
     def video_segments_from_irregular_source_list(video_sources: List[Union[str, List[str]]]) -> List['VideoSegment']:
@@ -185,7 +193,7 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
 
 class VideoSegmentList(WeightableList):
     """
-    A list of Video Segments with some extra helpful properties
+    A list of Video Segments with extended functionality
     """
 
     def __init__(self, video_segments: Opt[List[Union[VideoSegment, List[Any]]]] = None,
@@ -195,21 +203,18 @@ class VideoSegmentList(WeightableList):
         ----------
         video_segments
             An arbitrarily nested irregular list of VideoSegments and lists of VideoSegments.
-            e.g. [W1, W2, [W3, W4]]
+            VideoSegments will be flattened.
+            e.g. [S1, S2, [S3, S4]] -> [S1, S2, S3, S4]
 
         weights
             Weights to distribute across the video_segments
         """
+        if video_segments is None:
+            video_segments = []
+
         super().__init__(video_segments, weights)
 
-    @property
-    def durations(self) -> List[float]:
-        return [segment.duration for segment in self]
+    def to_spec(self) -> List[dict]:
+        spec = [segment.to_spec() for segment in self]
 
-    @property
-    def dimensions(self) -> List[Dimensions]:
-        return [segment.dimensions for segment in self]
-
-    @property
-    def fpses(self) -> List[int]:
-        return [segment.fps for segment in self]
+        return json.dumps(spec)

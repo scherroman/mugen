@@ -66,11 +66,11 @@ class Filterable:
             Filters to test
             
         short_circuit
-            Whether or not the function should exit early on a trait filter failure
+            Whether or not the function should exit early on a filter failure
 
         Returns
         -------
-        True if all trait_filters passed, false otherwise
+        True if all filters passed, false otherwise
         """
         passed_filters = []
         failed_filters = []

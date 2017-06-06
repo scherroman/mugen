@@ -3,7 +3,6 @@ from typing import List, Any
 
 import pytest
 
-import mugen.utility as util
 from mugen.mixins.Weightable import Weightable, WeightableList
 
 
@@ -82,6 +81,6 @@ def test_weight_fractions(weightables, expected_fractions):
     (weightables_nested(), [3, 3], [3, 1, 1, 1]),
     (weightables_double_nested(), [3, 3, 3], [3, 1.5, .5, .5, .5]),
 ])
-def test_WeightableList(weightables, weights, expected_weights):
+def test_weightable_list(weightables, weights, expected_weights):
     weightable_list = WeightableList(weightables, weights)
     assert weightable_list.weights == expected_weights

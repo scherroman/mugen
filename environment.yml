@@ -1,9 +1,9 @@
 name: mugen
 dependencies:
 - python=3.6
-- cython>=0.25.2
 - pip
 - pip:
+  - cython>=0.25.2
   - moviepy>=0.2.3.2
   - librosa>=0.5.0
   - Pillow>=3.4.2
