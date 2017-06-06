@@ -95,7 +95,7 @@ python cli.py create --events-speed 1/2
 python cli.py create --beats-mode weak_beats --group-events-by-type --group-speeds 1/2 1 1/4
 ```
 
-**Control the speed of scene changes at specific sections**
+**Control the speed of scene changes for specific sections**
 
 ```
 python cli.py create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --target-groups primary --group-speeds 1/2 0 1/4 1/2 1/2 1/4
