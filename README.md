@@ -73,7 +73,7 @@ Mugen has not been tested on Linux or Windows, but should work on these systems 
 
 **Warning: Recreate is still in the works, and is currently unavailable**
 
-**Navigate to the Command Line Interface**
+**Navigate to the command line interface**
 
 `
 cd src/bin/
