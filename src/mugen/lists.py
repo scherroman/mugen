@@ -17,6 +17,16 @@ class MugenList(list):
         else:
             return result
 
+    def pretty_repr(self, element_reprs: List[str]):
+        repr_str = ""
+        for index, element_repr in enumerate(element_reprs):
+            if index != 0:
+                repr_str += ' '
+            repr_str += element_repr
+            if index != len(self) - 1:
+                repr_str += ', \n'
+        return f'[{repr_str}]'
+
     def lget(self, attr) -> List[Any]:
         """    
         Returns

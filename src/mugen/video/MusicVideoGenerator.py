@@ -303,7 +303,7 @@ class MusicVideoGenerator(Taggable):
             The final music video output file with added auxiliary tracks
         """
         locations = events.locations
-        events_str = [event.index_repr(index) for index, event in enumerate(events)]
+        events_str = [event.alt_repr(index) for index, event in enumerate(events)]
 
         subtitle_track_events = SubtitleTrack.create(events_str, 'events', locations=locations, default=True)
 

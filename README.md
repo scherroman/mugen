@@ -39,6 +39,18 @@ Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and
 
 Mugen has not been tested on Linux or Windows, but should work on these systems provided the dependencies are compiled and installed properly.
 
+## Quick Install
+
+**1. [Install Miniconda 3.6](http://conda.pydata.org/miniconda.html) (Python virtual environment and package manager)**
+
+**2. Create mugen virtual environment**
+
+`conda env create -f environment.yml`
+
+**3. Activate mugen environment**
+
+`source activate mugen`
+
 ## Full Install  (Mac OS X)
 
 **1. [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
@@ -61,7 +73,14 @@ Mugen has not been tested on Linux or Windows, but should work on these systems 
 
 **Warning: Recreate is still in the works, and is currently unavailable**
 
+**Navigate to the Command Line Interface**
+
+`
+cd src/bin/
+`
+
 ### Help Menu
+---
 
 ```
 python cli.py --help
@@ -140,6 +159,15 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 ```
 
 ## Python Examples
+
+### Import mugen
+---
+
+```
+>>> import sys
+>>> sys.path.append("/Users/myuser/Documents/repos/mugen/src")
+>>> import mugen
+```
 
 ### Create a preview
 ---

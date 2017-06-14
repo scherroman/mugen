@@ -1,4 +1,5 @@
 from enum import Enum
+from functools import lru_cache
 
 import librosa
 import numpy as np
@@ -36,18 +37,6 @@ class BeatsMode(str, Enum):
     """
     BEATS = 'beats'
     WEAK_BEATS = 'weak_beats'
-
-
-class TrimMode(str, Enum):
-    """
-    trim: Remove weak beats
-    trim_lead: Remove leading weak beats
-    trim_trail: Remove trailing weak beats
-    """
-    NONE = 'none'
-    TRIM = 'trim'
-    TRIM_LEAD = 'trim_lead'
-    TRIM_TRAIL = 'trim_trail'
 
 
 class OnsetsMode(str, Enum):
@@ -98,7 +87,8 @@ class Audio:
         filename = paths.filename_from_path(self.audio_file)
         return f'<Audio, file: {filename}, duration: {self.duration}>'
 
-    def beats(self, mode: str = BeatsMode.BEATS, *, trim_mode: str = TrimMode.NONE) -> EventList:
+    @lru_cache(maxsize=None)
+    def beats(self, mode: str = BeatsMode.BEATS) -> EventList:
         """
         Gets beats using librosa's beat tracker.
         
@@ -108,9 +98,6 @@ class Audio:
             Method of generating beats from the audio
             See :class:`~mugen.audio.Audio.BeatsMode` for supported values.
 
-        trim_mode
-            Method of trimming (removing) weak beat events
-            See :class:`~mugen.audio.Audio.TrimMode` for supported values.
         Returns
         -------
         Detected beats from the audio
@@ -133,21 +120,13 @@ class Audio:
         if mode == BeatsMode.BEATS:
             beats = untrimmed_beats
         elif mode == BeatsMode.WEAK_BEATS:
-            if trim_mode == TrimMode.NONE:
-                beats = trimmed_leading_beats + trimmed_beats + trimmed_trailing_beats
-            elif trim_mode == TrimMode.TRIM:
-                beats = trimmed_beats
-            elif trim_mode == TrimMode.TRIM_LEAD:
-                beats = trimmed_beats + trimmed_trailing_beats
-            elif trim_mode == TrimMode.TRIM_TRAIL:
-                beats = trimmed_leading_beats + trimmed_beats
-            else:
-                raise ParameterError(f"Unsupported trim mode {trim_mode}.")
+            beats = trimmed_leading_beats + trimmed_beats + trimmed_trailing_beats
         else:
             raise ParameterError(f"Unsupported beats mode {mode}.")
 
         return beats
 
+    @lru_cache(maxsize=None)
     def onsets(self, mode: str = OnsetsMode.ONSETS) -> EventList:
         """
         Gets onsets using librosa's onset detector.

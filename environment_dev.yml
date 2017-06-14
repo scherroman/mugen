@@ -1,6 +1,7 @@
 name: mugen
 dependencies:
 - python=3.6
+- jupyter>=1.0.0
 - pip
 - pip:
   - cython>=0.25.2
@@ -12,3 +13,10 @@ dependencies:
   - pysrt>=1.1.1
   - tqdm>=4.10.0
   - decorator>=4.0.11
+
+  # Testing
+  - pytest>=3.0.7
+  - pytest-cov>=2.4.0
+
+  # Documentation
+  - sphinx>=1.6.2
