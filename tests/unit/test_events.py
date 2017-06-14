@@ -52,6 +52,10 @@ def events_speed_multiplied_1_3x() -> EventList:
                       Event(30, type='silence')])
 
 
+def test_event_list__initializes_non_uniform_inputs_successfully():
+    EventList([1, 2, 3, Event(4, type="beat")])
+
+
 @pytest.mark.parametrize("events, speed, offset, expected_events", [
     (EventList([]), 5, None, []),
     (EventList([6]), 0, None, EventList([])),
@@ -76,6 +80,10 @@ def test_speed_multiply_events(events, speed, offset, expected_events):
 def test_offset_events(events, offset, expected_locations):
     events.offset(offset)
     assert events.lget('location') == expected_locations
+
+
+def test_event_group_list__initializes_non_uniform_inputs_successfully():
+    EventGroupList([[1, 2, 3], EventList([1, 2, 3, Event(4, type="beat")])])
 
 
 @pytest.mark.parametrize("events, expected_event_group_list", [

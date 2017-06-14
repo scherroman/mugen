@@ -19,7 +19,7 @@ import mugen.video.video_filters as vf
 
 import bin.utility as cli_util
 import bin.constants as cli_c
-from mugen.events import EventList
+from mugen.events import EventList, EventGroupList
 
 
 class TargetGroups(str, Enum):
@@ -175,11 +175,11 @@ def prepare_events(audio: Audio, args) -> EventList:
         elif target_groups == TargetGroups.SECONDARY:
             event_groups.secondary_groups.speed_multiply(group_speeds, group_speed_offsets)
 
-        print(f"\nEvents: {event_groups}")
+        print(f"\nEvents: \n{event_groups}")
 
         events = event_groups.flatten()
     else:
-        event_groups = events.group_by_type(primaries=group_events_by_type)
+        event_groups = EventGroupList([events])
         print(f"\nEvents: {event_groups}")
 
     if events_offset:

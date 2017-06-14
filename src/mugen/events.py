@@ -80,30 +80,26 @@ class EventList(MugenList):
     """
     type: str
 
-    def __init__(self, events: Opt[Union[List[Event], List[TIME_FORMAT]]] = None):
+    def __init__(self, events: Opt[List[Union[Event, TIME_FORMAT]]] = None):
         if events is None:
             events = []
-        elif events and type(events[0]) != Event:
-            # Convert inputs to Events
-            events = [Event(event) for event in events]
+        else:
+            for index, event in enumerate(events):
+                if type(event) != Event:
+                    # Convert event location to Event
+                    events[index] = Event(event)
 
         super().__init__(events)
 
-    # def __repr__(self):
-    #     event_list_str = ""
-    #     for index, event in enumerate(self):
-    #         event_list_str += event.index_repr(index)
-    #
-    #         if index != len(self) - 1:
-    #             event_list_str += ', '
-    #     return f'[{event_list_str}]'
+    def __repr__(self):
+        event_reprs = [event.index_repr(index) for index, event in enumerate(self)]
+        return super().pretty_repr(event_reprs)
 
-    @property
-    def alt_repr(self):
+    def alt_repr(self, indexes: range, target: str):
         """
         Alternate representation
         """
-        return f'<EventList ({len(self)}), type: {self.type}>'
+        return f'<EventList {indexes.start}-{indexes.stop} ({len(self)}), type: {self.type}, target: {target}>'
 
     @property
     def type(self) -> Union[str, None]:
@@ -300,22 +296,25 @@ class EventGroupList(MugenList):
         """
         if groups is None:
             groups = []
-        elif groups and type(groups[0]) != EventList:
-            # Convert inputs to EventLists
-            groups = [EventList(group) for group in groups]
+        else:
+            for index, group in enumerate(groups):
+                if type(group) != EventList:
+                    # Convert event locations to EventList
+                    groups[index] = EventList(group)
 
         super().__init__(groups)
 
         self._primary_groups = primaries if primaries is not None else []
 
     def __repr__(self):
-        event_groups_str = ""
-        for index, l in enumerate(self):
-            event_groups_str += l.alt_repr
-
-            if index != len(self) - 1:
-                event_groups_str += ', '
-        return f'[{event_groups_str}]'
+        group_reprs = []
+        index_count = 0
+        for group in self:
+            group_indexes = range(index_count, index_count + len(group) - 1)
+            group_target = self._get_group_target(group)
+            group_reprs.append(group.alt_repr(group_indexes, group_target))
+            index_count += len(group)
+        return super().pretty_repr(group_reprs)
 
     @property
     def primary_groups(self) -> 'EventGroupList':
@@ -334,6 +333,9 @@ class EventGroupList(MugenList):
         Non-primary groups
         """
         return EventGroupList([group for group in self if group not in self.primary_groups])
+
+    def _get_group_target(self, group):
+        return 'primary' if group in self.primary_groups else 'secondary'
 
     def speed_multiply(self, speeds: List[float], offsets: Opt[List[float]] = None):
         """
