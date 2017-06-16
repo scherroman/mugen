@@ -359,7 +359,7 @@ def parse_args(args):
                               help=f'Method of generating beat events from the audio file. '
                                    f'Default is {BeatsMode.BEATS}. '
                                    f'Supported values are {[e.value for e in BeatsMode]}.')
-    audio_parser.add_argument('-om', '--onsets-mode', dest='onsets_mode',
+    audio_parser.add_argument('-om', '--onsets-mode', dest='onsets_mode', default=OnsetsMode.ONSETS,
                               help=f'Method of generating onset events from the audio file. '
                                    f'Supported values are {[e.value for e in OnsetsMode]}.')
 
