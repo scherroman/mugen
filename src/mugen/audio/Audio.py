@@ -1,5 +1,6 @@
 from enum import Enum
 from functools import lru_cache
+from typing import List
 
 import librosa
 import numpy as np
@@ -87,10 +88,9 @@ class Audio:
         filename = paths.filename_from_path(self.audio_file)
         return f'<Audio, file: {filename}, duration: {self.duration}>'
 
-    @lru_cache(maxsize=None)
     def beats(self, mode: str = BeatsMode.BEATS) -> EventList:
         """
-        Gets beats using librosa's beat tracker.
+        Gets beat events
         
         Parameters
         ----------
@@ -100,26 +100,25 @@ class Audio:
 
         Returns
         -------
-        Detected beats from the audio
+        Detected beat events from the audio
         """
-        # Mark leading & trailing trimmed beats as weak beats
-        tempo, trimmed_beats = librosa.beat.beat_track(y=self.samples, sr=self.sample_rate, units='time',
-                                                       trim=True)
-        tempo, untrimmed_beats = librosa.beat.beat_track(y=self.samples, sr=self.sample_rate, units='time',
-                                                         trim=False)
-        trimmed_leading_beats = [beat for beat in untrimmed_beats if beat < trimmed_beats[0]]
-        trimmed_trailing_beats = [beat for beat in untrimmed_beats if beat > trimmed_beats[-1]]
-
+        untrimmed_beats = self._beats()
         untrimmed_beats = EventList([Event(beat, type=AudioEventType.BEAT) for beat in untrimmed_beats])
-        trimmed_beats = EventList([Event(beat, type=AudioEventType.BEAT) for beat in trimmed_beats])
-        trimmed_leading_beats = EventList([Event(beat, type=AudioEventType.WEAK_BEAT) for beat in
-                                           trimmed_leading_beats])
-        trimmed_trailing_beats = EventList([Event(beat, type=AudioEventType.WEAK_BEAT) for beat in
-                                            trimmed_trailing_beats])
 
         if mode == BeatsMode.BEATS:
             beats = untrimmed_beats
         elif mode == BeatsMode.WEAK_BEATS:
+            trimmed_beats = self._beats(trim=True)
+            trimmed_leading_beats = [beat for beat in untrimmed_beats.locations if beat < trimmed_beats[0]]
+            trimmed_trailing_beats = [beat for beat in untrimmed_beats.locations if beat > trimmed_beats[-1]]
+
+            # Mark leading & trailing trimmed beats as weak beats
+            trimmed_beats = EventList([Event(beat, type=AudioEventType.BEAT) for beat in trimmed_beats])
+            trimmed_leading_beats = EventList([Event(beat, type=AudioEventType.WEAK_BEAT) for beat in
+                                               trimmed_leading_beats])
+            trimmed_trailing_beats = EventList([Event(beat, type=AudioEventType.WEAK_BEAT) for beat in
+                                                trimmed_trailing_beats])
+
             beats = trimmed_leading_beats + trimmed_beats + trimmed_trailing_beats
         else:
             raise ParameterError(f"Unsupported beats mode {mode}.")
@@ -127,9 +126,31 @@ class Audio:
         return beats
 
     @lru_cache(maxsize=None)
+    def _beats(self, trim=False) -> List[float]:
+        """
+        Gets beat locations using librosa's beat tracker
+
+        Parameters
+        ----------
+        trim
+            Whether to discard weak beats
+
+        Returns
+        -------
+        Beat locations
+        """
+        if trim:
+            tempo, beats = librosa.beat.beat_track(y=self.samples, sr=self.sample_rate, units='time',
+                                                   trim=True)
+        else:
+            tempo, beats = librosa.beat.beat_track(y=self.samples, sr=self.sample_rate, units='time',
+                                                   trim=False)
+
+        return beats
+
     def onsets(self, mode: str = OnsetsMode.ONSETS) -> EventList:
         """
-        Gets onsets using librosa's onset detector.
+        Gets onset events
         
         Parameters
         ----------
@@ -139,15 +160,36 @@ class Audio:
 
         Returns
         -------
-        Detected onsets from the audio
+        Detected onset events from the audio
         """
         if mode == OnsetsMode.ONSETS:
-            onsets = librosa.beat.onset.onset_detect(y=self.samples, sr=self.sample_rate, units='time')
+            onsets = self._onsets()
             onsets = EventList([Event(onset, type=AudioEventType.ONSET) for onset in onsets])
         elif mode == OnsetsMode.BACKTRACK:
-            onsets = librosa.beat.onset.onset_detect(y=self.samples, sr=self.sample_rate, units='time', backtrack=True)
+            onsets = self._onsets(backtrack=True)
             onsets = EventList([Event(onset, type=AudioEventType.ONSET_BACKTRACKED) for onset in onsets])
         else:
             raise ParameterError(f"Unsupported onsets mode {mode}.")
+
+        return onsets
+
+    @lru_cache(maxsize=None)
+    def _onsets(self, backtrack=False):
+        """
+        Gets onset locations using librosa's onset detector.
+
+        Parameters
+        ----------
+        backtrack
+            Whether to shift onset events back to the nearest local minimum of energy
+
+        Returns
+        -------
+        Onset locations
+        """
+        if backtrack:
+            onsets = librosa.beat.onset.onset_detect(y=self.samples, sr=self.sample_rate, units='time', backtrack=True)
+        else:
+            onsets = librosa.beat.onset.onset_detect(y=self.samples, sr=self.sample_rate, units='time', backtrack=False)
 
         return onsets
