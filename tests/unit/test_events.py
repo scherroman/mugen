@@ -109,19 +109,21 @@ def test_group_by_slices(events, slices, expected_event_groups):
 def test_event_group_list__group_by_slices_resulting_groups():
     events = EventList([1, 2, 3, 4, 5, 6, 7, 8])
     event_groups = events.group_by_slices([(1, 3), (5, 7)])
-    assert event_groups.primary_groups == EventGroupList([[2, 3], [6, 7]])
-    assert event_groups.secondary_groups == EventGroupList([[1], [4, 5], [8]])
+    assert event_groups.selected_groups == EventGroupList([[2, 3], [6, 7]])
+    assert event_groups.unselected_groups == EventGroupList([[1], [4, 5], [8]])
 
 
 def test_event_group_list__group_by_types_resulting_groups(events):
     event_groups = events.group_by_type(['silence'])
-    assert event_groups.primary_groups == EventGroupList([EventList([Event(6, type='silence')]),
-                                                          EventList([Event(30, type='silence')])])
-    assert event_groups.secondary_groups == EventGroupList([EventList([Event(12, type='beat'),
-                                                                       Event(18, type='beat'),
-                                                                       Event(24, type='beat')])])
+    assert event_groups.selected_groups == EventGroupList([EventList([Event(6, type='silence')]),
+                                                           EventList([Event(30, type='silence')])])
+    assert event_groups.unselected_groups == EventGroupList([EventList([Event(12, type='beat'),
+                                                                        Event(18, type='beat'),
+                                                                        Event(24, type='beat')])])
+
+    # Not specifying type selects all groups
     event_groups = events.group_by_type()
-    assert event_groups.primary_groups == []
+    assert event_groups.selected_groups == event_groups
 
 
 @pytest.mark.parametrize("event_groups, speeds, offsets, expected_event_groups", [
