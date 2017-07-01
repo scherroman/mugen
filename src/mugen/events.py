@@ -95,11 +95,11 @@ class EventList(MugenList):
         event_reprs = [event.index_repr(index) for index, event in enumerate(self)]
         return super().pretty_repr(event_reprs)
 
-    def alt_repr(self, indexes: range, target: str):
+    def alt_repr(self, indexes: range, selected: bool):
         """
         Alternate representation
         """
-        return f'<EventList {indexes.start}-{indexes.stop} ({len(self)}), type: {self.type}, target: {target}>'
+        return f'<EventList {indexes.start}-{indexes.stop} ({len(self)}), type: {self.type}, selected: {selected}>'
 
     @property
     def type(self) -> Union[str, None]:
@@ -227,37 +227,41 @@ class EventList(MugenList):
 
         self[:] = combined_events
 
-    def group_by_type(self, primaries: List[str] = None) -> 'EventGroupList':
+    def group_by_type(self, select_types: List[str] = None) -> 'EventGroupList':
         """
         Groups events by type
 
         Attributes
         ----------
-        primaries
-            A list of types corresponding to primary groups in the resulting EventGroupList.
+        select_types
+            A list of types for which to select groups in the resulting EventGroupList.
+            If no types are specified, all resulting groups will be selected.
         
         Returns
         -------
-        An EventGroupList
+        An EventGroupList partitioned by type
         """
-        if primaries is None:
-            primaries = []
+        if select_types is None:
+            select_types = []
 
         groups = [EventList(list(group)) for index, group in groupby(self, key=attrgetter('type'))]
-        primary_groups = [group for group in groups if group.type in primaries]
+        if not select_types:
+            selected_groups = groups
+        else:
+            selected_groups = [group for group in groups if group.type in select_types]
 
-        return EventGroupList(groups, primaries=primary_groups)
+        return EventGroupList(groups, selected=selected_groups)
 
     def group_by_slices(self, slices: (int, int)) -> 'EventGroupList':
         """
         Groups events by slices.
         Does not support negative indexing.
 
-        Slices explicitly passed in will become primary groups in the resulting EventGroupList.
+        Slices explicitly passed in will become selected groups in the resulting EventGroupList.
 
         Returns
         -------
-        An EventGroupList
+        An EventGroupList partitioned by slice
         """
         slices = [slice(sl[0], sl[1]) for sl in slices]
 
@@ -267,8 +271,8 @@ class EventList(MugenList):
 
         # Group events by slices
         groups = [self[sl] for sl in all_slices]
-        primaries = [group for index, group in enumerate(groups) if index in target_indexes]
-        groups = EventGroupList(groups, primaries=primaries)
+        selected_groups = [group for index, group in enumerate(groups) if index in target_indexes]
+        groups = EventGroupList(groups, selected=selected_groups)
 
         return groups
 
@@ -279,20 +283,20 @@ class EventGroupList(MugenList):
 
     Attributes
     ----------
-    _primary_groups
-        The primary list of groups to track
+    _selected_groups
+        A subset of groups being tracked
     """
-    _primary_groups: List[EventList]
+    _selected_groups: List[EventList]
 
     def __init__(self, groups: Opt[Union[List[EventList], List[List[TIME_FORMAT]]]] = None, *,
-                 primaries: List[EventList] = None):
+                 selected: List[EventList] = None):
         """
         Parameters
         ----------
         groups
 
-        primaries
-            The primary list of groups to track
+        selected
+            A subset of groups to track
         """
         if groups is None:
             groups = []
@@ -304,38 +308,34 @@ class EventGroupList(MugenList):
 
         super().__init__(groups)
 
-        self._primary_groups = primaries if primaries is not None else []
+        self._selected_groups = selected if selected is not None else []
 
     def __repr__(self):
         group_reprs = []
         index_count = 0
         for group in self:
             group_indexes = range(index_count, index_count + len(group) - 1)
-            group_target = self._get_group_target(group)
-            group_reprs.append(group.alt_repr(group_indexes, group_target))
+            group_reprs.append(group.alt_repr(group_indexes, True if group in self.selected_groups else False))
             index_count += len(group)
         return super().pretty_repr(group_reprs)
 
     @property
-    def primary_groups(self) -> 'EventGroupList':
+    def selected_groups(self) -> 'EventGroupList':
         """
         Returns
         -------
-        Primary groups
+        Selected groups
         """
-        return EventGroupList([group for group in self._primary_groups])
+        return EventGroupList([group for group in self._selected_groups])
 
     @property
-    def secondary_groups(self) -> 'EventGroupList':
+    def unselected_groups(self) -> 'EventGroupList':
         """
         Returns
         -------
-        Non-primary groups
+        Unselected groups
         """
-        return EventGroupList([group for group in self if group not in self.primary_groups])
-
-    def _get_group_target(self, group):
-        return 'primary' if group in self.primary_groups else 'secondary'
+        return EventGroupList([group for group in self if group not in self.selected_groups])
 
     def speed_multiply(self, speeds: List[float], offsets: Opt[List[float]] = None):
         """

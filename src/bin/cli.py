@@ -24,8 +24,8 @@ from mugen.events import EventList, EventGroupList
 
 class TargetGroups(str, Enum):
     ALL = 'all'
-    PRIMARY = 'primary'
-    SECONDARY = 'secondary'
+    SELECTED = 'selected'
+    UNSELECTED = 'unselected'
 
 debug = False
 
@@ -164,16 +164,16 @@ def prepare_events(audio: Audio, args) -> EventList:
 
     if group_events_by_type is not None or group_events_by_slices:
         if group_events_by_type is not None:
-            event_groups = events.group_by_type(primaries=group_events_by_type)
+            event_groups = events.group_by_type(select_types=group_events_by_type)
         else:
             event_groups = events.group_by_slices(slices=group_events_by_slices)
 
         if target_groups == TargetGroups.ALL:
             event_groups.speed_multiply(group_speeds, group_speed_offsets)
-        elif target_groups == TargetGroups.PRIMARY:
-            event_groups.primary_groups.speed_multiply(group_speeds, group_speed_offsets)
-        elif target_groups == TargetGroups.SECONDARY:
-            event_groups.secondary_groups.speed_multiply(group_speeds, group_speed_offsets)
+        elif target_groups == TargetGroups.SELECTED:
+            event_groups.selected_groups.speed_multiply(group_speeds, group_speed_offsets)
+        elif target_groups == TargetGroups.UNSELECTED:
+            event_groups.unselected_groups.speed_multiply(group_speeds, group_speed_offsets)
 
         print(f"\nEvents: \n{event_groups}")
 
@@ -275,25 +275,25 @@ def parse_args(args):
                               help='Group events by one or more slices. '
                                    'Must be of the form start,stop or (start,stop). '
                                    'Events will be grouped starting at "start", up to but not including "stop". '
-                                   'Groups explicitly specified by slices will become "primary groups". '
-                                   'Any surrounding "secondary" groups will be filled in automatically. '
+                                   'Groups explicitly specified by slices will become "selected" groups. '
+                                   'Any surrounding "unselected" groups will be filled in automatically. '
                                    'e.g.) If there are 40 events, a slice of (20,30) results in three groups '
-                                   '(0,20) (20,30) (30,39), with one primary group (20,30)')
+                                   '(0,20) (20,30) (30,39), with one selected group (20,30)')
     event_parser.add_argument('-gebt', '--group-events-by-type', dest='group_events_by_type', nargs='*',
                               help='Group events by type. Useful for modes like the "weak_beats" beats mode. '
                                    'e.g.) If our events are: <10 weak_beat, 20 beat, 10 weak_beat>, '
                                    'passing this option with "weak_beat" will result in three groups '
-                                   '(0,9) (9,29) (29,39), with two primary groups (0,9) (29,39)')
-    event_parser.add_argument('-tg', '--target-groups', dest='target_groups', default=TargetGroups.ALL,
+                                   '(0,9) (9,29) (29,39), with two selected groups (0,9) (29,39)')
+    event_parser.add_argument('-tg', '--target-groups', dest='target_groups', default=TargetGroups.SELECTED,
                               help='Which groups "--group-by" modifiers should apply to. '
-                                   'Either all groups, only primary groups, or only secondary groups. '
-                                   f'Default is {TargetGroups.ALL}. '
+                                   'Either all groups, only selected groups, or only unselected groups. '
+                                   f'Default is {TargetGroups.SELECTED}. '
                                    f'Supported values are {[e.value for e in TargetGroups]}.')
     event_parser.add_argument('-gs', '--group-speeds', dest='group_speeds', type=Fraction, nargs='+',
                               default=[],
                               help='Speed multipliers for event groups created by "--group-by" options. '
                                    f'e.g.) 1/2 1/4 1/8 will speed multiply all of (0,20) (20,30) (30,39), in order. '
-                                   f'But 1/2 with --target-groups {TargetGroups.PRIMARY} will speed multiply only '
+                                   f'But 1/2 with --target-groups {TargetGroups.SELECTED} will speed multiply only '
                                    f'(20,30).')
     event_parser.add_argument('-gso', '--group-speed-offsets', dest='group_speed_offsets', type=int,
                               default=[], nargs='+',

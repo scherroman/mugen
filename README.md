@@ -117,7 +117,7 @@ python cli.py create --beats-mode weak_beats --group-events-by-type --group-spee
 **Control the speed of scene changes for specific sections**
 
 ```
-python cli.py create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --target-groups primary --group-speeds 1/2 0 1/4 1/2 1/2 1/4
+python cli.py create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --group-speeds 1/2 0 1/4 1/2 1/2 1/4
 ```
 
 **Allow clips with cuts and repeat clips**
@@ -189,7 +189,7 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 
 >>> beats = generator.audio.beats()
 >>> beat_groups = beats.group_by_slices([(0, 23), (23, 32), (32, 95), (160, 225), (289,331), (331, 415)])
->>> beat_groups.primary_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
+>>> beat_groups.selected_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
 >>> beats = beat_groups.flatten()
 
 >>> music_video = generator.generate_from_audio_events(beats)
