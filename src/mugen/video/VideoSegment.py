@@ -248,6 +248,14 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
 
         return video_segments
 
+    def ipython_display(self, *args, **kwargs):
+        """
+        Fixes inheritance bug with moviepy's ipython_display
+        """
+        seg_copy = self.copy()
+        seg_copy.__class__ = VideoFileClip
+        return seg_copy.ipython_display(*args, **kwargs)
+
 
 class VideoSegmentList(WeightableList):
     """
