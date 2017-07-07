@@ -47,6 +47,8 @@ def create_music_video(args):
     audio_source = args.audio_source
     video_sources = args.video_sources
     video_source_weights = args.video_source_weights
+    fade_in = args.fade_in
+    fade_out = args.fade_out
 
     video_filters = args.video_filters
     exclude_video_filters = args.exclude_video_filters
@@ -89,6 +91,12 @@ def create_music_video(args):
     util.ensure_dir(music_video_directory)
 
     music_video = generator.generate_from_events(events)
+
+    # Apply effects
+    if fade_in:
+        music_video.video_segments[0].add_fadein(fade_in)
+    if fade_out:
+        music_video.video_segments[-1].add_fadeout(fade_out)
 
     # Print stats for rejected video segments
     cli_util.print_rejected_segment_stats(generator)
@@ -404,6 +412,10 @@ def parse_args(args):
                                     '(i.e.) Pass --weights .6 .4 or --weights 6 4 to use the first video source '
                                     '(a series of 26 episodes) 60%% of the time, and the second video source '
                                     '(a movie) 40%% of the time.')
+    create_parser.add_argument('-fi', '--fade-in', dest='fade_in', type=float,
+                               help='Fade-in for the music video, in seconds')
+    create_parser.add_argument('-fo', '--fade-out', dest='fade_out', type=float,
+                               help='Fade-out for the music video, in seconds')
 
     # Recreate Command Parameters
     recreate_parser = subparsers.add_parser('recreate', parents=[video_parser],
