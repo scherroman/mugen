@@ -105,6 +105,17 @@ def parse_json_file(json_file: str) -> dict:
 """ MISC """
 
 
+def window(iterable, size):
+    i = iter(iterable)
+    win = []
+    for e in range(0, size):
+        win.append(next(i))
+    yield win
+    for e in i:
+        win = win[1:] + [e]
+        yield win
+
+
 def ranges_overlap(a_start, a_end, b_start, b_end) -> bool:
     return max(a_start, b_start) < min(a_end, b_end)
 
@@ -191,6 +202,13 @@ def seconds_to_time_code(seconds: float) -> str:
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return "%02d:%02d:%02d.%03d" % (h, m, s, ms)
+
+
+def hex_to_rgb(hex_value) -> List[int]:
+    """Return [red, green, blue] for the color given as #rrggbb."""
+    hex_value = hex_value.lstrip('#')
+    len_hex_value = len(hex_value)
+    return [int(hex_value[i:i + len_hex_value // 3], 16) for i in range(0, len_hex_value, len_hex_value // 3)]
 
 
 def list_to_subclass(l: List[Any], subclass: Type[list]):

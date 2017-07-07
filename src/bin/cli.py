@@ -10,8 +10,7 @@ from mugen import constants as c
 from mugen import paths
 from mugen import utility as util
 from mugen import MusicVideoGenerator, Audio, VideoFilter
-from mugen.audio.Audio import AudioEventsMode, BeatsMode, OnsetsMode
-from mugen.video.events import VideoEventsMode
+from mugen.audio.Audio import BeatsMode, OnsetsMode
 from mugen.video.MusicVideoGenerator import PreviewMode
 
 import mugen.video.VideoWriter as Vw
@@ -20,6 +19,17 @@ import mugen.video.video_filters as vf
 import bin.utility as cli_util
 import bin.constants as cli_c
 from mugen.events import EventList, EventGroupList
+
+
+class AudioEventsMode(str, Enum):
+    """
+    Method of generating audio events
+
+    beats: Detect beats
+    onsets: Detect onsets
+    """
+    BEATS = 'beats'
+    ONSETS = 'onsets'
 
 
 class TargetGroups(str, Enum):
@@ -37,6 +47,8 @@ def create_music_video(args):
     audio_source = args.audio_source
     video_sources = args.video_sources
     video_source_weights = args.video_source_weights
+    fade_in = args.fade_in
+    fade_out = args.fade_out
 
     video_filters = args.video_filters
     exclude_video_filters = args.exclude_video_filters
@@ -72,13 +84,19 @@ def create_music_video(args):
 
     print("\nGenerating music video from video segments and audio...")
 
-    music_video = generator.generate_from_audio_events(events)
-
     # Create the directory for the music video
     music_video_name = cli_util.get_music_video_name(output_directory, video_name)
     music_video_directory = os.path.join(output_directory, music_video_name)
-    output_path = os.path.join(music_video_directory, music_video_name + Vw.DEFAULT_VIDEO_EXTENSION)
+    output_path = os.path.join(music_video_directory, music_video_name + Vw.VIDEO_EXTENSION)
     util.ensure_dir(music_video_directory)
+
+    music_video = generator.generate_from_events(events)
+
+    # Apply effects
+    if fade_in:
+        music_video.video_segments[0].add_fadein(fade_in)
+    if fade_out:
+        music_video.video_segments[-1].add_fadeout(fade_out)
 
     # Print stats for rejected video segments
     cli_util.print_rejected_segment_stats(generator)
@@ -96,14 +114,20 @@ def create_music_video(args):
         music_video.writer.audio_codec = audio_codec
     if audio_bitrate:
         music_video.writer.audio_bitrate = audio_bitrate
-    music_video.write_to_video_file(output_path, dimensions=video_dimensions, aspect_ratio=video_aspect_ratio,
-                                    use_original_audio=use_original_audio)
+
+    if use_original_audio:
+        music_video.audio_file = None
+    if video_dimensions:
+        music_video.dimensions = video_dimensions
+    if video_aspect_ratio:
+        music_video.aspect_ratio = video_aspect_ratio
+
+    music_video.write_to_video_file(output_path)
 
     # Save the individual segments if asked to do so
     if save_segments:
         print("\nSaving video segments...")
-        music_video.write_video_segments(music_video_directory, dimensions=video_dimensions,
-                                         aspect_ratio=video_aspect_ratio)
+        music_video.write_video_segments(music_video_directory)
 
 
 def recreate_music_video(args):
@@ -120,7 +144,7 @@ def preview_audio(args):
     # Prepare Inputs
     audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
     filename = paths.filename_from_path(audio_file)
-    output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else Vw.DEFAULT_VIDEO_EXTENSION
+    output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else Vw.VIDEO_EXTENSION
     output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" + audio_events_mode +
                                output_extension)
 
@@ -305,9 +329,9 @@ def parse_args(args):
                                    f'Otherwise will output {cli_c.DEFAULT_MUSIC_VIDEO_NAME}_0, '
                                    f'{cli_c.DEFAULT_MUSIC_VIDEO_NAME}_1, etc...')
 
-    video_parser.add_argument('-vem', '--video-events-mode', dest='video_events_mode',
-                              help=f'Method of generating video events for the music video. '
-                                   f'Supported values are {[e.value for e in VideoEventsMode]}')
+    # video_parser.add_argument('-vem', '--video-events-mode', dest='video_events_mode',
+    #                           help=f'Method of generating video events for the music video. '
+    #                                f'Supported values are {[e.value for e in VideoCutsMode]}')
     video_parser.add_argument('-vf', '--video-filters', dest='video_filters', nargs='+',
                               help=f'Video filters that each segment in the music video must pass. '
                                    f'Defaults are {[filter for filter in vf.VIDEO_FILTERS_DEFAULT]}'
@@ -321,13 +345,13 @@ def parse_args(args):
 
     video_parser.add_argument('-vpre', '--video-preset', dest='video_preset',
                               help=f'Tunes the time that FFMPEG will spend optimizing compression while writing '
-                                   f'the music video to file. Default is {Vw.DEFAULT_VIDEO_PRESET}')
+                                   f'the music video to file. Default is {Vw.VIDEO_PRESET}')
     video_parser.add_argument('-vcod', '--video-codec', dest='video_codec',
-                              help=f'The video codec for the music video. Default is {Vw.DEFAULT_VIDEO_CODEC}')
+                              help=f'The video codec for the music video. Default is {Vw.VIDEO_CODEC}')
     video_parser.add_argument('-vcrf', '--video-crf', dest='video_crf', type=int,
                               help=f'The crf quality value for the music video. '
                                    f'Takes an integer from 0 (lossless) to 51 (lossy). '
-                                   f'Default is {Vw.DEFAULT_VIDEO_CRF}')
+                                   f'Default is {Vw.VIDEO_CRF}')
     video_parser.add_argument('-vdim', '--video-dimensions', dest='video_dimensions', type=int, nargs=2,
                               help='The pixel dimensions for the music video, width and height. '
                                    'All video segments will be resized (cropped and/or scaled) appropriately '
@@ -365,10 +389,10 @@ def parse_args(args):
 
     audio_parser.add_argument('-ac', '--audio-codec', dest='audio_codec',
                               help=f'The audio codec for the music video if the original audio is used. '
-                                   f'Default is {Vw.DEFAULT_AUDIO_CODEC}')
+                                   f'Default is {Vw.AUDIO_CODEC}')
     audio_parser.add_argument('-ab', '--audio-bitrate', dest='audio_bitrate', type=int,
                               help='The audio bitrate for the music video if no audio_file is given. '
-                                   f'Default is {Vw.DEFAULT_AUDIO_BITRATE} (kbps)')
+                                   f'Default is {Vw.AUDIO_BITRATE} (kbps)')
 
     """ COMMANDS """
 
@@ -388,6 +412,10 @@ def parse_args(args):
                                     '(i.e.) Pass --weights .6 .4 or --weights 6 4 to use the first video source '
                                     '(a series of 26 episodes) 60%% of the time, and the second video source '
                                     '(a movie) 40%% of the time.')
+    create_parser.add_argument('-fi', '--fade-in', dest='fade_in', type=float,
+                               help='Fade-in for the music video, in seconds')
+    create_parser.add_argument('-fo', '--fade-out', dest='fade_out', type=float,
+                               help='Fade-out for the music video, in seconds')
 
     # Recreate Command Parameters
     recreate_parser = subparsers.add_parser('recreate', parents=[video_parser],

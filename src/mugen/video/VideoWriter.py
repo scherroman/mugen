@@ -6,14 +6,14 @@ from tqdm import tqdm
 
 from mugen.utility import temp_file_enabled
 
-DEFAULT_AUDIO_BITRATE = 320
-DEFAULT_AUDIO_CODEC = 'mp3'
+AUDIO_BITRATE = 320
+AUDIO_CODEC = 'mp3'
 
-DEFAULT_VIDEO_PRESET = 'medium'
-DEFAULT_VIDEO_CODEC = 'libx264'
-DEFAULT_VIDEO_CRF = 18
+VIDEO_PRESET = 'medium'
+VIDEO_CODEC = 'libx264'
+VIDEO_CRF = 18
 
-DEFAULT_VIDEO_EXTENSION = '.mkv'
+VIDEO_EXTENSION = '.mkv'
 
 
 class VideoWriter:
@@ -51,9 +51,9 @@ class VideoWriter:
     audio_bitrate: int
     ffmpeg_params: list
 
-    def __init__(self, preset: str = DEFAULT_VIDEO_PRESET, codec: str = DEFAULT_VIDEO_CODEC,
-                 crf: int = DEFAULT_VIDEO_CRF, audio_codec: str = DEFAULT_AUDIO_CODEC,
-                 audio_bitrate: int = DEFAULT_AUDIO_BITRATE, ffmpeg_params: Opt[List[str]] = None):
+    def __init__(self, preset: str = VIDEO_PRESET, codec: str = VIDEO_CODEC, crf: int = VIDEO_CRF,
+                 audio_codec: str = AUDIO_CODEC, audio_bitrate: int = AUDIO_BITRATE,
+                 ffmpeg_params: Opt[List[str]] = None):
         self.preset = preset
         self.codec = codec
         self.crf = crf
@@ -62,7 +62,7 @@ class VideoWriter:
         self.ffmpeg_params = ffmpeg_params or []
 
     def write_video_clips_to_directory(self, video_clips: List[VideoClip], directory: str, *,
-                                       file_extension: str = DEFAULT_VIDEO_EXTENSION, audio: Union[str, bool] = True,
+                                       file_extension: str = VIDEO_EXTENSION, audio: Union[str, bool] = True,
                                        **kwargs):
         """
         Writes a list of video segments to files in the specified directory
@@ -72,7 +72,7 @@ class VideoWriter:
             self.write_video_clip_to_file(segment, output_path, audio=audio, verbose=False, progress_bar=False,
                                           **kwargs)
 
-    @temp_file_enabled('output_path', DEFAULT_VIDEO_EXTENSION)
+    @temp_file_enabled('output_path', VIDEO_EXTENSION)
     def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Opt[str] = None, *,
                                  audio: Union[str, bool] = True, **kwargs):
         """

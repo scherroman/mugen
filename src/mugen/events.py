@@ -1,5 +1,4 @@
 import copy
-from enum import Enum
 from fractions import Fraction
 from typing import List, Optional as Opt, Union
 from itertools import groupby, zip_longest
@@ -13,20 +12,6 @@ from mugen.lists import MugenList
 from mugen.utility import convert_float_to_fraction, convert_time_to_seconds
 
 
-class EventType(str, Enum):
-    """
-    Type of an event
-    """
-    pass
-
-
-class EventsMode(str, Enum):
-    """
-    Method of generating events
-    """
-    pass
-
-
 class Event:
     """
     An event which occurs in some time sequence (i.e a song, or music video)
@@ -38,32 +23,27 @@ class Event:
         
     duration
         duration of the event (seconds)
-        
-    type
-        type of the event
     """
     location: float
     duration: float
-    type: str
 
     @convert_time_to_seconds(['location', 'duration'])
-    def __init__(self, location: TIME_FORMAT, *, duration: TIME_FORMAT = 0, type: str = 'unknown'):
+    def __init__(self, location: TIME_FORMAT = None, duration: float = 0):
         self.location = location
         self.duration = duration
-        self.type = type
 
     def __repr__(self):
         return self.index_repr()
 
     def index_repr(self, index: Opt[int] = None):
         if index is None:
-            repr_str = f"<Event, "
+            repr_str = f"<{self.__class__.__name__}, "
         else:
-            repr_str = f"<Event {index}, "
-        repr_str += f"location: {self.location:.3f}, "
+            repr_str = f"<{self.__class__.__name__} {index}, "
+        if self.location:
+            repr_str += f"location: {self.location:.3f}"
         if self.duration:
-            repr_str += f"duration:{self.duration:.3f}, "
-        repr_str += f"type: {self.type}>"
+            repr_str += f", duration:{self.duration:.3f}"
 
         return repr_str
 
@@ -78,14 +58,13 @@ class EventList(MugenList):
     """
     A list of Events with extended functionality
     """
-    type: str
 
     def __init__(self, events: Opt[List[Union[Event, TIME_FORMAT]]] = None):
         if events is None:
             events = []
         else:
             for index, event in enumerate(events):
-                if type(event) != Event:
+                if not isinstance(event, Event):
                     # Convert event location to Event
                     events[index] = Event(event)
 
@@ -99,14 +78,15 @@ class EventList(MugenList):
         """
         Alternate representation
         """
-        return f'<EventList {indexes.start}-{indexes.stop} ({len(self)}), type: {self.type}, selected: {selected}>'
+        return f'<{self.__class__.__name__} {indexes.start}-{indexes.stop} ({len(self)}), ' \
+               f'type: {self.type}, selected: {selected}>'
 
     @property
     def type(self) -> Union[str, None]:
         if len(self) == 0:
             return None
-        elif len(set([event.type for event in self])) == 1:
-            return self[0].type
+        elif len(set([event.__class__.__name__ for event in self])) == 1:
+            return self[0].__class__.__name__
         else:
             return 'mixed'
 
@@ -124,7 +104,7 @@ class EventList(MugenList):
 
     @property
     def types(self) -> List[str]:
-        return [event.type for event in self]
+        return [event.__class__.__name__ for event in self]
 
     def offset(self, offset: float):
         """
@@ -244,7 +224,7 @@ class EventList(MugenList):
         if select_types is None:
             select_types = []
 
-        groups = [EventList(list(group)) for index, group in groupby(self, key=attrgetter('type'))]
+        groups = [EventList(list(group)) for index, group in groupby(self, key=attrgetter('__class__'))]
         if not select_types:
             selected_groups = groups
         else:
@@ -302,7 +282,7 @@ class EventGroupList(MugenList):
             groups = []
         else:
             for index, group in enumerate(groups):
-                if type(group) != EventList:
+                if not isinstance(group, EventList):
                     # Convert event locations to EventList
                     groups[index] = EventList(group)
 
