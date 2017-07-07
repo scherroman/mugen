@@ -2,10 +2,14 @@ import json
 import random
 from typing import Optional as Opt, List, Tuple, Union, Any
 
+import copy
 from moviepy.editor import VideoFileClip
+from moviepy.video import VideoClip
 
 import mugen.utility as util
 import mugen.video.sizing as v_sizing
+import mugen.video.effects as v_effects
+from mugen.video.effects import VideoEffect
 from mugen import paths
 from mugen.utility import convert_time_to_seconds
 from mugen.video.sizing import Dimensions
@@ -26,8 +30,12 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     ----------
     source_start_time
         Start time of the video segment in the video file (seconds)
+
+    effects
+        A list of effects to apply to the video when composed
     """
     source_start_time: float
+    effects: List[VideoEffect]
 
     def __init__(self, filename: str, *, audio: bool = True, **kwargs):
         """
@@ -44,6 +52,7 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
         VideoFileClip.__init__(self, filename, audio=audio, **kwargs)
 
         self.source_start_time = 0
+        self.effects = []
 
         # Parent VideFileClip will not always be able to properly read an fps value
         if not self.fps:
@@ -51,7 +60,7 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
 
     def __repr__(self):
         filename = paths.filename_from_path(self.video_file)
-        return f"<VideoSegment, file: {filename}, source_start_time:{self.source_start_time}, " \
+        return f"<{self.__class__.__name__}, file: {filename}, source_start_time:{self.source_start_time}, " \
                f"duration: {self.duration}>"
 
     """ PROPERTIES """
@@ -100,24 +109,73 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     def first_middle_last_frames(self) -> List[LIST_3D]:
         return [self.first_frame, self.middle_frame, self.last_frame]
 
+    """ EFFECTS """
+
+    def add_crossfade(self, duration: float = v_effects.FADE_DURATION):
+        """
+        Adds a crossfade effect to the beginning of the video segment.
+        This effect will only be applied when composed inside a music video
+        """
+        self.effects.append(v_effects.CrossFade(duration))
+
+    def add_fadein(self, duration: float = v_effects.FADE_DURATION, color: str = v_effects.FADE_COLOR):
+        """
+        Adds a fade-in effect to the video segment.
+        """
+        self.effects.append(v_effects.FadeIn(duration, color))
+
+    def add_fadeout(self, duration: float = v_effects.FADE_DURATION, color: str = v_effects.FADE_COLOR):
+        """
+        Adds a fade-out effect to the video segment.
+        """
+        self.effects.append(v_effects.FadeOut(duration, color))
+
     """ METHODS """
 
-    @convert_time_to_seconds(['start_time', 'duration'])
-    def subclip(self, start_time: TIME_FORMAT = 0, duration: TIME_FORMAT = None) -> 'VideoSegment':
+    def copy(self) -> 'VideoSegment':
+        new_segment = super().copy()
+
+        # Deepcopy effects
+        new_segment.effects = copy.deepcopy(self.effects)
+
+        return new_segment
+
+    def compose(self) -> 'VideoSegment':
+        """
+        Composes the video segment, applying all effects
+
+        Returns
+        -------
+        A new video segment with all effects applied
+        """
+        segment = self
+
+        for effect in self.effects:
+            if isinstance(effect, v_effects.FadeIn):
+                segment = segment.fadein(effect.duration, effect.rgb_color)
+                segment.audio = segment.audio.audio_fadein(effect.duration)
+            elif isinstance(effect, v_effects.FadeOut):
+                segment = segment.fadeout(effect.duration, effect.rgb_color)
+                segment.audio = segment.audio.audio_fadeout(effect.duration)
+
+        return segment
+
+    @convert_time_to_seconds(['start_time', 'end_time'])
+    def subclip(self, start_time: TIME_FORMAT = 0, end_time: TIME_FORMAT = None) -> 'VideoSegment':
         """
         Parameters
         ----------
         start_time
             Start time of the video segment in the source video file
             
-        duration
-            Duration of the subclip
+        end_time
+            End time of the video segment in the source video file
 
         Returns
         -------
-        A subclip of the original video file, starting at 'start_time' and lasting for 'duration'
+        A subclip of the original video file, starting at 'start_time' and ending at 'end_time'
         """
-        subclip = super().subclip(start_time, start_time + duration)
+        subclip = super().subclip(start_time, end_time)
 
         if start_time < 0:
             # Set relative to end
@@ -131,7 +189,7 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
     def random_subclip(self, duration: TIME_FORMAT) -> 'VideoSegment':
         start_time = random.uniform(0, self.duration - duration)
 
-        return self.subclip(start_time, duration)
+        return self.subclip(start_time, start_time + duration)
 
     def crop_scale(self, desired_dimensions: Tuple[int, int]) -> 'VideoSegment':
         """
@@ -140,7 +198,7 @@ class VideoSegment(Taggable, Weightable, Filterable, VideoFileClip):
         A new VideoSegment, cropped and/or scaled as necessary to reach desired dimensions
         """
         desired_dimensions = Dimensions(*desired_dimensions)
-        segment = self.copy()
+        segment = self
 
         if segment.aspect_ratio != desired_dimensions.aspect_ratio:
             # Crop video to match desired aspect ratio

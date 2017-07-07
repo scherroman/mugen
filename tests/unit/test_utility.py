@@ -9,6 +9,13 @@ class DummyList(list):
     foo = 1
 
 
+@pytest.mark.parametrize("iterable, expected_list", [
+    ([1, 2, 3, 4, 5, 6, 7], [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
+])
+def test_window(iterable, expected_list):
+    assert list(util.window(iterable, 2)) == expected_list
+
+
 @pytest.mark.parametrize("a_start, a_end, b_start, b_end, do_overlap", [
     (5, 10, 11, 12, False),  # disjoint
     (5, 10, 10, 12, False),  # contiguous
@@ -68,6 +75,15 @@ def test_time_to_seconds(time, expected_seconds):
 ])
 def test_seconds_to_time_code(seconds, expected_time_code):
     assert util.seconds_to_time_code(seconds) == expected_time_code
+
+
+@pytest.mark.parametrize("hex_value, expected_rgb", [
+    ('#000000', [0, 0, 0]),
+    ('#ffffff', [255, 255, 255]),
+    ('#3563df', [53, 99, 223])
+])
+def test_hex_to_rgb(hex_value, expected_rgb):
+    assert util.hex_to_rgb(hex_value) == expected_rgb
 
 
 def test_list_to_subclass():

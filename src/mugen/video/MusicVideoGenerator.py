@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Optional as Opt, List, Union
 
+import copy
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.VideoClip import ColorClip
 from tqdm import tqdm
@@ -13,7 +14,7 @@ import mugen.video.video_filters as vf
 from mugen import paths
 from mugen.audio.Audio import Audio
 from mugen.constants import TIME_FORMAT
-from mugen.events import EventList, Event
+from mugen.events import EventList
 from mugen.exceptions import MugenError
 from mugen.mixins.Filterable import Filter, ContextFilter
 from mugen.mixins.Taggable import Taggable
@@ -22,7 +23,7 @@ from mugen.video.MusicVideo import MusicVideo
 from mugen.video.VideoSegment import VideoSegment, VideoSegmentList
 from mugen.video.VideoSegmentSampler import VideoSegmentSampler
 from mugen.video.VideoWriter import VideoWriter
-from mugen.video.events import VideoEventsMode, VideoEventList, VideoEventType
+from mugen.video.cuts import CutList
 from mugen.video.io import SubtitleTrack
 
 
@@ -149,26 +150,25 @@ class MusicVideoGenerator(Taggable):
 
         return string
 
-    def generate_from_video_events(self, video_events: VideoEventList) -> MusicVideo:
+    def generate_from_video_cuts(self, video_cuts: CutList) -> MusicVideo:
         """
         Generates a MusicVideo from a list of video events
         
         Parameters
         ----------
-        video_events
-            Video events which occur in the music video
+        video_cuts
+            Cut events which occur in the music video
         """
-        # Ensure END event is present
-        video_events.ensure_end_event(self.audio.duration)
+        # Ensure END cut is present
+        video_cuts.ensure_end_cut(self.audio.duration)
 
         # Calculate segment durations from cut locations
-        cut_locations = [cut.location for cut in video_events]
-        segment_durations = loc_util.intervals_from_locations(cut_locations)
+        segment_durations = video_cuts.intervals
 
         music_video_segments = self._generate_video_segments(segment_durations)
 
         # Assemble music video from music video segments and audio
-        music_video = MusicVideo(self.audio.audio_file, music_video_segments)
+        music_video = MusicVideo(music_video_segments, self.audio.audio_file)
 
         return music_video
 
@@ -182,27 +182,22 @@ class MusicVideoGenerator(Taggable):
         video_cut_locations
             Timestamps at which a cut occurs in the music video
         """
-        video_cuts = VideoEventList([Event(location, type=VideoEventType.CUT) for location in video_cut_locations])
+        video_cuts = CutList(video_cut_locations)
 
-        return self.generate_from_video_events(video_cuts)
+        return self.generate_from_video_cuts(video_cuts)
 
-    def generate_from_audio_events(self, audio_events: EventList,
-                                   video_events_mode: str = VideoEventsMode.CUTS) -> MusicVideo:
+    def generate_from_events(self, events: EventList) -> MusicVideo:
         """
-        Generates a MusicVideo from a list of audio events
+        Generates a MusicVideo from a list of events
 
         Parameters
         ----------
-        audio_events
-            audio events to translate into video events
-            
-        video_events_mode
-            Method of generating video events from audio events.
-            See :class:`~mugen.video.constants.VideoEventsMode` for supported values.
+        events
+            events to translate into video cuts
         """
-        video_events = VideoEventList.from_audio_events(audio_events, video_events_mode)
+        video_cuts = CutList.from_events(events)
 
-        return self.generate_from_video_events(video_events)
+        return self.generate_from_video_cuts(video_cuts)
 
     def _generate_video_segments(self, durations: List[float]) -> List[VideoSegment]:
         """
@@ -220,9 +215,12 @@ class MusicVideoGenerator(Taggable):
         video_segments = []
         video_segment_sampler = VideoSegmentSampler(self.video_sources)
 
+        # Make deep copies of filters
+        video_filters = copy.deepcopy(self.video_filters)
+
         # Set memory for all ContextFilters
-        for video_filter in self.video_filters:
-            if type(video_filter) == ContextFilter and video_filter.memory is None:
+        for video_filter in video_filters:
+            if isinstance(video_filter, ContextFilter) and video_filter.memory is None:
                 video_filter.memory = video_segments
 
         for duration in tqdm(durations):
@@ -232,17 +230,12 @@ class MusicVideoGenerator(Taggable):
                 video_segment = video_segment_sampler.sample(duration)
 
                 video_segment.passed_filters, video_segment.failed_filters = \
-                    video_segment.apply_filters(self.video_filters)
+                    video_segment.apply_filters(video_filters)
                 if not video_segment.failed_filters:
                     video_segments.append(video_segment)
                 else:
                     self.meta[self.Meta.REJECTED_SEGMENT_STATS].append(video_segment.__dict__)
                     video_segment = None
-
-        # Clear memory for all ContextFilters
-        for video_filter in self.video_filters:
-            if type(video_filter) == ContextFilter:
-                video_filter.memory = []
 
         return video_segments
 
@@ -269,7 +262,7 @@ class MusicVideoGenerator(Taggable):
             Method of previewing. Visual by default.
             See :class:`~mugen.audio.Audio.PreviewMode` for supported values.
         """
-        if type(events) == EventList:
+        if isinstance(events, EventList):
             event_locations = [event.location for event in events]
         else:
             event_locations = util.time_list_to_seconds(events)

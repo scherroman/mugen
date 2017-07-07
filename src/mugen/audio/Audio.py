@@ -6,29 +6,43 @@ import librosa
 import numpy as np
 
 from mugen import paths
-from mugen.events import EventList, Event, EventsMode, EventType
+from mugen.events import EventList, Event
 from mugen.exceptions import ParameterError
 
 
-class AudioEventType(EventType):
-    END = 'end'
-    BEAT = 'beat'
-    WEAK_BEAT = 'weak_beat'
-    ONSET = 'onset'
-    ONSET_BACKTRACKED = 'onset_backtracked'
-    # SILENCE
-    # FADE_IN
-    # FADE_OUT
-    # DROP
+class AudioEvent(Event):
+    """
+    An event in some audio
+    """
+    pass
 
 
-class AudioEventsMode(EventsMode):
+class End(AudioEvent):
     """
-    beats: Detect beats
-    weak_beats: Detect onsets
+    The end of some audio
     """
-    BEATS = 'beats'
-    ONSETS = 'onsets'
+    pass
+
+
+class Beat(AudioEvent):
+    """
+    A beat in some audio
+    """
+    pass
+
+
+class WeakBeat(Beat):
+    """
+    A weak beat in some audio
+    """
+    pass
+
+
+class Onset(AudioEvent):
+    """
+    An onset in some audio
+    """
+    pass
 
 
 class BeatsMode(str, Enum):
@@ -103,7 +117,7 @@ class Audio:
         Detected beat events from the audio
         """
         untrimmed_beats = self._beats()
-        untrimmed_beats = EventList([Event(beat, type=AudioEventType.BEAT) for beat in untrimmed_beats])
+        untrimmed_beats = EventList([Beat(beat) for beat in untrimmed_beats])
 
         if mode == BeatsMode.BEATS:
             beats = untrimmed_beats
@@ -113,11 +127,9 @@ class Audio:
             trimmed_trailing_beats = [beat for beat in untrimmed_beats.locations if beat > trimmed_beats[-1]]
 
             # Mark leading & trailing trimmed beats as weak beats
-            trimmed_beats = EventList([Event(beat, type=AudioEventType.BEAT) for beat in trimmed_beats])
-            trimmed_leading_beats = EventList([Event(beat, type=AudioEventType.WEAK_BEAT) for beat in
-                                               trimmed_leading_beats])
-            trimmed_trailing_beats = EventList([Event(beat, type=AudioEventType.WEAK_BEAT) for beat in
-                                                trimmed_trailing_beats])
+            trimmed_beats = EventList([Beat(beat) for beat in trimmed_beats])
+            trimmed_leading_beats = EventList([WeakBeat(beat) for beat in trimmed_leading_beats])
+            trimmed_trailing_beats = EventList([WeakBeat(beat) for beat in trimmed_trailing_beats])
 
             beats = trimmed_leading_beats + trimmed_beats + trimmed_trailing_beats
         else:
@@ -164,12 +176,12 @@ class Audio:
         """
         if mode == OnsetsMode.ONSETS:
             onsets = self._onsets()
-            onsets = EventList([Event(onset, type=AudioEventType.ONSET) for onset in onsets])
         elif mode == OnsetsMode.BACKTRACK:
             onsets = self._onsets(backtrack=True)
-            onsets = EventList([Event(onset, type=AudioEventType.ONSET_BACKTRACKED) for onset in onsets])
         else:
             raise ParameterError(f"Unsupported onsets mode {mode}.")
+
+        onsets = EventList([Onset(onset) for onset in onsets])
 
         return onsets
 

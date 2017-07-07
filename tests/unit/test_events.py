@@ -3,57 +3,63 @@ import pytest
 from mugen.events import Event, EventList, EventGroupList
 
 
+class Beat(Event):
+    pass
+
+
+class Silence(Event):
+    pass
+
+
 @pytest.fixture
 def events() -> EventList:
-    return EventList([Event(6, type='silence'),
-                      Event(12, type='beat'),
-                      Event(18, type='beat'),
-                      Event(24, type='beat'),
-                      Event(30, type='silence')])
+    return EventList([Silence(6),
+                      Beat(12),
+                      Beat(18),
+                      Beat(24),
+                      Silence(30)])
 
 
 @pytest.fixture
 def events_grouped_by_type() -> EventGroupList:
-    return EventGroupList([EventList([Event(6, type='silence')]),
-                           EventList([Event(12, type='beat'),
-                                      Event(18, type='beat'),
-                                      Event(24, type='beat')]),
-                           EventList([Event(30, type='silence')])])
+    return EventGroupList([EventList([Silence(6)]),
+                           EventList([Beat(12), Beat(18), Beat(24)]),
+                           EventList([Silence(30)])])
 
 
 @pytest.fixture
 def events_speed_multiplied_2x() -> EventList:
-    return EventList([Event(6, type='silence'),
-                      Event(12, type='beat'), Event(15, type='beat'),
-                      Event(18, type='beat'), Event(21, type='beat'),
-                      Event(24, type='beat'),
-                      Event(30, type='silence')])
+    return EventList([Silence(6),
+                      Beat(12), Beat(15),
+                      Beat(18), Beat(21),
+                      Beat(24),
+                      Silence(30)])
 
 
 @pytest.fixture
 def events_speed_multiplied_1_2x() -> EventList:
-    return EventList([Event(6, type='silence'),
-                      Event(12, type='beat'),
-                      Event(24, type='beat'),
-                      Event(30, type='silence')])
+    return EventList([Silence(6),
+                      Beat(12),
+                      Beat(24),
+                      Silence(30)])
 
 
 @pytest.fixture
 def events_speed_multiplied_1_2x_offset_1() -> EventList:
-    return EventList([Event(6, type='silence'),
-                      Event(18, type='beat'),
-                      Event(30, type='silence')])
+    return EventList([Silence(6),
+                      Beat(18),
+                      Silence(30)])
 
 
 @pytest.fixture
 def events_speed_multiplied_1_3x() -> EventList:
-    return EventList([Event(6, type='silence'),
-                      Event(12, type='beat'),
-                      Event(30, type='silence')])
+    return EventList([Silence(6),
+                      Beat(12),
+                      Silence(30)])
 
 
 def test_event_list__initializes_non_uniform_inputs_successfully():
-    EventList([1, 2, 3, Event(4, type="beat")])
+    EventList([1, 2, 3, Beat(4)])
 
 
 @pytest.mark.parametrize("events, speed, offset, expected_events", [
@@ -83,7 +89,7 @@ def test_offset_events(events, offset, expected_locations):
 
 
 def test_event_group_list__initializes_non_uniform_inputs_successfully():
-    EventGroupList([[1, 2, 3], EventList([1, 2, 3, Event(4, type="beat")])])
+    EventGroupList([[1, 2, 3], EventList([1, 2, 3, Beat(4)])])
 
 
 @pytest.mark.parametrize("events, expected_event_group_list", [
@@ -114,12 +120,12 @@ def test_event_group_list__group_by_slices_resulting_groups():
 
 
 def test_event_group_list__group_by_types_resulting_groups(events):
-    event_groups = events.group_by_type(['silence'])
-    assert event_groups.primary_groups == EventGroupList([EventList([Event(6, type='silence')]),
-                                                          EventList([Event(30, type='silence')])])
-    assert event_groups.secondary_groups == EventGroupList([EventList([Event(12, type='beat'),
-                                                                       Event(18, type='beat'),
-                                                                       Event(24, type='beat')])])
+    event_groups = events.group_by_type(['Silence'])
+    assert event_groups.primary_groups == EventGroupList([EventList([Silence(6)]),
+                                                          EventList([Silence(30)])])
+    assert event_groups.secondary_groups == EventGroupList([EventList([Beat(12),
+                                                                       Beat(18),
+                                                                       Beat(24)])])
     event_groups = events.group_by_type()
     assert event_groups.primary_groups == []
 
