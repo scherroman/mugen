@@ -1,6 +1,6 @@
 import pytest
 
-from mugen.video.sources.VideoSource import VideoSource, TimeRange
+from mugen.video.sources.VideoSource import VideoSource, TimeRange, VideoSourceList
 
 from tests import DATA_PATH
 
@@ -31,3 +31,15 @@ def test_time_boundaries():
     video_source.time_boundaries.append(boundary)
 
     assert boundary.start <= video_source.sample(duration).source_start_time <= boundary.end
+
+
+def test_video_source_list__populates_from_video_files():
+    video_source_list = VideoSourceList([f'{DATA_PATH}/video/shinsekai.mp4'])
+
+    assert type(video_source_list[0]) == VideoSource
+
+
+def test_video_source_list__populates_from_directory():
+    video_source_list = VideoSourceList(f'{DATA_PATH}/video')
+
+    assert type(video_source_list[0]) == VideoSource
