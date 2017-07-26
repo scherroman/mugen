@@ -12,7 +12,7 @@ from typing import List, Callable, Any, Type
 
 import decorator
 
-from mugen.constants import TIME_FORMAT
+from mugen.constants import TIME_FORMAT, Color
 from mugen.exceptions import ParameterError
 import mugen.exceptions as ex
 import mugen.paths as paths
@@ -93,6 +93,24 @@ def listdir_nohidden(path):
     for file in os.listdir(path):
         if not file.startswith('.'):
             yield os.path.join(path, file)
+
+
+def files_from_directory(directory: str) -> List[str]:
+    """
+    Returns
+    -------
+    A list of all video files found in the directory
+    """
+    return [item for item in listdir_nohidden(directory) if os.path.isfile(item)]
+
+
+def directories_from_directory(directory: str) -> List[str]:
+    """
+    Returns
+    -------
+    A list of all directories found in the directory
+    """
+    return [item for item in listdir_nohidden(directory) if os.path.isdir(item)]
 
 
 def parse_json_file(json_file: str) -> dict:
@@ -211,6 +229,13 @@ def hex_to_rgb(hex_value) -> List[int]:
     return [int(hex_value[i:i + len_hex_value // 3], 16) for i in range(0, len_hex_value, len_hex_value // 3)]
 
 
+def color_to_hex_code(color):
+    if color.startswith('#'):
+        return color
+    else:
+        return Color(color).hex_code()
+
+
 def list_to_subclass(l: List[Any], subclass: Type[list]):
     return subclass(l)
 
@@ -247,6 +272,13 @@ def convert_time_to_seconds(*varnames: str):
     Decorator to convert varnames from TIME_FORMAT to seconds
     """
     return preprocess_args(time_to_seconds, *varnames)
+
+
+def convert_color_to_hex_code(*varnames: str):
+    """
+    Decorator to convert varnames to hex color format
+    """
+    return preprocess_args(color_to_hex_code, *varnames)
 
 
 def convert_time_list_to_seconds(*varnames: str):

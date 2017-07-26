@@ -1,5 +1,7 @@
+import bisect
 import copy
 from fractions import Fraction
+from functools import wraps
 from typing import List, Optional as Opt, Union
 from itertools import groupby, zip_longest
 from operator import attrgetter
@@ -15,35 +17,40 @@ from mugen.utility import convert_float_to_fraction, convert_time_to_seconds
 class Event:
     """
     An event which occurs in some time sequence (i.e a song, or music video)
-
-    Attributes
-    ----------    
-    location
-        location of the event in the time sequence (seconds)
-        
-    duration
-        duration of the event (seconds)
     """
     location: float
     duration: float
 
     @convert_time_to_seconds(['location', 'duration'])
     def __init__(self, location: TIME_FORMAT = None, duration: float = 0):
+        """
+        Parameters
+        ----------
+        location
+            location of the event in the time sequence (seconds)
+
+        duration
+            duration of the event (seconds)
+        """
         self.location = location
         self.duration = duration
+
+    def __lt__(self, other):
+        return self.location < other.location
 
     def __repr__(self):
         return self.index_repr()
 
     def index_repr(self, index: Opt[int] = None):
         if index is None:
-            repr_str = f"<{self.__class__.__name__}, "
+            repr_str = f'<{self.__class__.__name__}'
         else:
-            repr_str = f"<{self.__class__.__name__} {index}, "
+            repr_str = f'<{self.__class__.__name__} {index}'
         if self.location:
-            repr_str += f"location: {self.location:.3f}"
+            repr_str += f', location: {self.location:.3f}'
         if self.duration:
-            repr_str += f", duration:{self.duration:.3f}"
+            repr_str += f', duration:{self.duration:.3f}'
+        repr_str += '>'
 
         return repr_str
 
@@ -54,29 +61,68 @@ class Event:
         return not self == other
 
 
-class EventList(MugenList):
+def requires_end(func):
     """
-    A list of Events with extended functionality
+    Decorator raises error if there is no end specified for the EventList
     """
 
-    def __init__(self, events: Opt[List[Union[Event, TIME_FORMAT]]] = None):
-        if events is None:
-            events = []
-        else:
+    @wraps(func)
+    def _requires_end(self, *args, **kwargs):
+        if not self.end:
+            raise ValueError(f"EventList's {func} method requires the 'end' attribute to be set.")
+
+        return func(self, *args, **kwargs)
+
+    return _requires_end
+
+
+class EventList(MugenList):
+    """
+    A list of Events which occur in some time sequence
+    """
+    end: Opt[float]
+
+    def __init__(self, events: Opt[List[Union[Event, TIME_FORMAT]]] = None, *, end: TIME_FORMAT = None):
+        """
+        Parameters
+        ----------
+        events
+            events which occur in the time sequence
+
+        end
+            duration of the time sequence
+        """
+        if events is not None:
             for index, event in enumerate(events):
                 if not isinstance(event, Event):
                     # Convert event location to Event
                     events[index] = Event(event)
 
+        self.end = end
+
         super().__init__(events)
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.end == other.end
+
+    def __add__(self, rhs):
+        return type(self)((super().__add__(rhs)), end=rhs.end)
+
+    def __getitem__(self, item):
+        result = list.__getitem__(self, item)
+        if isinstance(item, slice):
+            return type(self)(result, end=self.end)
+        else:
+            return result
 
     def __repr__(self):
         event_reprs = [event.index_repr(index) for index, event in enumerate(self)]
-        return super().pretty_repr(event_reprs)
+        pretty_repr = super().pretty_repr(event_reprs)
+        return f'<{pretty_repr}, end: {self.end}>'
 
-    def alt_repr(self, indexes: range, selected: bool):
+    def list_repr(self, indexes: range, selected: bool):
         """
-        Alternate representation
+        Repr for use in lists
         """
         return f'<{self.__class__.__name__} {indexes.start}-{indexes.stop} ({len(self)}), ' \
                f'type: {self.type}, selected: {selected}>'
@@ -99,12 +145,37 @@ class EventList(MugenList):
         return loc_util.intervals_from_locations(self.locations)
 
     @property
+    def segment_locations(self):
+        """
+        Returns
+        -------
+        locations of segments between events
+        """
+        return [0] + [event.location for event in self]
+
+    @property
+    @requires_end
+    def segment_durations(self):
+        """
+        Returns
+        -------
+        durations of segments between events
+        """
+        return loc_util.intervals_from_locations(self.locations + [self.end])
+
+    @property
     def durations(self) -> List[float]:
         return [event.duration for event in self]
 
     @property
     def types(self) -> List[str]:
         return [event.__class__.__name__ for event in self]
+
+    def add_events(self, events: List[Union[Event, TIME_FORMAT]]):
+        for event in events:
+            if not isinstance(event, Event):
+                event = Event(event)
+            bisect.insort(self, event)
 
     def offset(self, offset: float):
         """
@@ -224,7 +295,7 @@ class EventList(MugenList):
         if select_types is None:
             select_types = []
 
-        groups = [EventList(list(group)) for index, group in groupby(self, key=attrgetter('__class__'))]
+        groups = [EventList(list(group), end=self.end) for index, group in groupby(self, key=attrgetter('__class__'))]
         if not select_types:
             selected_groups = groups
         else:
@@ -260,11 +331,6 @@ class EventList(MugenList):
 class EventGroupList(MugenList):
     """
     An alternate, more useful representation for a list of EventLists
-
-    Attributes
-    ----------
-    _selected_groups
-        A subset of groups being tracked
     """
     _selected_groups: List[EventList]
 
@@ -278,9 +344,7 @@ class EventGroupList(MugenList):
         selected
             A subset of groups to track
         """
-        if groups is None:
-            groups = []
-        else:
+        if groups is not None:
             for index, group in enumerate(groups):
                 if not isinstance(group, EventList):
                     # Convert event locations to EventList
@@ -295,9 +359,13 @@ class EventGroupList(MugenList):
         index_count = 0
         for group in self:
             group_indexes = range(index_count, index_count + len(group) - 1)
-            group_reprs.append(group.alt_repr(group_indexes, True if group in self.selected_groups else False))
+            group_reprs.append(group.list_repr(group_indexes, True if group in self.selected_groups else False))
             index_count += len(group)
         return super().pretty_repr(group_reprs)
+
+    @property
+    def end(self):
+        return self[-1].end if self else None
 
     @property
     def selected_groups(self) -> 'EventGroupList':
@@ -332,10 +400,9 @@ class EventGroupList(MugenList):
     def flatten(self) -> EventList:
         """
         Flattens the EventGroupList back into an EventList.
-        Supports an arbitrary level of nesting.
 
         Returns
         -------
         A flattened EventList for this EventGroupList
         """
-        return EventList(lists.flatten(self))
+        return EventList(lists.flatten(self), end=self.end)

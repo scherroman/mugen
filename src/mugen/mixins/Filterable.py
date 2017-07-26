@@ -3,7 +3,7 @@ from typing import List, Callable, Optional as Opt, Any, Tuple
 
 class Filter:
     """
-    A function used to filter an object based its content
+    A function used to filter an object based its sources
     
     Attributes
     ----------
@@ -55,6 +55,8 @@ class Filterable:
     failed_filters: List[Filter]
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.passed_filters = []
         self.failed_filters = []
 

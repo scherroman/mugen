@@ -6,19 +6,37 @@ import sys
 from enum import Enum
 from fractions import Fraction
 
+import bin.constants as cli_c
+import bin.utility as cli_util
+import mugen.video.io.VideoWriter as Vw
+import mugen.video.video_filters as vf
+from bin.utility import shutdown, message
+from mugen import MusicVideoGenerator, Audio, VideoFilter
 from mugen import constants as c
 from mugen import paths
 from mugen import utility as util
-from mugen import MusicVideoGenerator, Audio, VideoFilter
-from mugen.audio.Audio import BeatsMode, OnsetsMode
-from mugen.video.MusicVideoGenerator import PreviewMode
-
-import mugen.video.VideoWriter as Vw
-import mugen.video.video_filters as vf
-
-import bin.utility as cli_util
-import bin.constants as cli_c
 from mugen.events import EventList, EventGroupList
+from mugen.exceptions import ParameterError
+from mugen.video.MusicVideoGenerator import PreviewMode
+from mugen.video.sources.VideoSource import VideoSourceList
+
+
+class BeatsMode(str, Enum):
+    """
+    beats: Detect beats
+    weak_beats: Detect beats & weak beats
+    """
+    BEATS = 'beats'
+    WEAK_BEATS = 'weak_beats'
+
+
+class OnsetsMode(str, Enum):
+    """
+    onsets: Detect onsets
+    backtrack: Shift onset events back to the nearest local minimum of energy
+    """
+    ONSETS = 'onsets'
+    BACKTRACK = 'backtrack'
 
 
 class AudioEventsMode(str, Enum):
@@ -67,22 +85,26 @@ def create_music_video(args):
 
     # Prepare Inputs
     audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
+
     if video_sources:
         video_source_files = cli_util.video_files_from_sources(video_sources)
     else:
         video_source_files = cli_util.prompt_files_selection(c.FileType.VIDEO)
+    video_sources = VideoSourceList(video_source_files, weights=video_source_weights)
 
-    generator = MusicVideoGenerator(audio_file, video_source_files=video_source_files,
-                                    video_source_weights=video_source_weights,
+    generator = MusicVideoGenerator(audio_file, video_sources=video_sources,
                                     video_filters=video_filters,
                                     exclude_video_filters=exclude_video_filters,
                                     include_video_filters=include_video_filters)
 
-    cli_util.print_weight_stats(generator)
+    message(f"Weights\n------------\n{generator.video_sources.flatten().weight_stats()}")
 
-    events = prepare_events(generator.audio, args)
+    try:
+        events = prepare_events(generator.audio, args)
+    except ParameterError as e:
+        shutdown(str(e))
 
-    print("\nGenerating music video from video segments and audio...")
+    message("Generating music video from video segments and audio...")
 
     # Create the directory for the music video
     music_video_name = cli_util.get_music_video_name(output_directory, video_name)
@@ -90,18 +112,18 @@ def create_music_video(args):
     output_path = os.path.join(music_video_directory, music_video_name + Vw.VIDEO_EXTENSION)
     util.ensure_dir(music_video_directory)
 
-    music_video = generator.generate_from_events(events)
+    music_video = generator.generate_from_video_cuts(events)
 
     # Apply effects
     if fade_in:
-        music_video.video_segments[0].add_fadein(fade_in)
+        music_video.segments[0].effects.add_fadein(fade_in)
     if fade_out:
-        music_video.video_segments[-1].add_fadeout(fade_out)
+        music_video.segments[-1].effects.add_fadeout(fade_out)
 
     # Print stats for rejected video segments
     cli_util.print_rejected_segment_stats(generator)
 
-    print(f"\nWriting music video '{output_path}'...")
+    message(f"Writing music video '{output_path}'...")
 
     # Save the music video
     if video_preset:
@@ -126,12 +148,8 @@ def create_music_video(args):
 
     # Save the individual segments if asked to do so
     if save_segments:
-        print("\nSaving video segments...")
+        message("Saving video segments...")
         music_video.write_video_segments(music_video_directory)
-
-
-def recreate_music_video(args):
-    return
 
 
 def preview_audio(args):
@@ -145,13 +163,16 @@ def preview_audio(args):
     audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
     filename = paths.filename_from_path(audio_file)
     output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else Vw.VIDEO_EXTENSION
-    output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" + audio_events_mode +
-                               output_extension)
+    output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" +
+                               (audio_events_mode if audio_events_mode else "") + output_extension)
 
     generator = MusicVideoGenerator(audio_file, None)
-    events = prepare_events(generator.audio, args)
+    try:
+        events = prepare_events(generator.audio, args)
+    except ParameterError as e:
+        shutdown(str(e))
 
-    print(f"\nCreating audio preview '{paths.filename_from_path(output_path)}'...")
+    message(f"Creating audio preview '{paths.filename_from_path(output_path)}'...")
 
     generator.preview_events(events, output_path, preview_mode)
 
@@ -170,44 +191,57 @@ def prepare_events(audio: Audio, args) -> EventList:
     group_speeds = args.group_speeds
     group_speed_offsets = args.group_speed_offsets
 
-    if event_locations:
-        events = EventList(event_locations)
-    else:
-        print(f"\nAnalyzing audio...")
+    if audio_events_mode:
+        message("Analyzing audio...")
 
         if audio_events_mode == AudioEventsMode.BEATS:
-            events = audio.beats(beats_mode)
+            if beats_mode == BeatsMode.BEATS:
+                events = audio.beats()
+            elif beats_mode == BeatsMode.WEAK_BEATS:
+                events = audio.beats(trim=True)
+            else:
+                raise ParameterError(f"Unsupported beats mode {beats_mode}.")
         elif audio_events_mode == AudioEventsMode.ONSETS:
-            events = audio.onsets(onsets_mode)
+            if onsets_mode == OnsetsMode.ONSETS:
+                events = audio.onsets()
+            elif onsets_mode == OnsetsMode.BACKTRACK:
+                events = audio.onsets(backtrack=True)
+            else:
+                raise ParameterError(f"Unsupported onsets mode {onsets_mode}.")
         else:
-            print("\nMust provide either events mode or event locations.")
-            sys.exit(1)
+            raise ParameterError(f"Unsupported audio events mode {audio_events_mode}.")
 
-    if events_speed:
-        events.speed_multiply(events_speed, events_speed_offset)
+        if events_speed:
+            events.speed_multiply(events_speed, events_speed_offset)
 
-    if group_events_by_type is not None or group_events_by_slices:
-        if group_events_by_type is not None:
-            event_groups = events.group_by_type(select_types=group_events_by_type)
+        if group_events_by_type is not None or group_events_by_slices:
+            if group_events_by_type is not None:
+                event_groups = events.group_by_type(select_types=group_events_by_type)
+            else:
+                event_groups = events.group_by_slices(slices=group_events_by_slices)
+
+            if target_groups == TargetGroups.ALL:
+                event_groups.speed_multiply(group_speeds, group_speed_offsets)
+            elif target_groups == TargetGroups.SELECTED:
+                event_groups.selected_groups.speed_multiply(group_speeds, group_speed_offsets)
+            elif target_groups == TargetGroups.UNSELECTED:
+                event_groups.unselected_groups.speed_multiply(group_speeds, group_speed_offsets)
+
+            events = event_groups.flatten()
         else:
-            event_groups = events.group_by_slices(slices=group_events_by_slices)
+            event_groups = EventGroupList([events])
 
-        if target_groups == TargetGroups.ALL:
-            event_groups.speed_multiply(group_speeds, group_speed_offsets)
-        elif target_groups == TargetGroups.SELECTED:
-            event_groups.selected_groups.speed_multiply(group_speeds, group_speed_offsets)
-        elif target_groups == TargetGroups.UNSELECTED:
-            event_groups.unselected_groups.speed_multiply(group_speeds, group_speed_offsets)
+        message(f"Events:\n{event_groups}")
 
-        print(f"\nEvents: \n{event_groups}")
+        if events_offset:
+            events.offset(events_offset)
 
-        events = event_groups.flatten()
+        if event_locations:
+            events.add_events(event_locations)
+    elif event_locations:
+        events = EventList(event_locations, end=audio.duration)
     else:
-        event_groups = EventGroupList([events])
-        print(f"\nEvents: {event_groups}")
-
-    if events_offset:
-        events.offset(events_offset)
+        raise ParameterError("Must provide either audio events mode or event locations.")
 
     return events
 
@@ -237,6 +271,8 @@ def prepare_args(args):
 
     if getattr_none(args, 'video_dimensions') is not None:
         args.video_dimensions = tuple(args.video_dimensions)
+    if getattr_none(args, 'event_locations') is None:
+        args.audio_events_mode = AudioEventsMode.BEATS
 
     return args
 
@@ -281,11 +317,15 @@ def parse_args(args):
                              'Will create the directory if non-existent. Default is ' + cli_c.OUTPUT_PATH_BASE)
 
     # Event Common Parameters
+    # event_parser.add_argument('-d', '--duration', dest='duration', type=float,
+    #                           help='Manually set the duration of the music video. If no audio source is provided, '
+    #                                'this option will be used instead.')
     event_parser.add_argument('-el', '--event-locations', dest='event_locations', type=float, nargs='+',
-                              help='Event locations for the audio file. '
+                              help='Manually enter Event locations for the audio file. '
                                    'Usually this corresponds to beats in the music, or any location where one feels '
-                                   'there should be a cut between clips in the music video. Takes a list of numerical '
-                                   'values separated by spaces.')
+                                   'there should be a cut between clips in the music video. '
+                                   'If this option is specified alongside --audio-events-mode, both will be combined. '
+                                   'Takes a list of numerical values separated by spaces.')
     event_parser.add_argument('-eo', '--events-offset', dest='events_offset', type=float,
                               help='Global offset for event locations.')
     event_parser.add_argument('-es', '--events-speed', dest='events_speed', type=Fraction,
@@ -305,8 +345,8 @@ def parse_args(args):
                                    '(0,20) (20,30) (30,39), with one selected group (20,30)')
     event_parser.add_argument('-gebt', '--group-events-by-type', dest='group_events_by_type', nargs='*',
                               help='Group events by type. Useful for modes like the "weak_beats" beats mode. '
-                                   'e.g.) If our events are: <10 weak_beat, 20 beat, 10 weak_beat>, '
-                                   'passing this option with "weak_beat" will result in three groups '
+                                   'e.g.) If our events are: <10 WeakBeat, 20 Beat, 10 WeakBeat>, '
+                                   'passing this option with "WeakBeat" will result in three groups '
                                    '(0,9) (9,29) (29,39), with two selected groups (0,9) (29,39)')
     event_parser.add_argument('-tg', '--target-groups', dest='target_groups', default=TargetGroups.SELECTED,
                               help='Which groups "--group-by" modifiers should apply to. '
@@ -329,9 +369,6 @@ def parse_args(args):
                                    f'Otherwise will output {cli_c.DEFAULT_MUSIC_VIDEO_NAME}_0, '
                                    f'{cli_c.DEFAULT_MUSIC_VIDEO_NAME}_1, etc...')
 
-    # video_parser.add_argument('-vem', '--video-events-mode', dest='video_events_mode',
-    #                           help=f'Method of generating video events for the music video. '
-    #                                f'Supported values are {[e.value for e in VideoCutsMode]}')
     video_parser.add_argument('-vf', '--video-filters', dest='video_filters', nargs='+',
                               help=f'Video filters that each segment in the music video must pass. '
                                    f'Defaults are {[filter for filter in vf.VIDEO_FILTERS_DEFAULT]}'
@@ -374,9 +411,9 @@ def parse_args(args):
                               help=f"Whether or not to use the original audio from video segments for the music video. "
                                    f"Defaults to False.")
 
-    audio_parser.add_argument('-aem', '--audio-events-mode', dest='audio_events_mode', default=AudioEventsMode.BEATS,
+    audio_parser.add_argument('-aem', '--audio-events-mode', dest='audio_events_mode', default=None,
                               help=f'Method of generating events from the audio file. '
-                                   f'Default is {AudioEventsMode.BEATS}. '
+                                   f'Default is {AudioEventsMode.BEATS}, if no event locations are provided.'
                                    f'Supported values are {[e.value for e in AudioEventsMode]}.')
 
     audio_parser.add_argument('-bm', '--beats-mode', dest='beats_mode', default=BeatsMode.BEATS,
@@ -417,18 +454,6 @@ def parse_args(args):
     create_parser.add_argument('-fo', '--fade-out', dest='fade_out', type=float,
                                help='Fade-out for the music video, in seconds')
 
-    # Recreate Command Parameters
-    recreate_parser = subparsers.add_parser('recreate', parents=[video_parser],
-                                            help="Recreate a music video from a spec file.")
-    recreate_parser.set_defaults(func=recreate_music_video)
-    recreate_parser.add_argument('-s', '--spec-source', dest='spec_src',
-                                 help='The spec file from which to recreate the music video. '
-                                      'Spec files are generated alongside music videos created by this program.')
-    recreate_parser.add_argument('-rs', '--replace-segments', dest='replace_segments', type=int, nargs='+',
-                                 help='Pass in this argument to provide a list of segment numbers in the music video '
-                                      'to replace with new random segments. '
-                                      'Takes values separated by spaces (e.g.) 98 171 200 305.')
-
     # Preview Command Parameters
     preview_parser = subparsers.add_parser('preview', parents=[audio_parser, event_parser],
                                            help="Create an audio preview of events for a music video by marking "
@@ -452,6 +477,6 @@ if __name__ == '__main__':
     setup(args)
     args.func(args)
 
-    print("\nAll Done!")
+    message("All Done!")
 
 

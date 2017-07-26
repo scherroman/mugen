@@ -12,7 +12,7 @@ except ImportError:
     text_detection_available = False
 
 from mugen.video.constants import LIST_3D
-from mugen.video.VideoSegment import VideoSegment
+from mugen.video.segments.VideoSegment import VideoSegment
 
 DEFAULT_CONTRAST_THRESHOLD = 30
 

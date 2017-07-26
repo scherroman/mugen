@@ -8,4 +8,6 @@ class Taggable:
     tags: List[str]
 
     def __init__(self, *args, tags: Opt[List[str]] = None, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.tags = tags or []

@@ -1,57 +1,42 @@
 from fractions import Fraction
 from typing import Optional as Opt, Union, List, Any
 
-from mugen import utility as util
+from copy import deepcopy
+
+from mugen import utility as util, lists
 from mugen.lists import MugenList
 
 
 class Weightable:
     """
     Mixin for weighting objects, useful for weighted sampling
+
+    Attributes
+    ----------
+    weight
+        assigned weight
     """
-    weight: float = 1
+    weight: float
 
-    def __init__(self, *args, weight: Opt[float] = None, **kwargs):
-        if weight is not None:
-            self.weight = weight
+    def __init__(self, *args, weight: float = 1, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.weight = weight
 
 
-class WeightableList(MugenList):
+class WeightableList(Weightable, MugenList):
     """
     A list of Weightables with extended functionality
     """
 
-    def __init__(self, weightables: Opt[List[Union[Weightable, List[Any]]]] = None, weights: Opt[List[float]] = None):
+    def __init__(self, weightables: Opt[List[Union[Weightable, List[Any]]]] = None, **kwargs):
         """
         Parameters
         ----------
         weightables
-            An arbitrarily nested irregular list of Weightables and lists of Weightables.
-            Weightables will be flattened.
-            e.g. [W1, W2, [W3, W4]] -> [W1, W2, W3, W4]
-             
-        weights
-            Weights to distribute across the weightables
+            An arbitrarily nested list of Weightables.
         """
-        if weightables is None:
-            weightables = []
-
-        super().__init__(weightables)
-
-        if weightables:
-            if weights is None:
-                # Default all weights to 1
-                weights = [1] * len(weightables)
-
-            # Distribute the weights for each weightable
-            for weightable, weight in zip(weightables, weights):
-                if type(weightable) is list:
-                    WeightableList._distribute_weight(weightable, weight)
-                else:
-                    weightable.weight = weight
-
-            # Flatten weightables
-            self.flatten()
+        super().__init__(weightables, **kwargs)
 
     @property
     def weights(self) -> List[float]:
@@ -86,15 +71,28 @@ class WeightableList(MugenList):
         """
         return [util.float_to_fraction(weight) for weight in self.normalized_weights]
 
-    @staticmethod
-    def _distribute_weight(weightables: List[Union[Weightable, List[Any]]], weight: float):
+    def flatten(self) -> 'WeightableList':
         """
-        Evenly distributes weight across an arbitrarily nested irregular list of weightables
+        Returns
+        -------
+        A flattened, deep copy of this weightable list, with weights distributed and normalized
         """
-        split_weight = weight / len(weightables)
+        weightables_copy = deepcopy(self)
+        self._distribute_weight(weightables_copy, 1)
 
-        for weightable in weightables:
-            if type(weightable) is list:
-                WeightableList._distribute_weight(weightable, split_weight)
+        return type(self)(lists.flatten(weightables_copy))
+
+    @staticmethod
+    def _distribute_weight(weightables: 'WeightableList', weight: float):
+        """
+        Distributes weight across an arbitrarily nested list of weightables
+        """
+        normalized_weights = weightables.normalized_weights
+
+        for weightable, normalized_weight in zip(weightables, normalized_weights):
+            new_weight = normalized_weight * weight
+
+            if isinstance(weightable, WeightableList):
+                WeightableList._distribute_weight(weightable, new_weight)
             else:
-                weightable.weight = split_weight
+                weightable.weight = new_weight
