@@ -2,7 +2,8 @@ import pytest
 
 from mugen.video.sources.Source import SourceList
 from mugen.video.sources.SourceSampler import SourceSampler
-from .test_ColorSource import black_source, white_source, orange_source, purple_source
+
+from tests.unit.video.sources.test_ColorSource import black_source, white_source, orange_source, purple_source
 
 
 @pytest.fixture

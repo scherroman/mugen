@@ -1,6 +1,6 @@
 import pytest
 
-from .test_ColorSegment import orange_segment
+from tests.unit.video.segments.test_ColorSegment import orange_segment
 
 
 @pytest.mark.parametrize("segment, aspect_ratio, expected_dimensions", [
