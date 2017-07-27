@@ -1,5 +1,4 @@
 from fractions import Fraction
-from typing import List, Any
 
 import pytest
 
@@ -8,42 +7,37 @@ from mugen.mixins.Weightable import Weightable, WeightableList
 
 @pytest.fixture
 def weightable_list_a() -> WeightableList:
-    return WeightableList([Weightable(), Weightable(), Weightable(), Weightable()], weights=[1, 1, 1, 1])
+    return WeightableList([Weightable(weight=1), Weightable(weight=1), Weightable(weight=1), Weightable(weight=1)])
 
 
 @pytest.fixture
 def weightable_list_b() -> WeightableList:
-    return WeightableList([Weightable(), Weightable(), Weightable(), Weightable()], weights=[1, 1, 2, 4])
+    return WeightableList([Weightable(weight=1), Weightable(weight=1), Weightable(weight=2), Weightable(weight=4)])
 
 
 @pytest.fixture
 def weightable_list_c() -> WeightableList:
-    return WeightableList([Weightable(), Weightable(), Weightable(), Weightable()], weights=[1/2, 1/2, 1, 1])
+    return WeightableList([Weightable(weight=1/2), Weightable(weight=1/2), Weightable(weight=1), Weightable(weight=1)])
 
 
 @pytest.fixture
 def weightable_list_d() -> WeightableList:
-    return WeightableList([Weightable(), Weightable(), Weightable(), Weightable()], weights=[1, 3, 6, 0])
+    return WeightableList([Weightable(weight=1), Weightable(weight=3), Weightable(weight=6), Weightable(weight=0)])
 
 
 @pytest.fixture
-def weightable() -> Weightable:
-    return Weightable()
+def weightables_regular(weight: float = 1) -> WeightableList:
+    return WeightableList([Weightable(weight=2), Weightable(weight=2), Weightable(weight=2)], weight=weight)
 
 
 @pytest.fixture
-def weightables_regular() -> List[Weightable]:
-    return [Weightable(), Weightable(), Weightable()]
+def weightables_nested(weight: float = 1) -> WeightableList:
+    return WeightableList([Weightable(weight=3), weightables_regular(weight=3)], weight=weight)
 
 
 @pytest.fixture
-def weightables_nested() -> List[Any]:
-    return [weightable(), weightables_regular()]
-
-
-@pytest.fixture
-def weightables_double_nested() -> List[Any]:
-    return [weightable(), [weightable(), weightables_regular()]]
+def weightables_double_nested(weight: float = 1) -> WeightableList:
+    return WeightableList([Weightable(weight=3), weightables_nested(weight=3)], weight=weight)
 
 
 @pytest.mark.parametrize("weightables, expected_weights", [
@@ -76,11 +70,12 @@ def test_weight_fractions(weightables, expected_fractions):
     assert weightables.weight_fractions == expected_fractions
 
 
-@pytest.mark.parametrize("weightables, weights, expected_weights", [
-    (weightables_regular(), [2, 2, 2], [2, 2, 2]),
-    (weightables_nested(), [3, 3], [3, 1, 1, 1]),
-    (weightables_double_nested(), [3, 3, 3], [3, 1.5, .5, .5, .5]),
+@pytest.mark.parametrize("weightables, expected_weights", [
+    (weightables_regular(), [pytest.approx(1/3), pytest.approx(1/3), pytest.approx(1/3)]),
+    (weightables_nested(), [pytest.approx(1/2), pytest.approx(1/6), pytest.approx(1/6), pytest.approx(1/6)]),
+    (weightables_double_nested(), [pytest.approx(1/2), pytest.approx(1/4), pytest.approx(1/12), pytest.approx(1/12),
+                                   pytest.approx(1/12)]),
 ])
-def test_weightable_list(weightables, weights, expected_weights):
-    weightable_list = WeightableList(weightables, weights)
-    assert weightable_list.weights == expected_weights
+def test_weightable_list(weightables, expected_weights):
+    flat_weightables = weightables.flatten()
+    assert flat_weightables.weights == expected_weights

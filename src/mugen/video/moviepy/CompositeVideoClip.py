@@ -2,7 +2,9 @@ import moviepy.editor as moviepy
 
 
 class CompositeVideoClip(moviepy.CompositeVideoClip):
-
+    """
+    A wrapper around moviepy's CompositeVideoClip
+    """
     def __init__(self, clips, *args, **kwargs):
         moviepy.CompositeVideoClip.__init__(self, clips, *args, **kwargs)
 
@@ -11,5 +13,3 @@ class CompositeVideoClip(moviepy.CompositeVideoClip):
             self.fps = None
         else:
             self.fps = max(fpss)
-
-

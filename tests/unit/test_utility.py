@@ -58,7 +58,9 @@ def test_fill_slices(slices, length, expected_slices):
     ('.5', .5),
     ('33', 33),
     ('33.045', 33.045),
+    ('1:21.5', 81.5),
     ('01:33.045', 93.045),
+    ('1:33.045', 93.045),
     ('00:00:33.045', 33.045),
     ('01:01:33.045', 3693.045),
     ('01:01:33.5', 3693.5),
@@ -80,10 +82,20 @@ def test_seconds_to_time_code(seconds, expected_time_code):
 @pytest.mark.parametrize("hex_value, expected_rgb", [
     ('#000000', [0, 0, 0]),
     ('#ffffff', [255, 255, 255]),
-    ('#3563df', [53, 99, 223])
+    ('#3563df', [53, 99, 223]),
+    ('#FF4500', [255, 69, 0])
 ])
 def test_hex_to_rgb(hex_value, expected_rgb):
     assert util.hex_to_rgb(hex_value) == expected_rgb
+
+
+@pytest.mark.parametrize("color, expected_hex_code", [
+    ('#123456', '#123456'),
+    ('black', '#000000'),
+    ('white', '#ffffff')
+])
+def test_color_to_hex_code(color, expected_hex_code):
+    assert util.color_to_hex_code(color) == expected_hex_code
 
 
 def test_list_to_subclass():

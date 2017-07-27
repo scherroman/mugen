@@ -45,24 +45,6 @@ class Onset(AudioEvent):
     pass
 
 
-class BeatsMode(str, Enum):
-    """
-    beats: Detect beats
-    weak_beats: Detect beats & weak beats
-    """
-    BEATS = 'beats'
-    WEAK_BEATS = 'weak_beats'
-
-
-class OnsetsMode(str, Enum):
-    """
-    onsets: Detect onsets
-    backtrack: Shift onset events back to the nearest local minimum of energy
-    """
-    ONSETS = 'onsets'
-    BACKTRACK = 'backtrack'
-
-
 class Audio:
     """
     Wraps the audio ouput from librosa, providing access to extra features
@@ -102,43 +84,40 @@ class Audio:
         filename = paths.filename_from_path(self.audio_file)
         return f'<Audio, file: {filename}, duration: {self.duration}>'
 
-    def beats(self, mode: str = BeatsMode.BEATS) -> EventList:
+    def beats(self, trim: bool = False) -> EventList:
         """
         Gets beat events
         
         Parameters
         ----------
-        mode
-            Method of generating beats from the audio
-            See :class:`~mugen.audio.Audio.BeatsMode` for supported values.
+        trim
+            Label weak leading and trailing beats separately
 
         Returns
         -------
         Detected beat events from the audio
         """
         untrimmed_beats = self._beats()
-        untrimmed_beats = EventList([Beat(beat) for beat in untrimmed_beats])
+        untrimmed_beats = EventList([Beat(beat) for beat in untrimmed_beats], end=self.duration)
 
-        if mode == BeatsMode.BEATS:
+        if not trim:
             beats = untrimmed_beats
-        elif mode == BeatsMode.WEAK_BEATS:
+        else:
             trimmed_beats = self._beats(trim=True)
             trimmed_leading_beats = [beat for beat in untrimmed_beats.locations if beat < trimmed_beats[0]]
             trimmed_trailing_beats = [beat for beat in untrimmed_beats.locations if beat > trimmed_beats[-1]]
 
             # Mark leading & trailing trimmed beats as weak beats
-            trimmed_beats = EventList([Beat(beat) for beat in trimmed_beats])
-            trimmed_leading_beats = EventList([WeakBeat(beat) for beat in trimmed_leading_beats])
-            trimmed_trailing_beats = EventList([WeakBeat(beat) for beat in trimmed_trailing_beats])
+            trimmed_beats = EventList([Beat(beat) for beat in trimmed_beats], end=self.duration)
+            trimmed_leading_beats = EventList([WeakBeat(beat) for beat in trimmed_leading_beats], end=self.duration)
+            trimmed_trailing_beats = EventList([WeakBeat(beat) for beat in trimmed_trailing_beats], end=self.duration)
 
             beats = trimmed_leading_beats + trimmed_beats + trimmed_trailing_beats
-        else:
-            raise ParameterError(f"Unsupported beats mode {mode}.")
 
         return beats
 
     @lru_cache(maxsize=None)
-    def _beats(self, trim=False) -> List[float]:
+    def _beats(self, trim: bool = False) -> List[float]:
         """
         Gets beat locations using librosa's beat tracker
 
@@ -160,33 +139,30 @@ class Audio:
 
         return beats
 
-    def onsets(self, mode: str = OnsetsMode.ONSETS) -> EventList:
+    def onsets(self, backtrack: bool = False) -> EventList:
         """
         Gets onset events
         
         Parameters
         ----------
-        mode
-            Method of generating onsets from the audio
-            See :class:`~mugen.audio.Audio.OnsetsMode` for supported values.
+        backtrack
+            Shift onset events back to the nearest local minimum of energy
 
         Returns
         -------
         Detected onset events from the audio
         """
-        if mode == OnsetsMode.ONSETS:
+        if not backtrack:
             onsets = self._onsets()
-        elif mode == OnsetsMode.BACKTRACK:
-            onsets = self._onsets(backtrack=True)
         else:
-            raise ParameterError(f"Unsupported onsets mode {mode}.")
+            onsets = self._onsets(backtrack=True)
 
-        onsets = EventList([Onset(onset) for onset in onsets])
+        onsets = EventList([Onset(onset) for onset in onsets], end=self.duration)
 
         return onsets
 
     @lru_cache(maxsize=None)
-    def _onsets(self, backtrack=False):
+    def _onsets(self, backtrack: bool = False):
         """
         Gets onset locations using librosa's onset detector.
 

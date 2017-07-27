@@ -1,5 +1,5 @@
 import collections
-from typing import List, Any
+from typing import List, Any, Optional as Opt
 
 
 class MugenList(list):
@@ -7,8 +7,14 @@ class MugenList(list):
     A subclass of list with extra functionality, used internally
     """
 
+    def __init__(self, items: Opt[List[Any]] = None):
+        if items is None:
+            items = []
+
+        super().__init__(items)
+
     def __add__(self, rhs):
-        return type(self)((list.__add__(self, rhs)))
+        return type(self)((super().__add__(rhs)))
 
     def __getitem__(self, item):
         result = list.__getitem__(self, item)
@@ -17,9 +23,12 @@ class MugenList(list):
         else:
             return result
 
-    def pretty_repr(self, element_reprs: List[str]):
+    def pretty_repr(self, item_reprs: List[str] = None):
+        if item_reprs is None:
+            item_reprs = [repr(item) for item in self]
+
         repr_str = ""
-        for index, element_repr in enumerate(element_reprs):
+        for index, element_repr in enumerate(item_reprs):
             if index != 0:
                 repr_str += ' '
             repr_str += element_repr
@@ -37,9 +46,12 @@ class MugenList(list):
 
     def flatten(self):
         """
-        Flattens an arbitrarily nested irregular list of objects
+        Returns
+        -------
+        A new, flattened version of this list.
+        Flattens an arbitrarily nested list of objects
         """
-        self[:] = flatten(self)
+        return type(self)(flatten(self))
 
 
 def flatten(l: List[Any]) -> List[Any]:

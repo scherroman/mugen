@@ -63,7 +63,7 @@ def test_event_list__initializes_non_uniform_inputs_successfully():
 
 
 @pytest.mark.parametrize("events, speed, offset, expected_events", [
-    (EventList([]), 5, None, []),
+    (EventList([]), 5, None, EventList([])),
     (EventList([6]), 0, None, EventList([])),
     (EventList([6]), 3, None, EventList([6])),
     (EventList([6, 12]), 1 / 3, None, EventList([6])),
@@ -86,6 +86,22 @@ def test_speed_multiply_events(events, speed, offset, expected_events):
 def test_offset_events(events, offset, expected_locations):
     events.offset(offset)
     assert events.lget('location') == expected_locations
+
+
+@pytest.mark.parametrize("events, events_b, expected_events", [
+    (EventList([10, 20, 30]), EventList([5, 15, 25, 35]), EventList([5, 10, 15, 20, 25, 30, 35]))
+])
+def test_add_events(events, events_b, expected_events):
+    events.add_events(events_b)
+    assert events == expected_events
+
+
+@pytest.mark.parametrize("events_a, events_b, expected_events", [
+    (EventList([6, 12], end=30), EventList([18, 24], end=30), EventList([6, 12, 18, 24], end=30)),
+    (EventList([6, 12], end=18), EventList([18, 24], end=30), EventList([6, 12, 18, 24], end=30))
+])
+def test_event_list_concatenate(events_a, events_b, expected_events):
+    assert events_a + events_b == expected_events
 
 
 def test_event_group_list__initializes_non_uniform_inputs_successfully():
@@ -143,5 +159,6 @@ def test_event_group_list__speed_multiply(event_groups, speeds, offsets, expecte
     assert event_groups == expected_event_groups
 
 
-def test_event_group_list__flatten_yields_event_list():
-    assert type(EventGroupList([EventList(), EventList()]).flatten()) == EventList
+def test_event_group_list__flatten():
+    assert EventGroupList([EventList([1, 2, 3], end=50), EventList([4, 5, 6], end=50)]).flatten() == \
+           EventList([1, 2, 3, 4, 5, 6], end=50)

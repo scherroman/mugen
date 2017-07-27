@@ -24,13 +24,13 @@ def list_of_dimensions():
     return [dimensions_16_9(), dimensions_4_3(), dimensions_21_9()]
 
 
-@pytest.mark.parametrize("dimensions, desired_aspect_ratio, expected_aspect_ratio", [
+@pytest.mark.parametrize("dimensions, aspect_ratio, expected_dimensions", [
     (dimensions_16_9(), 16/9, (1920, 1080)),
     (dimensions_16_9(), 4/3, (1440, 1080)),
     (dimensions_4_3(), 16/9, (720, 405))
 ])
-def test_crop_dimensions_to_aspect_ratio(dimensions, desired_aspect_ratio, expected_aspect_ratio):
-    assert v_sizing.crop_dimensions_to_aspect_ratio(dimensions, desired_aspect_ratio) == expected_aspect_ratio
+def test_crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio, expected_dimensions):
+    assert v_sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio) == expected_dimensions
 
 
 @pytest.mark.parametrize("dimensions, desired_aspect_ratio, expected_coordinates", [
