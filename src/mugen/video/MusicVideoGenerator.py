@@ -114,21 +114,21 @@ class MusicVideoGenerator:
 
         self.meta = {self.Meta.REJECTED_SEGMENT_STATS: []}
 
-    def generate_from_video_cuts(self, video_cuts: Union[EventList, List[TIME_FORMAT]]) -> MusicVideo:
+    def generate_from_events(self, events: Union[EventList, List[TIME_FORMAT]]) -> MusicVideo:
         """
-        Generates a MusicVideo from a list of video events
+        Generates a MusicVideo from a list of events
         
         Parameters
         ----------
-        video_cuts
-            Cut events which occur in the music video.
+        events
+            Events corresponding to cuts which occur in the music video.
             Either a list of events or event locations.
         """
-        if not isinstance(video_cuts, EventList):
-            video_cuts = EventList(video_cuts, end=self.audio.duration)
+        if not isinstance(events, EventList):
+            events = EventList(events, end=self.audio.duration)
 
         # Get segment durations from cut locations
-        segment_durations = video_cuts.segment_durations
+        segment_durations = events.segment_durations
 
         music_video_segments = self._generate_music_video_segments(segment_durations)
 

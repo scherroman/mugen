@@ -192,6 +192,6 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 >>> beat_groups.selected_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
 >>> beats = beat_groups.flatten()
 
->>> music_video = generator.generate_from_audio_events(beats)
+>>> music_video = generator.generate_from_events(beats)
 >>> music_video.write_to_video_file("flowers.mkv")
 ```

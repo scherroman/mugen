@@ -112,7 +112,7 @@ def create_music_video(args):
     output_path = os.path.join(music_video_directory, music_video_name + Vw.VIDEO_EXTENSION)
     util.ensure_dir(music_video_directory)
 
-    music_video = generator.generate_from_video_cuts(events)
+    music_video = generator.generate_from_events(events)
 
     # Apply effects
     if fade_in:
