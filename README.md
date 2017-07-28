@@ -71,8 +71,6 @@ Mugen has not been tested on Linux or Windows, but should work on these systems 
 
 ## Examples
 
-**Warning: Recreate is still in the works, and is currently unavailable**
-
 **Navigate to the command line interface**
 
 `
@@ -85,7 +83,6 @@ cd src/bin/
 ```
 python cli.py --help
 python cli.py create --help
-python cli.py recreate --help
 python cli.py preview --help
 ```
 
@@ -132,7 +129,7 @@ python cli.py create --exclude-video-filters not_has_cut not_is_repeat
 python cli.py create --video-filters has_text
 ```
 
-### Preview events in a song
+### Preview a music video
 ---
 
 ```
@@ -151,13 +148,6 @@ python cli.py preview --event-locations 2 4 6 10 11 12
 python cli.py preview --audio-events-mode onsets --events-speed 1/2 --events-speed-offset 1
 ```
 
-### Recreate a music video (currently unavailable)
----
-
-```
-python cli.py recreate --spec-source vaporwave_timescapes_spec.json
-```
-
 ## Python Examples
 
 ### Import mugen
@@ -169,29 +159,71 @@ python cli.py recreate --spec-source vaporwave_timescapes_spec.json
 >>> import mugen
 ```
 
-### Create a preview
+### Preview a music video
 ---
 
 ```
 >>> from mugen import MusicVideoGenerator
 >>>
 >>> generator = MusicVideoGenerator("Pogo - Forget.mp3")
+>>>
 >>> beats = generator.audio.beats()
 >>> beats.speed_multiply(1/2)
->>> generator.preview_events(beats, "forget.mkv")
+>>>
+>>> generator.preview_events(beats, "forget-preview.mkv")
 ```
 
 ### Create a music video
 ---
+
 ```
 >>> from mugen import MusicVideoGenerator
->>> generator = MusicVideoGenerator("in love with a ghost - flowers feat. nori.mp3", ["wolf children ame & yuki.mkv"])
-
+>>>
+>>> generator = MusicVideoGenerator("in love with a ghost - flowers.mp3", ["wolf children.mkv"])
+>>>
 >>> beats = generator.audio.beats()
 >>> beat_groups = beats.group_by_slices([(0, 23), (23, 32), (32, 95), (160, 225), (289,331), (331, 415)])
 >>> beat_groups.selected_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
 >>> beats = beat_groups.flatten()
-
+>>>
 >>> music_video = generator.generate_from_events(beats)
 >>> music_video.write_to_video_file("flowers.mkv")
+>>> music_video.save("flowers.pickle")
+```
+
+### Replace a segment in a music video
+---
+
+```
+>>> from mugen import VideoSource, MusicVideo
+>>>
+>>> music_video = MusicVideo.load("flowers.pickle")
+>>> wolf_children = VideoSource("wolf children.mkv")
+>>> music_video.segments[1] = wolf_children.sample(music_video.segments[1].duration)
+>>>
+>>> music_video.write_to_video_file("flowers.mkv")
+```
+
+### Preview a segment in a music video
+---
+
+```
+>>> from mugen import MusicVideo
+>>>
+>>> music_video = MusicVideo.load("flowers.pickle")
+>>>
+>>> ''' Basic Previews (pretty iffy) '''
+>>>
+>>> # Use a lower fps to reduce lag in playback
+>>> music_video.segments[1].preview(fps=10)
+>>>
+>>> # Preview a frame at a specific time (seconds)
+>>> music_video.segments[1].show(.5)
+>>>
+>>> ''' Jupyter Notebook Previews (much better) '''
+>>> 
+>>> music_video.segments[1].ipython_display(autoplay=1, loop=1, width=400)
+>>>
+>>> # Preview a frame at a specific time (seconds)
+>>> music_video.segments[1].ipython_display(t=.5, width=400)
 ```

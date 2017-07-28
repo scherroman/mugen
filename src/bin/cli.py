@@ -8,7 +8,7 @@ from fractions import Fraction
 
 import bin.constants as cli_c
 import bin.utility as cli_util
-import mugen.video.io.VideoWriter as Vw
+import mugen.video.io.VideoWriter as VideoWriter
 import mugen.video.video_filters as vf
 from bin.utility import shutdown, message
 from mugen import MusicVideoGenerator, Audio, VideoFilter
@@ -17,6 +17,7 @@ from mugen import paths
 from mugen import utility as util
 from mugen.events import EventList, EventGroupList
 from mugen.exceptions import ParameterError
+from mugen.mixins import Persistable
 from mugen.video.MusicVideoGenerator import PreviewMode
 from mugen.video.sources.VideoSource import VideoSourceList
 
@@ -106,12 +107,6 @@ def create_music_video(args):
 
     message("Generating music video from video segments and audio...")
 
-    # Create the directory for the music video
-    music_video_name = cli_util.get_music_video_name(output_directory, video_name)
-    music_video_directory = os.path.join(output_directory, music_video_name)
-    output_path = os.path.join(music_video_directory, music_video_name + Vw.VIDEO_EXTENSION)
-    util.ensure_dir(music_video_directory)
-
     music_video = generator.generate_from_events(events)
 
     # Apply effects
@@ -123,7 +118,14 @@ def create_music_video(args):
     # Print stats for rejected video segments
     cli_util.print_rejected_segment_stats(generator)
 
-    message(f"Writing music video '{output_path}'...")
+    # Create the directory for the music video
+    music_video_name = cli_util.get_music_video_name(output_directory, video_name)
+    music_video_directory = os.path.join(output_directory, music_video_name)
+    music_video_output_path = os.path.join(music_video_directory, music_video_name + VideoWriter.VIDEO_EXTENSION)
+    music_video_pickle_path = os.path.join(music_video_directory, music_video_name + Persistable.PICKLE_EXTENSION)
+    util.ensure_dir(music_video_directory)
+
+    message(f"Writing music video '{music_video_output_path}'...")
 
     # Save the music video
     if video_preset:
@@ -144,7 +146,8 @@ def create_music_video(args):
     if video_aspect_ratio:
         music_video.aspect_ratio = video_aspect_ratio
 
-    music_video.write_to_video_file(output_path)
+    music_video.write_to_video_file(music_video_output_path)
+    music_video.save(music_video_pickle_path)
 
     # Save the individual segments if asked to do so
     if save_segments:
@@ -162,7 +165,7 @@ def preview_audio(args):
     # Prepare Inputs
     audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
     filename = paths.filename_from_path(audio_file)
-    output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else Vw.VIDEO_EXTENSION
+    output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else VideoWriter.VIDEO_EXTENSION
     output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" +
                                (audio_events_mode if audio_events_mode else "") + output_extension)
 
@@ -382,13 +385,13 @@ def parse_args(args):
 
     video_parser.add_argument('-vpre', '--video-preset', dest='video_preset',
                               help=f'Tunes the time that FFMPEG will spend optimizing compression while writing '
-                                   f'the music video to file. Default is {Vw.VIDEO_PRESET}')
+                                   f'the music video to file. Default is {VideoWriter.VIDEO_PRESET}')
     video_parser.add_argument('-vcod', '--video-codec', dest='video_codec',
-                              help=f'The video codec for the music video. Default is {Vw.VIDEO_CODEC}')
+                              help=f'The video codec for the music video. Default is {VideoWriter.VIDEO_CODEC}')
     video_parser.add_argument('-vcrf', '--video-crf', dest='video_crf', type=int,
                               help=f'The crf quality value for the music video. '
                                    f'Takes an integer from 0 (lossless) to 51 (lossy). '
-                                   f'Default is {Vw.VIDEO_CRF}')
+                                   f'Default is {VideoWriter.VIDEO_CRF}')
     video_parser.add_argument('-vdim', '--video-dimensions', dest='video_dimensions', type=int, nargs=2,
                               help='The pixel dimensions for the music video, width and height. '
                                    'All video segments will be resized (cropped and/or scaled) appropriately '
@@ -426,10 +429,10 @@ def parse_args(args):
 
     audio_parser.add_argument('-ac', '--audio-codec', dest='audio_codec',
                               help=f'The audio codec for the music video if the original audio is used. '
-                                   f'Default is {Vw.AUDIO_CODEC}')
+                                   f'Default is {VideoWriter.AUDIO_CODEC}')
     audio_parser.add_argument('-ab', '--audio-bitrate', dest='audio_bitrate', type=int,
                               help='The audio bitrate for the music video if no audio_file is given. '
-                                   f'Default is {Vw.AUDIO_BITRATE} (kbps)')
+                                   f'Default is {VideoWriter.AUDIO_BITRATE} (kbps)')
 
     """ COMMANDS """
 

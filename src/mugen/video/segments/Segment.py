@@ -8,12 +8,13 @@ import mugen.utility as util
 import mugen.video.sizing as v_sizing
 import mugen.video.effects as v_effects
 from mugen.mixins.Filterable import Filterable
+from mugen.mixins.Persistable import Persistable
 from mugen.video.effects import VideoEffectList
 from mugen.video.constants import LIST_3D
 from mugen.video.sizing import Dimensions
 
 
-class Segment(Filterable, ABC):
+class Segment(Filterable, Persistable, ABC):
     """
     A segment of content in a video.
     Simulates a wrapper for moviepy's VideoClip class.
@@ -34,6 +35,16 @@ class Segment(Filterable, ABC):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.name}>, duration: {self.duration}>"
+
+    def __copy__(self):
+        """
+        Override copy to avoid causing conflicts with custom pickling
+        """
+        cls = self.__class__
+        new_segment = cls.__new__(cls)
+        new_segment.__dict__.update(self.__dict__)
+
+        return new_segment
 
     def __deepcopy__(self, memo):
         return self.copy()

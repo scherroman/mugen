@@ -11,6 +11,7 @@ import mugen.video.effects as v_effects
 import mugen.video.io.subtitles as v_io
 import mugen.video.sizing as v_sizing
 from mugen.events import EventList
+from mugen.mixins.Persistable import Persistable
 from mugen.utility import ensure_json_serializable, temp_file_enabled
 from mugen.video.cuts import Cut
 from mugen.video.io.VideoWriter import VideoWriter, VIDEO_EXTENSION
@@ -36,7 +37,7 @@ def requires_video_segments(func):
     return _requires_video_segments
 
 
-class MusicVideo:
+class MusicVideo(Persistable):
     """
     A video composed of video segments and overlaid audio
 
@@ -77,6 +78,8 @@ class MusicVideo:
         aspect_ratio
             Aspect ratio for the music video (Overruled by dimensions)
         """
+        super().__init__(**kwargs)
+
         # Required Parameters
         self.audio_file = audio_file
         self.segments = segments

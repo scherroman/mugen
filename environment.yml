@@ -11,3 +11,4 @@ dependencies:
   - pysrt>=1.1.1
   - tqdm>=4.10.0
   - decorator>=4.0.11
+  - dill>=0.2.7.1
