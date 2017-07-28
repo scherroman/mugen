@@ -25,3 +25,11 @@ def test_dimensions():
 def test_cuts():
     assert music_video().cuts.segment_locations == [0, 1, 2]
     assert music_video().cuts.segment_durations == [1, 1, 1]
+
+
+def test_compose__duration_is_sum_of_segment_durations():
+    mv = music_video()
+    composed_music_video = mv.compose()
+
+    assert composed_music_video.duration == sum(segment.duration for segment in mv.segments)
+

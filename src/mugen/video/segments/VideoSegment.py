@@ -1,4 +1,6 @@
+from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.io.ffmpeg_reader import FFMPEG_VideoReader
 
 import mugen.utility as util
 from mugen import paths
@@ -29,14 +31,35 @@ class VideoSegment(Segment, VideoFileClip):
         super().__init__(file, **kwargs)
 
         self.source_start_time = 0
-
         if not self.fps:
             self.fps = Segment.DEFAULT_VIDEO_FPS
 
     def __repr__(self):
-
         return f"<{self.__class__.__name__}: {self.name}, source_start_time: {self.source_start_time_time_code}, " \
                f"duration: {self.duration}>"
+
+    def __getstate__(self):
+        """
+        Custom pickling
+        """
+        state = self.__dict__.copy()
+
+        # Remove the video segment's audio and reader to allow pickling
+        state['reader'] = None
+        state['audio'] = None
+
+        return state
+
+    def __setstate__(self, newstate):
+        """
+        Custom unpickling
+        """
+        # Recreate the video segment's audio and reader
+        newstate['reader'] = FFMPEG_VideoReader(newstate['filename'])
+        newstate['audio'] = AudioFileClip(newstate['filename']).subclip(newstate['source_start_time'],
+                                                                        newstate['source_start_time'] +
+                                                                        newstate['duration'])
+        self.__dict__.update(newstate)
 
     """ PROPERTIES """
 
