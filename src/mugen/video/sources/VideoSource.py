@@ -2,6 +2,8 @@ import os
 import random
 from typing import Union, List, Optional as Opt, NamedTuple, Tuple
 
+from numpy.random import choice
+
 from mugen import paths
 from mugen.constants import TIME_FORMAT
 from mugen.video.segments.VideoSegment import VideoSegment
@@ -65,7 +67,6 @@ class VideoSource(Source):
     def sample(self, duration: float) -> VideoSegment:
         """
         Randomly samples a video segment with the specified duration.
-        If any source time boundaries are set, a random source time boundary will be selected to sample from.
 
         Parameters
         ----------
@@ -73,10 +74,12 @@ class VideoSource(Source):
             duration of the video segment to sample
         """
         if self.time_boundaries:
-            # Select a boundary at random
+            # Select a random time boundary to sample from, weighted by duration
             time_ranges = [TimeRange(*boundary) for boundary in self.time_boundaries]
             time_ranges = [time_range for time_range in time_ranges if time_range.duration >= duration]
-            time_range_to_sample = random.choice(time_ranges)
+            total_duration = sum([time_range.duration for time_range in time_ranges])
+            time_range_weights = [time_range.duration / total_duration for time_range in time_ranges]
+            time_range_to_sample = time_ranges[choice(len(time_ranges), p=time_range_weights)]
         else:
             time_range_to_sample = TimeRange(0, self.segment.duration)
 
