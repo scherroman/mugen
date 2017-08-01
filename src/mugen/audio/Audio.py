@@ -1,4 +1,3 @@
-from enum import Enum
 from functools import lru_cache
 from typing import List
 
@@ -7,7 +6,6 @@ import numpy as np
 
 from mugen import paths
 from mugen.events import EventList, Event
-from mugen.exceptions import ParameterError
 
 
 class AudioEvent(Event):
@@ -51,7 +49,7 @@ class Audio:
     
     Attributes
     ----------
-        audio_file
+        file
             Loaded audio file
             
         samples
@@ -63,25 +61,25 @@ class Audio:
         duration
             Audio duration (seconds)
     """
-    audio_file: str
+    file: str
     sample_rate: int
     samples: np.ndarray
     duration: float
 
-    def __init__(self, audio_file: str, *, sample_rate: int = 44100):
+    def __init__(self, file: str, *, sample_rate: int = 44100):
         """        
         Parameters
         ----------
-        audio_file
+        file
             Audio file to load
         """
 
-        self.audio_file = audio_file
-        self.samples, self.sample_rate = librosa.load(audio_file, sr=sample_rate)
+        self.file = file
+        self.samples, self.sample_rate = librosa.load(file, sr=sample_rate)
         self.duration = librosa.get_duration(y=self.samples, sr=self.sample_rate)
 
     def __repr__(self):
-        filename = paths.filename_from_path(self.audio_file)
+        filename = paths.filename_from_path(self.file)
         return f'<Audio, file: {filename}, duration: {self.duration}>'
 
     def beats(self, trim: bool = False) -> EventList:
