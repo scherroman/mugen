@@ -133,7 +133,7 @@ class MusicVideoGenerator:
         music_video_segments = self._generate_music_video_segments(segment_durations)
 
         # Assemble music video from music video segments and audio
-        music_video = MusicVideo(music_video_segments, self.audio.audio_file)
+        music_video = MusicVideo(music_video_segments, self.audio.file)
 
         return music_video
 
@@ -198,9 +198,9 @@ class MusicVideoGenerator:
             events = EventList(events, end=self.audio.duration)
 
         if mode == PreviewMode.AUDIO:
-            a_util.create_marked_audio_file(self.audio.audio_file, events.locations, output_path)
+            a_util.create_marked_audio_file(self.audio.file, events.locations, output_path)
         elif mode == PreviewMode.VISUAL:
-            temp_marked_audio_file = a_util.create_marked_audio_file(self.audio.audio_file, events.locations)
+            temp_marked_audio_file = a_util.create_marked_audio_file(self.audio.file, events.locations)
 
             composite_segments = []
             for index, duration in enumerate(events.segment_durations):

@@ -10,7 +10,7 @@ from mugen.video.MusicVideoGenerator import MusicVideoGenerator
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.segments.ImageSegment import ImageSegment
 from mugen.video.segments.ColorSegment import ColorSegment
-from mugen.video.sources.VideoSource import VideoSource
+from mugen.video.sources.VideoSource import VideoSource, VideoSourceList
 from mugen.video.sources.ImageSource import ImageSource
 from mugen.video.sources.ColorSource import ColorSource
 

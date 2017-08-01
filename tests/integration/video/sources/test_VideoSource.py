@@ -4,10 +4,14 @@ from mugen.video.sources.VideoSource import VideoSource, TimeRange, VideoSourceL
 
 from tests import DATA_PATH
 
+SHINSEKAI_VIDEO_FILE = f'{DATA_PATH}/video/shinsekai.mp4'
+SHINSEKAI_VIDEO_GLOB = f'{DATA_PATH}/video/shin*'
+VIDEO_DIRECTORY = f'{DATA_PATH}/video'
+
 
 @pytest.fixture
 def shinsekai_source() -> VideoSource:
-    return VideoSource(f'{DATA_PATH}/video/shinsekai.mp4')
+    return VideoSource(SHINSEKAI_VIDEO_FILE)
 
 
 def five_percent_duration(video_source) -> float:
@@ -46,12 +50,25 @@ def test_time_boundaries__multiple_boundaries():
 
 
 def test_video_source_list__populates_from_video_files():
-    video_source_list = VideoSourceList([f'{DATA_PATH}/video/shinsekai.mp4'])
+    video_source_list = VideoSourceList([SHINSEKAI_VIDEO_FILE])
 
     assert type(video_source_list[0]) == VideoSource
 
 
 def test_video_source_list__populates_from_directory():
-    video_source_list = VideoSourceList(f'{DATA_PATH}/video')
+    video_source_list = VideoSourceList(VIDEO_DIRECTORY)
+
+    assert type(video_source_list[0]) == VideoSource
+
+
+def test_video_source_list__populates_from_file_glob():
+    video_source_list = VideoSourceList(SHINSEKAI_VIDEO_GLOB)
+
+    assert type(video_source_list[0]) == VideoSource
+
+
+def test_video_source_list__populates_from_nested_sources():
+    video_source_list = VideoSourceList([SHINSEKAI_VIDEO_FILE, VIDEO_DIRECTORY,
+                                         [SHINSEKAI_VIDEO_FILE, SHINSEKAI_VIDEO_GLOB]])
 
     assert type(video_source_list[0]) == VideoSource

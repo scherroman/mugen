@@ -1,3 +1,4 @@
+import glob as globber
 import os
 import random
 from typing import Union, List, Optional as Opt, NamedTuple, Tuple
@@ -93,7 +94,7 @@ class VideoSourceList(SourceList):
     """
     A list of VideoSources
     """
-    directory: Opt[str]
+    name: Opt[str]
 
     def __init__(self, sources=Opt[Union[List[Union[Source, 'VideoSourceList']], str]], **kwargs):
         """
@@ -101,16 +102,20 @@ class VideoSourceList(SourceList):
         ----------
         sources
             A list of sources.
-            Accepts arbitrarily nested video files, directories, VideoSources, and VideoSourceLists.
+            Accepts arbitrarily nested video files, file globs, directories, VideoSources, and VideoSourceLists.
         """
-        self.directory = None
+        self.name = None
 
         if isinstance(sources, str):
-            # Build list of sources from directory
-            self.directory = sources
-            sources = self._sources_from_directory(self.directory)
+            self.name = paths.filename_from_path(sources)
+
+            # Build list of sources from directory or file glob
+            if os.path.isdir(sources):
+                sources = self._sources_from_files(util.files_from_directory(sources))
+            else:
+                sources = self._sources_from_files(globber.glob(sources))
         else:
-            # Convert any source files to VideoSources, and any lists or directories to VideoSourceLists
+            # Convert any source files to VideoSources, and any lists, file globs or directories to VideoSourceLists
             sources = self._fill_in_sources(sources)
 
         super().__init__(sources, **kwargs)
@@ -124,15 +129,10 @@ class VideoSourceList(SourceList):
 
         return super().list_repr()
 
-    @property
-    def name(self):
-        return paths.filename_from_path(self.directory) if self.directory else None
-
     @staticmethod
-    def _sources_from_directory(directory: str):
+    def _sources_from_files(files: List[str]):
         sources = []
 
-        files = util.files_from_directory(directory)
         for file in files:
             try:
                 source = VideoSource(file)
@@ -147,10 +147,10 @@ class VideoSourceList(SourceList):
     def _fill_in_sources(sources: list):
         for index, source in enumerate(sources):
             if isinstance(source, str):
-                if os.path.isdir(source):
-                    sources[index] = VideoSourceList(source)
-                else:
+                try:
                     sources[index] = VideoSource(source)
+                except IOError:
+                    sources[index] = VideoSourceList(source)
             if isinstance(source, list) and not isinstance(source, VideoSourceList):
                 sources[index] = VideoSourceList(source)
 
