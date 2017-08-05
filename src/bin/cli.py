@@ -236,15 +236,15 @@ def prepare_events(audio: Audio, args) -> EventList:
 
         message(f"Events:\n{event_groups}")
 
-        if events_offset:
-            events.offset(events_offset)
-
         if event_locations:
             events.add_events(event_locations)
     elif event_locations:
         events = EventList(event_locations, end=audio.duration)
     else:
         raise ParameterError("Must provide either audio events mode or event locations.")
+
+    if events_offset:
+        events.offset(events_offset)
 
     return events
 

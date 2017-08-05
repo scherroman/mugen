@@ -17,15 +17,13 @@ Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and
 
 1. Provide an audio file and a set of video files.
 
-2. Perform rhythm analysis and extract beat locations from the audio.
+2. Perform rhythm analysis to identify beat locations.
 
-3. Generate a set of random video segments from the video files, with durations corresponding to the durations of beat intervals. 
+3. Generate a set of random video segments syced to the beat.
 
-4. Discard and replace segments with scene changes, detectable text (e.g. credits), or low contrast (i.e. solid colors, very dark scenes).
+4. Discard segments with scene changes, detectable text (e.g. credits), or low contrast (i.e. solid colors, very dark scenes).
 
 5. Combine the segments in order, overlay the audio, and output the resulting music video.
-
-6. Save a reusable spec file detailing the structure of the music video. 
 
 ## Requirements
 
