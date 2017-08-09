@@ -20,6 +20,9 @@ class Filter:
         self.name = function.__name__
         self.function = function
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.name}>"
+
     def __call__(self, *args, **kwargs) -> bool:
         return self.function(*args, **kwargs)
 

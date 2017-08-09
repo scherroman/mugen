@@ -3,7 +3,8 @@ from typing import Optional as Opt, Union, List, Any
 
 from copy import deepcopy
 
-from mugen import utility as util, lists
+import mugen.utility as util
+from mugen import lists
 from mugen.lists import MugenList
 
 

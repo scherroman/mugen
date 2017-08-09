@@ -1,7 +1,7 @@
 import operator
 import os
 from functools import wraps
-from typing import List, Optional as Opt
+from typing import List, Optional as Opt, Union
 
 from moviepy.editor import AudioFileClip, VideoClip
 
@@ -14,7 +14,7 @@ from mugen.events import EventList
 from mugen.mixins.Persistable import Persistable
 from mugen.utility import ensure_json_serializable, temp_file_enabled
 from mugen.video.cuts import Cut
-from mugen.video.io.VideoWriter import VideoWriter, VIDEO_EXTENSION
+from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.io.subtitles import SubtitleTrack
 from mugen.video.moviepy.CompositeVideoClip import CompositeVideoClip
 from mugen.video.segments.Segment import Segment
@@ -176,9 +176,10 @@ class MusicVideo(Persistable):
         return music_video
 
     @requires_video_segments
-    @temp_file_enabled('output_path', VIDEO_EXTENSION)
-    def write_to_video_file(self, output_path: Opt[str] = None, *, audio = None, auxiliary_tracks: bool = True,
-                            verbose: bool = False, **kwargs):
+    @temp_file_enabled('output_path', VideoWriter.VIDEO_EXTENSION)
+    def write_to_video_file(self, output_path: Opt[str] = None, *, audio: Opt[Union[bool, str]] = None,
+                            add_auxiliary_tracks: bool = True, verbose: bool = False, progress_bar: bool = True,
+                            **kwargs):
         """
         writes the music video to a video file
         
@@ -191,11 +192,14 @@ class MusicVideo(Persistable):
             Audio for the music video. Can be True to enable, False to disable, an external audio file,
             or None to automatically set the value.
 
-        auxiliary_tracks
+        add_auxiliary_tracks
             Whether or not helpful auxiliary subtitle tracks should be included.
 
         verbose
-            Whether stdout output should be verbose
+            Whether output to stdout should include extra information during writing
+
+        progress_bar
+            Whether to output progress information to stdout
 
         Use this method over moviepy's write_videofile to preserve the audio file's codec and bitrate.
         """
@@ -203,14 +207,14 @@ class MusicVideo(Persistable):
             audio = self.audio_file or True
         composed_music_video = self.compose()
 
-        if auxiliary_tracks:
-            # Add helpful subtitle/audio tracks to video file
+        if add_auxiliary_tracks:
             temp_output_path = self.writer.write_video_clip_to_file(composed_music_video, audio=audio, verbose=verbose,
-                                                                    **kwargs)
+                                                                    progress_bar=progress_bar, **kwargs)
+            # Add helpful subtitle/audio tracks to video file
             self._add_auxiliary_tracks(temp_output_path, output_path)
         else:
             self.writer.write_video_clip_to_file(composed_music_video, output_path, audio=audio, verbose=verbose,
-                                                 **kwargs)
+                                                 progress_bar=progress_bar, **kwargs)
 
         return output_path
 

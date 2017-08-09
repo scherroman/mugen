@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional as Opt, List, Union
 
-from numpy.random import choice
-
 from mugen.mixins.Taggable import Taggable
 from mugen.mixins.Weightable import Weightable, WeightableList
 from mugen.video.segments import Segment

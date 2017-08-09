@@ -8,10 +8,10 @@ from fractions import Fraction
 
 import bin.constants as cli_c
 import bin.utility as cli_util
-import mugen.video.io.VideoWriter as VideoWriter
 import mugen.video.video_filters as vf
+from mugen.video.io.VideoWriter import VideoWriter
 from bin.utility import shutdown, message
-from mugen import MusicVideoGenerator, Audio, VideoFilter
+from mugen import MusicVideoGenerator, VideoFilter
 from mugen import constants as c
 from mugen import paths
 from mugen import utility as util
@@ -64,6 +64,7 @@ def create_music_video(args):
     video_name = args.video_name
 
     audio_source = args.audio_source
+    duration = args.duration
     video_sources = args.video_sources
     video_source_weights = args.video_source_weights
     fade_in = args.fade_in
@@ -85,7 +86,7 @@ def create_music_video(args):
     save_segments = args.save_segments
 
     # Prepare Inputs
-    audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
+    audio_file = get_audio_file(audio_source, duration)
 
     if video_sources:
         video_source_files = cli_util.video_files_from_sources(video_sources)
@@ -93,15 +94,15 @@ def create_music_video(args):
         video_source_files = cli_util.prompt_files_selection(c.FileType.VIDEO)
     video_sources = VideoSourceList(video_source_files, weights=video_source_weights)
 
-    generator = MusicVideoGenerator(audio_file, video_sources=video_sources,
-                                    video_filters=video_filters,
+    generator = MusicVideoGenerator(audio_file, video_sources,
+                                    duration=duration, video_filters=video_filters,
                                     exclude_video_filters=exclude_video_filters,
                                     include_video_filters=include_video_filters)
 
     message(f"Weights\n------------\n{generator.video_sources.flatten().weight_stats()}")
 
     try:
-        events = prepare_events(generator.audio, args)
+        events = prepare_events(generator, args)
     except ParameterError as e:
         shutdown(str(e))
 
@@ -159,19 +160,20 @@ def preview_audio(args):
     output_directory = args.output_directory
 
     audio_source = args.audio_source
+    duration = args.duration
     audio_events_mode = args.audio_events_mode
     preview_mode = args.preview_mode
 
     # Prepare Inputs
-    audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
-    filename = paths.filename_from_path(audio_file)
+    audio_file = get_audio_file(audio_source, duration)
+    filename = paths.filename_from_path(audio_file) if audio_file else ''
     output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else VideoWriter.VIDEO_EXTENSION
     output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" +
                                (audio_events_mode if audio_events_mode else "") + output_extension)
 
-    generator = MusicVideoGenerator(audio_file, None)
+    generator = MusicVideoGenerator(audio_file, duration=duration)
     try:
-        events = prepare_events(generator.audio, args)
+        events = prepare_events(generator, args)
     except ParameterError as e:
         shutdown(str(e))
 
@@ -180,7 +182,9 @@ def preview_audio(args):
     generator.preview_events(events, output_path, preview_mode)
 
 
-def prepare_events(audio: Audio, args) -> EventList:
+def prepare_events(generator: MusicVideoGenerator, args) -> EventList:
+    audio = generator.audio
+
     audio_events_mode = args.audio_events_mode
     beats_mode = args.beats_mode
     onsets_mode = args.onsets_mode
@@ -239,7 +243,7 @@ def prepare_events(audio: Audio, args) -> EventList:
         if event_locations:
             events.add_events(event_locations)
     elif event_locations:
-        events = EventList(event_locations, end=audio.duration)
+        events = EventList(event_locations, end=generator.duration)
     else:
         raise ParameterError("Must provide either audio events mode or event locations.")
 
@@ -247,6 +251,16 @@ def prepare_events(audio: Audio, args) -> EventList:
         events.offset(events_offset)
 
     return events
+
+
+def get_audio_file(audio_source, duration):
+
+    if duration:
+        audio_file = None
+    else:
+        audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
+
+    return audio_file
 
 
 def getattr_none(*args, **kwargs):
@@ -272,8 +286,12 @@ def prepare_args(args):
     # sources = [src for src in sources if src is not None]
     # cli_util.validate_path(*[sources])
 
+    if getattr_none(args, 'duration') is not None and getattr_none(args, 'event_locations') is None:
+        raise ParameterError("Duration option requires event locations.")
+
     if getattr_none(args, 'video_dimensions') is not None:
         args.video_dimensions = tuple(args.video_dimensions)
+
     if getattr_none(args, 'event_locations') is None:
         args.audio_events_mode = AudioEventsMode.BEATS
 
@@ -320,9 +338,8 @@ def parse_args(args):
                              'Will create the directory if non-existent. Default is ' + cli_c.OUTPUT_PATH_BASE)
 
     # Event Common Parameters
-    # event_parser.add_argument('-d', '--duration', dest='duration', type=float,
-    #                           help='Manually set the duration of the music video. If no audio source is provided, '
-    #                                'this option will be used instead.')
+    event_parser.add_argument('-d', '--duration', dest='duration', type=float,
+                              help='Manually set the duration of the music video.')
     event_parser.add_argument('-el', '--event-locations', dest='event_locations', type=float, nargs='+',
                               help='Manually enter Event locations for the audio file. '
                                    'Usually this corresponds to beats in the music, or any location where one feels '
