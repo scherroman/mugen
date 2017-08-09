@@ -13,4 +13,5 @@ from mugen.video.segments.ColorSegment import ColorSegment
 from mugen.video.sources.VideoSource import VideoSource, VideoSourceList
 from mugen.video.sources.ImageSource import ImageSource
 from mugen.video.sources.ColorSource import ColorSource
+from mugen.video.sources.SourceSampler import SourceSampler
 

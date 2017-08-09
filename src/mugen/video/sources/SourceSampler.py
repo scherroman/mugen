@@ -13,7 +13,7 @@ class SourceSampler:
     """
     sources: SourceList
 
-    def __init__(self, sources: SourceList):
+    def __init__(self, sources: Union[SourceList, list]):
         """
         video_segments
 
@@ -23,6 +23,9 @@ class SourceSampler:
             An arbitrarily nested list of sources. Sources will be flattened internally.
             e.g. [S1, S2, [S3, S4]] -> [S1, S2, S3, S4]
         """
+        if not isinstance(sources, SourceList):
+            sources = SourceList(sources)
+
         self.sources = sources.flatten()
 
     def sample(self, duration: float) -> Segment:

@@ -193,11 +193,13 @@ python cli.py preview --audio-events-mode onsets --events-speed 1/2 --events-spe
 ---
 
 ```
->>> from mugen import VideoSource, MusicVideo
+>>> from mugen import VideoSource, SourceSampler, MusicVideo
 >>>
 >>> music_video = MusicVideo.load("flowers.pickle")
->>> wolf_children = VideoSource("wolf children.mkv")
->>> music_video.segments[1] = wolf_children.sample(music_video.segments[1].duration)
+>>> wolf_children = VideoSource("wolf children.mkv", weight=.2)
+>>> spirited_away = VideoSource("spirited away.mkv", weight=.8)
+>>> sampler = SourceSampler([wolf_children, spirited_away])
+>>> music_video.segments[1] = sampler.sample(music_video.segments[1].duration)
 >>>
 >>> music_video.write_to_video_file("flowers.mkv")
 ```
