@@ -6,15 +6,6 @@ from tqdm import tqdm
 
 from mugen.utility import temp_file_enabled
 
-AUDIO_BITRATE = 320
-AUDIO_CODEC = 'mp3'
-
-VIDEO_PRESET = 'medium'
-VIDEO_CODEC = 'libx264'
-VIDEO_CRF = 18
-
-VIDEO_EXTENSION = '.mkv'
-
 
 class VideoWriter:
     """
@@ -51,6 +42,13 @@ class VideoWriter:
     audio_bitrate: int
     ffmpeg_params: list
 
+    AUDIO_BITRATE = 320
+    AUDIO_CODEC = 'mp3'
+    VIDEO_PRESET = 'medium'
+    VIDEO_CODEC = 'libx264'
+    VIDEO_CRF = 18
+    VIDEO_EXTENSION = '.mkv'
+
     def __init__(self, preset: str = VIDEO_PRESET, codec: str = VIDEO_CODEC, crf: int = VIDEO_CRF,
                  audio_codec: str = AUDIO_CODEC, audio_bitrate: int = AUDIO_BITRATE,
                  ffmpeg_params: Opt[List[str]] = None):
@@ -74,7 +72,8 @@ class VideoWriter:
 
     @temp_file_enabled('output_path', VIDEO_EXTENSION)
     def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Opt[str] = None, *,
-                                 audio: Union[str, bool] = True, **kwargs):
+                                 audio: Union[str, bool] = True, verbose: bool = False, progress_bar: bool = True,
+                                 **kwargs):
         """
         Writes a video clip to file in the specified directory
 
@@ -87,6 +86,12 @@ class VideoWriter:
         audio
             Audio for the video clip. Can be True to enable, False to disable, or an external audio file.
 
+        verbose
+            Whether output to stdout should include extra information during writing
+
+        progress_bar
+            Whether to output progress information to stdout
+
         kwargs
             List of other keyword arguments to pass to moviepy's write_videofile
         """
@@ -96,6 +101,7 @@ class VideoWriter:
 
         video_clip.write_videofile(output_path, audio=audio,
                                    preset=self.preset, codec=self.codec, audio_codec=self.audio_codec,
-                                   audio_bitrate=audio_bitrate, ffmpeg_params=ffmpeg_params, **kwargs)
+                                   audio_bitrate=audio_bitrate, ffmpeg_params=ffmpeg_params, **kwargs, verbose=verbose,
+                                   progress_bar=progress_bar)
 
         return output_path
