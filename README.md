@@ -28,12 +28,13 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 ## Requirements
 
 - A Python 3.6+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
+- [ffmpeg](https://www.ffmpeg.org/)
 
 **Optional:** 
 
 - Install [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04 and `pip install tesserocr>=2.2.1` for text detection features.
 
-Mugen has not been tested on Linux or Windows, but should work on these systems provided the dependencies are compiled and installed properly.
+Mugen has not been tested on Windows, but should work provided the dependencies are compiled and installed properly.
 
 ## Installation 
 
@@ -77,6 +78,12 @@ git clone https://github.com/scherroman/mugen
 pip install -e mugen
 ```
 
+**6. Install ffmpeg**
+
+```
+imageio_download_bin ffmpeg
+```
+
 ## Full Install  (MacOS)
 
 **1. [Install Homebrew](http://brew.sh/)**
@@ -111,6 +118,12 @@ git clone https://github.com/scherroman/mugen
 
 ```
 pip install -e mugen[full]
+```
+
+**8. Install ffmpeg**
+
+```
+imageio_download_bin ffmpeg
 ```
 
 ## Examples
