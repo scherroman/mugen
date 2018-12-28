@@ -192,69 +192,67 @@ mugen preview --audio-events-mode onsets --events-speed 1/2 --events-speed-offse
 ---
 
 ```
->>> from mugen import MusicVideoGenerator
->>>
->>> generator = MusicVideoGenerator("Pogo - Forget.mp3")
->>>
->>> beats = generator.audio.beats()
->>> beats.speed_multiply(1/2)
->>>
->>> generator.preview_events(beats, "forget-preview.mkv")
+from mugen import MusicVideoGenerator
+
+generator = MusicVideoGenerator("Pogo - Forget.mp3")
+beats = generator.audio.beats()
+beats.speed_multiply(1/2)
+
+generator.preview_events(beats, "forget-preview.mkv")
 ```
 
 ### Create a music video
 ---
 
 ```
->>> from mugen import MusicVideoGenerator
->>>
->>> generator = MusicVideoGenerator("in love with a ghost - flowers.mp3", ["wolf children.mkv"])
->>>
->>> beats = generator.audio.beats()
->>> beat_groups = beats.group_by_slices([(0, 23), (23, 32), (32, 95), (160, 225), (289,331), (331, 415)])
->>> beat_groups.selected_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
->>> beats = beat_groups.flatten()
->>>
->>> music_video = generator.generate_from_events(beats)
->>> music_video.write_to_video_file("flowers.mkv")
->>> music_video.save("flowers.pickle")
+from mugen import MusicVideoGenerator
+
+generator = MusicVideoGenerator("in love with a ghost - flowers.mp3", ["wolf children.mkv"])
+beats = generator.audio.beats()
+beat_groups = beats.group_by_slices([(0, 23), (23, 32), (32, 95), (160, 225), (289,331), (331, 415)])
+beat_groups.selected_groups.speed_multiply([1/2, 0, 1/4, 1/2, 1/2, 1/4])
+beats = beat_groups.flatten()
+
+music_video = generator.generate_from_events(beats)
+music_video.write_to_video_file("flowers.mkv")
+music_video.save("flowers.pickle")
 ```
 
 ### Replace a segment in a music video
 ---
 
 ```
->>> from mugen import VideoSource, SourceSampler, MusicVideo
->>>
->>> music_video = MusicVideo.load("flowers.pickle")
->>> wolf_children = VideoSource("wolf children.mkv", weight=.2)
->>> spirited_away = VideoSource("spirited away.mkv", weight=.8)
->>> sampler = SourceSampler([wolf_children, spirited_away])
->>> music_video.segments[1] = sampler.sample(music_video.segments[1].duration)
->>>
->>> music_video.write_to_video_file("flowers.mkv")
+from mugen import VideoSource, SourceSampler, MusicVideo
+
+music_video = MusicVideo.load("flowers.pickle")
+wolf_children = VideoSource("wolf children.mkv", weight=.2)
+spirited_away = VideoSource("spirited away.mkv", weight=.8)
+sampler = SourceSampler([wolf_children, spirited_away])
+music_video.segments[1] = sampler.sample(music_video.segments[1].duration)
+
+music_video.write_to_video_file("flowers.mkv")
 ```
 
 ### Preview a segment in a music video
 ---
 
 ```
->>> from mugen import MusicVideo
->>>
->>> music_video = MusicVideo.load("flowers.pickle")
->>>
->>> ''' Basic Previews (pretty iffy) '''
->>>
->>> # Use a lower fps to reduce lag in playback
->>> music_video.segments[1].preview(fps=10)
->>>
->>> # Preview a frame at a specific time (seconds)
->>> music_video.segments[1].show(.5)
->>>
->>> ''' Jupyter Notebook Previews (much better) '''
->>> 
->>> music_video.segments[1].ipython_display(autoplay=1, loop=1, width=400)
->>>
->>> # Preview a frame at a specific time (seconds)
->>> music_video.segments[1].ipython_display(t=.5, width=400)
+from mugen import MusicVideo
+
+music_video = MusicVideo.load("flowers.pickle")
+
+''' Basic Previews (pretty iffy) '''
+
+# Use a lower fps to reduce lag in playback
+music_video.segments[1].preview(fps=10)
+
+# Preview a frame at a specific time (seconds)
+music_video.segments[1].show(.5)
+
+''' Jupyter Notebook Previews (much better) '''
+
+music_video.segments[1].ipython_display(autoplay=1, loop=1, width=400)
+
+# Preview a frame at a specific time (seconds)
+music_video.segments[1].ipython_display(t=.5, width=400)
 ```
