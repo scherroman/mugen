@@ -4,8 +4,7 @@ dependencies:
 - jupyter>=1.0.0
 - pip
 - pip:
-  - cython>=0.25.2
-  - moviepy>=0.2.3.2
+  - moviepy>=0.2.3.5
   - librosa>=0.5.0
   - tesserocr>=2.1.3
   - Pillow>=3.4.2
@@ -14,6 +13,7 @@ dependencies:
   - tqdm>=4.10.0
   - decorator>=4.0.11
   - dill>=0.2.7.1
+  - requests>=2.21.0
 
   # Testing
   - pytest>=3.0.7

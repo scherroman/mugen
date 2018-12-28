@@ -4,9 +4,9 @@ from moviepy.video.io.ffmpeg_reader import FFMPEG_VideoReader
 
 import mugen.utility as util
 from mugen import paths
+from mugen.constants import TIME_FORMAT
 from mugen.utility import convert_time_to_seconds
 from mugen.video.segments.Segment import Segment
-from mugen.constants import TIME_FORMAT
 
 
 class VideoSegment(Segment, VideoFileClip):

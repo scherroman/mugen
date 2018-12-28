@@ -1,5 +1,6 @@
 # project module marker
 
+from mugen.version import __version__
 
 from mugen.mixins.Filterable import Filter, ContextFilter
 from mugen.video.video_filters import VideoFilter
@@ -14,4 +15,3 @@ from mugen.video.sources.VideoSource import VideoSource, VideoSourceList
 from mugen.video.sources.ImageSource import ImageSource
 from mugen.video.sources.ColorSource import ColorSource
 from mugen.video.sources.SourceSampler import SourceSampler
-

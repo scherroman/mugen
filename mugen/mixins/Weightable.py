@@ -1,7 +1,6 @@
+from copy import deepcopy
 from fractions import Fraction
 from typing import Optional as Opt, Union, List, Any
-
-from copy import deepcopy
 
 import mugen.utility as util
 from mugen import lists

@@ -1,10 +1,9 @@
-from typing import List, Optional as Opt, Union, Any
+from typing import Union
 
 from numpy.random import choice
 
-from mugen.mixins.Weightable import WeightableList
 from mugen.video.segments import Segment
-from mugen.video.sources.Source import Source, SourceList
+from mugen.video.sources.Source import SourceList
 
 
 class SourceSampler:

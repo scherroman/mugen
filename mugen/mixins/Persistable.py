@@ -1,4 +1,4 @@
-from dill import dill
+import dill
 from typing import Optional as Opt
 
 from mugen.utility import temp_file_enabled

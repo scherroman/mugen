@@ -1,7 +1,6 @@
 import pytest
 
 from mugen.video.sources.VideoSource import VideoSource, TimeRange, VideoSourceList
-
 from tests import DATA_PATH
 
 SHINSEKAI_VIDEO_FILE = f'{DATA_PATH}/video/shinsekai.mp4'

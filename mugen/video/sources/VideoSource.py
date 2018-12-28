@@ -5,12 +5,12 @@ from typing import Union, List, Optional as Opt, NamedTuple, Tuple
 
 from numpy.random import choice
 
+import mugen.utility as util
 from mugen import paths
 from mugen.constants import TIME_FORMAT
+from mugen.utility import convert_time_to_seconds
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.Source import Source, SourceList
-from mugen.utility import convert_time_to_seconds
-import mugen.utility as util
 
 
 class TimeRangeBase(NamedTuple):

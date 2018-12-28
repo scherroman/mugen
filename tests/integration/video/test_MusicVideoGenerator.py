@@ -1,8 +1,6 @@
-from mugen import MusicVideoGenerator, MusicVideo
+from mugen import MusicVideoGenerator
 
 from tests import DATA_PATH
-
-from tests.integration.video.sources.test_VideoSource import shinsekai_source
 
 
 def test_music_video_generator__creates_music_video(shinsekai_source):

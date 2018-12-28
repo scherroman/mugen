@@ -7,16 +7,14 @@ import subprocess as sp
 from collections import OrderedDict
 from fractions import Fraction
 from functools import wraps
-
 from typing import List, Callable, Any, Type
 
 import decorator
 
-from mugen.constants import TIME_FORMAT, Color
-from mugen.exceptions import ParameterError
 import mugen.exceptions as ex
 import mugen.paths as paths
-
+from mugen.constants import TIME_FORMAT, Color
+from mugen.exceptions import ParameterError
 
 """ SYSTEM """
 

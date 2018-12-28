@@ -1,7 +1,6 @@
 import pytest
 
 from mugen.video.sources.ImageSource import ImageSource
-
 from tests import DATA_PATH
 
 

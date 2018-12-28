@@ -9,9 +9,9 @@
 
 A music video generator based on rhythm
 
-Use it to brainstorm AMVs, montages, and more! [Check it out](https://youtu.be/lHgFYo37CaU).
+Use it to brainstorm AMVs, montages, and more! [Check it out](https://youtu.be/ZlTR6XULe5M).
 
-Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and [librosa](https://github.com/librosa/librosa) audio analysis.
+Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editing, and [librosa](https://github.com/librosa/librosa) audio analysis.
 
 ## Basic Strategy
 
@@ -27,9 +27,7 @@ Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and
 
 ## Requirements
 
-1. A Python 3.6+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
-
-2. The pip dependencies listed in mugen's [conda environment](environment.yml). 
+- A Python 3.6+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
 
 **Optional:** 
 
@@ -37,125 +35,158 @@ Built with [moviepy](https://github.com/Zulko/moviepy) Python video editing, and
 
 Mugen has not been tested on Linux or Windows, but should work on these systems provided the dependencies are compiled and installed properly.
 
-## Quick Install
+## Installation 
 
-**1. [Install Miniconda 3.6](http://conda.pydata.org/miniconda.html) (Python virtual environment and package manager)**
+**1. Download this repository**
 
-**2. Create mugen virtual environment**
+```
+git clone https://github.com/scherroman/mugen
+```
 
-`conda env create -f environment.yml`
+**2. Install mugen**
 
-**3. Activate mugen environment**
+```
+pip install -e mugen
+```
 
-`source activate mugen`
+## Practical Install
 
-## Full Install  (Mac OS X)
+**1. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
 
-**1. [Install Homebrew](http://brew.sh/) (General purpose package manager for mac)**
+**2. Create a Python 3.6 virtual environment**
 
-**2. [Install Miniconda 3.6](http://conda.pydata.org/miniconda.html) (Python virtual environment and package manager)**
+```
+conda create --yes --name mugen python=3.6
+```
 
-**4. [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
+**3. Activate the virtual environment**
 
-`brew install tesseract --with-all-languages`
+```
+source activate mugen
+```
 
-**5. Create mugen virtual environment**
+**4. Download this repository**
 
-`conda env create -f environment_full.yml`
+```
+git clone https://github.com/scherroman/mugen
+```
 
-**6. Activate mugen environment**
+**5. Install mugen**
 
-`source activate mugen`
+```
+pip install -e mugen
+```
+
+## Full Install  (MacOS)
+
+**1. [Install Homebrew](http://brew.sh/)**
+
+**2. [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
+
+```
+brew install tesseract --with-all-languages
+```
+
+**3. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
+
+**4. Create a Python 3.6 virtual environment**
+
+```
+conda create --yes --name mugen python=3.6
+```
+
+**5. Activate the virtual environment**
+
+```
+source activate mugen
+```
+
+**6. Download this repository**
+
+```
+git clone https://github.com/scherroman/mugen
+```
+
+**7. Install mugen**
+
+```
+pip install -e mugen[full]
+```
 
 ## Examples
-
-**Navigate to the command line interface**
-
-`
-cd src/bin/
-`
 
 ### Help Menu
 ---
 
 ```
-python cli.py --help
-python cli.py create --help
-python cli.py preview --help
+mugen --help
+mugen create --help
+mugen preview --help
 ```
 
 ### Create a music video
 ---
 
 ```
-python cli.py create --audio-source MACINTOSH_PLUS_420.mp3 --video-sources TimeScapes.mkv
+mugen create --audio-source MACINTOSH_PLUS_420.mp3 --video-sources TimeScapes.mkv
 ```
 
 **Use a series 60% of the time and a movie 40% of the time**
 
 ```
-python cli.py create --video-sources Neon_Genesis_Evangelion/ The_End_of_Evangelion.mkv --video-source-weights .6 .4
+mugen create --video-sources Neon_Genesis_Evangelion/ The_End_of_Evangelion.mkv --video-source-weights .6 .4
 ```
 
 **Slow down scene changes to every other beat**
 
 ```
-python cli.py create --events-speed 1/2
+mugen create --events-speed 1/2
 ```
 
 **Slow down scene changes for leading and trailing weak beats**
 
 ```
-python cli.py create --beats-mode weak_beats --group-events-by-type --group-speeds 1/2 1 1/4
+mugen create --beats-mode weak_beats --group-events-by-type --group-speeds 1/2 1 1/4
 ```
 
 **Control the speed of scene changes for specific sections**
 
 ```
-python cli.py create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --group-speeds 1/2 0 1/4 1/2 1/2 1/4
+mugen create --group-events-by-slices (0,23) (23,32) (32,95) (160,225) (289,321) (321,415) --group-speeds 1/2 0 1/4 1/2 1/2 1/4
 ```
 
 **Allow clips with cuts and repeat clips**
 
 ```
-python cli.py create --exclude-video-filters not_has_cut not_is_repeat
+mugen create --exclude-video-filters not_has_cut not_is_repeat
 ```
 
 **Use only clips that have text**
 
 ```
-python cli.py create --video-filters has_text
+mugen create --video-filters has_text
 ```
 
 ### Preview a music video
 ---
 
 ```
-python cli.py preview --audio-source Spazzkid_Goodbye.mp3
+mugen preview --audio-source Spazzkid_Goodbye.mp3
 ```
 
 **Input event locations manually**
 
 ```
-python cli.py preview --event-locations 2 4 6 10 11 12
+mugen preview --event-locations 2 4 6 10 11 12
 ```
 
 **This gets interesting!**
 
 ```
-python cli.py preview --audio-events-mode onsets --events-speed 1/2 --events-speed-offset 1
+mugen preview --audio-events-mode onsets --events-speed 1/2 --events-speed-offset 1
 ```
 
 ## Python Examples
-
-### Import mugen
----
-
-```
->>> import sys
->>> sys.path.append("/Users/myuser/Documents/repos/mugen/src")
->>> import mugen
-```
 
 ### Preview a music video
 ---

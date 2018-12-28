@@ -1,25 +1,26 @@
-import argparse
-import logging
 import os
 import re
 import sys
+import logging
+import argparse
 from enum import Enum
 from fractions import Fraction
+from typing import List
 
-import bin.constants as cli_c
-import bin.utility as cli_util
 import mugen.video.video_filters as vf
-from mugen.video.io.VideoWriter import VideoWriter
-from bin.utility import shutdown, message
 from mugen import MusicVideoGenerator, VideoFilter
-from mugen import constants as c
 from mugen import paths
 from mugen import utility as util
 from mugen.events import EventList, EventGroupList
 from mugen.exceptions import ParameterError
 from mugen.mixins import Persistable
 from mugen.video.MusicVideoGenerator import PreviewMode
+from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.sources.VideoSource import VideoSourceList
+
+
+DEFAULT_OUTPUT_DIRECTORY = os.path.join(os.path.dirname(__file__), 'output')
+DEFAULT_MUSIC_VIDEO_NAME = 'music_video'
 
 
 class BeatsMode(str, Enum):
@@ -62,18 +63,15 @@ debug = False
 def create_music_video(args):
     output_directory = args.output_directory
     video_name = args.video_name
-
     audio_source = args.audio_source
     duration = args.duration
     video_sources = args.video_sources
     video_source_weights = args.video_source_weights
     fade_in = args.fade_in
     fade_out = args.fade_out
-
     video_filters = args.video_filters
     exclude_video_filters = args.exclude_video_filters
     include_video_filters = args.include_video_filters
-
     use_original_audio = args.use_original_audio
     video_dimensions = args.video_dimensions
     video_aspect_ratio = args.video_aspect_ratio
@@ -82,19 +80,12 @@ def create_music_video(args):
     video_crf = args.video_crf
     audio_codec = args.audio_codec
     audio_bitrate = args.audio_bitrate
-
     save_segments = args.save_segments
 
-    # Prepare Inputs
-    audio_file = get_audio_file(audio_source, duration)
-
-    if video_sources:
-        video_source_files = cli_util.video_files_from_sources(video_sources)
-    else:
-        video_source_files = cli_util.prompt_files_selection(c.FileType.VIDEO)
+    video_source_files = files_from_sources(video_sources)
     video_sources = VideoSourceList(video_source_files, weights=video_source_weights)
 
-    generator = MusicVideoGenerator(audio_file, video_sources,
+    generator = MusicVideoGenerator(audio_source, video_sources,
                                     duration=duration, video_filters=video_filters,
                                     exclude_video_filters=exclude_video_filters,
                                     include_video_filters=include_video_filters)
@@ -117,10 +108,10 @@ def create_music_video(args):
         music_video.segments[-1].effects.add_fadeout(fade_out)
 
     # Print stats for rejected video segments
-    cli_util.print_rejected_segment_stats(generator)
+    print_rejected_segment_stats(generator)
 
     # Create the directory for the music video
-    music_video_name = cli_util.get_music_video_name(output_directory, video_name)
+    music_video_name = get_music_video_name(output_directory, video_name)
     music_video_directory = os.path.join(output_directory, music_video_name)
     music_video_output_path = os.path.join(music_video_directory, music_video_name + VideoWriter.VIDEO_EXTENSION)
     music_video_pickle_path = os.path.join(music_video_directory, music_video_name + Persistable.PICKLE_EXTENSION)
@@ -158,20 +149,18 @@ def create_music_video(args):
 
 def preview_audio(args):
     output_directory = args.output_directory
-
     audio_source = args.audio_source
     duration = args.duration
     audio_events_mode = args.audio_events_mode
     preview_mode = args.preview_mode
 
     # Prepare Inputs
-    audio_file = get_audio_file(audio_source, duration)
-    filename = paths.filename_from_path(audio_file) if audio_file else ''
+    filename = paths.filename_from_path(audio_source) if audio_source else ''
     output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else VideoWriter.VIDEO_EXTENSION
     output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" +
                                (audio_events_mode if audio_events_mode else "") + output_extension)
 
-    generator = MusicVideoGenerator(audio_file, duration=duration)
+    generator = MusicVideoGenerator(audio_source, duration=duration)
     try:
         events = prepare_events(generator, args)
     except ParameterError as e:
@@ -239,9 +228,6 @@ def prepare_events(generator: MusicVideoGenerator, args) -> EventList:
             event_groups = EventGroupList([events])
 
         message(f"Events:\n{event_groups}")
-
-        if event_locations:
-            events.add_events(event_locations)
     elif event_locations:
         events = EventList(event_locations, end=generator.duration)
     else:
@@ -253,18 +239,95 @@ def prepare_events(generator: MusicVideoGenerator, args) -> EventList:
     return events
 
 
-def get_audio_file(audio_source, duration):
-
-    if duration:
-        audio_file = None
-    else:
-        audio_file = audio_source if audio_source else cli_util.prompt_file_selection(c.FileType.AUDIO)
-
-    return audio_file
-
-
 def getattr_none(*args, **kwargs):
     return getattr(*args, None, **kwargs)
+
+
+""" UTILITY FUNCTIONS """
+
+
+def shutdown(error_message: str):
+    message(error_message)
+    sys.exit(1)
+
+
+def message(message: str):
+    print('\n' + message)
+
+
+def get_music_video_name(directory: str, basename: str):
+    count = 0
+    while True:
+        music_video_name = basename + f"_{count}"
+        music_video_path = os.path.join(directory, music_video_name)
+
+        if not os.path.exists(music_video_path):
+            break
+
+        count += 1
+
+    return music_video_name
+
+
+def files_from_source(source: str) -> List[str]:
+    """
+    Parameters
+    ----------
+    source
+        A file source.
+        Accepts a file or directory
+
+    Returns
+    -------
+    A list of all file paths extracted from source
+    """
+    files = []
+    source_is_dir = os.path.isdir(source)
+
+    # Check if source is file or directory
+    if source_is_dir:
+        files.append([file for file in util.listdir_nohidden(source) if os.path.isfile(file)])
+    else:
+        files.append(source)
+
+    return files
+
+
+def files_from_sources(sources: List[str]) -> List[str]:
+    """
+    Parameters
+    ----------
+    sources
+        A list of file sources.
+        Accepts both files and directories
+
+    Returns
+    -------
+    A list of all file paths extracted from sources
+    """
+    files = []
+
+    for source in sources:
+        files.extend(files_from_source(source))
+
+    return files
+
+
+def print_rejected_segment_stats(generator: MusicVideoGenerator):
+    message("Filter results:")
+    for video_filter in generator.video_filters:
+        rejected_segments = [segment for segment in generator.meta[generator.Meta.REJECTED_SEGMENT_STATS]]
+        rejected_segments_failed_filter_names = [[failed_filter.name for failed_filter in segment['failed_filters']]
+                                                 for segment in rejected_segments]
+        num_failing = 0
+        for names in rejected_segments_failed_filter_names:
+            if video_filter.name in names:
+                num_failing += 1
+
+        print(f"{num_failing} segments failed filter '{video_filter.name}'")
+
+
+""" COMMAND LINE ARGUMENT PARSING """
 
 
 def setup(args):
@@ -282,18 +345,11 @@ def prepare_args(args):
     """
     Formats and validates program inputs
     """
-    # sources = [getattrNone(args, 'audio_source'), getattrNone(args, 'video_sources'), getattrNone(args, 'spec_src')]
-    # sources = [src for src in sources if src is not None]
-    # cli_util.validate_path(*[sources])
-
     if getattr_none(args, 'duration') is not None and getattr_none(args, 'event_locations') is None:
-        raise ParameterError("Duration option requires event locations.")
+        raise ParameterError("--duration option requires --event-locations.")
 
     if getattr_none(args, 'video_dimensions') is not None:
         args.video_dimensions = tuple(args.video_dimensions)
-
-    if getattr_none(args, 'event_locations') is None:
-        args.audio_events_mode = AudioEventsMode.BEATS
 
     return args
 
@@ -323,9 +379,10 @@ class HelpParser(argparse.ArgumentParser):
 
 
 def parse_args(args):
-    parser = HelpParser()
+
+    parser = HelpParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     event_parser = argparse.ArgumentParser(add_help=False)
-    video_parser = argparse.ArgumentParser(add_help=False) 
+    video_parser = argparse.ArgumentParser(add_help=False)
     audio_parser = argparse.ArgumentParser(add_help=False)
     subparsers = parser.add_subparsers()
 
@@ -333,9 +390,9 @@ def parse_args(args):
 
     parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False,
                         help='Pass in this argument to print useful debug info.')
-    parser.add_argument('-od', '--output-directory', dest='output_directory', default=cli_c.OUTPUT_PATH_BASE,
+    parser.add_argument('-od', '--output-directory', dest='output_directory', default=os.path.expanduser("~/Desktop"),
                         help='The directory in which to store any output from this program. '
-                             'Will create the directory if non-existent. Default is ' + cli_c.OUTPUT_PATH_BASE)
+                             f'Will create the directory if non-existent.')
 
     # Event Common Parameters
     event_parser.add_argument('-d', '--duration', dest='duration', type=float,
@@ -371,7 +428,6 @@ def parse_args(args):
     event_parser.add_argument('-tg', '--target-groups', dest='target_groups', default=TargetGroups.SELECTED,
                               help='Which groups "--group-by" modifiers should apply to. '
                                    'Either all groups, only selected groups, or only unselected groups. '
-                                   f'Default is {TargetGroups.SELECTED}. '
                                    f'Supported values are {[e.value for e in TargetGroups]}.')
     event_parser.add_argument('-gs', '--group-speeds', dest='group_speeds', type=Fraction, nargs='+',
                               default=[],
@@ -384,14 +440,14 @@ def parse_args(args):
                               help='Speed multiplier offsets for event group speeds.')
 
     # Video Common Parameters
-    video_parser.add_argument('-vn', '--video-name', dest='video_name', default=cli_c.DEFAULT_MUSIC_VIDEO_NAME,
+    video_parser.add_argument('-vn', '--video-name', dest='video_name', default=DEFAULT_MUSIC_VIDEO_NAME,
                               help=f'The name for the music video. '
-                                   f'Otherwise will output {cli_c.DEFAULT_MUSIC_VIDEO_NAME}_0, '
-                                   f'{cli_c.DEFAULT_MUSIC_VIDEO_NAME}_1, etc...')
+                                   f'On subsequent runs, the program will output <music_video_name>_0, '
+                                   f'<music_video_name>_1, etc...')
 
     video_parser.add_argument('-vf', '--video-filters', dest='video_filters', nargs='+',
+                              default=vf.VIDEO_FILTERS_DEFAULT,
                               help=f'Video filters that each segment in the music video must pass. '
-                                   f'Defaults are {[filter for filter in vf.VIDEO_FILTERS_DEFAULT]}'
                                    f'Supported values are {[filter.name for filter in VideoFilter]}. ')
     video_parser.add_argument('-evf', '--exclude-video-filters', dest='exclude_video_filters', nargs='+',
                               help=f'Video filters to exclude from the default video filters. '
@@ -400,15 +456,14 @@ def parse_args(args):
                               help=f'Video filters to include in addition to the default video filters. '
                                    f'See video_filters for supported values')
 
-    video_parser.add_argument('-vpre', '--video-preset', dest='video_preset',
+    video_parser.add_argument('-vpre', '--video-preset', dest='video_preset', default=VideoWriter.VIDEO_PRESET,
                               help=f'Tunes the time that FFMPEG will spend optimizing compression while writing '
-                                   f'the music video to file. Default is {VideoWriter.VIDEO_PRESET}')
-    video_parser.add_argument('-vcod', '--video-codec', dest='video_codec',
-                              help=f'The video codec for the music video. Default is {VideoWriter.VIDEO_CODEC}')
-    video_parser.add_argument('-vcrf', '--video-crf', dest='video_crf', type=int,
+                                   f'the music video to file.')
+    video_parser.add_argument('-vcod', '--video-codec', dest='video_codec', default=VideoWriter.VIDEO_CODEC,
+                              help=f'The video codec for the music video.')
+    video_parser.add_argument('-vcrf', '--video-crf', dest='video_crf', type=int, default=VideoWriter.VIDEO_CRF,
                               help=f'The crf quality value for the music video. '
-                                   f'Takes an integer from 0 (lossless) to 51 (lossy). '
-                                   f'Default is {VideoWriter.VIDEO_CRF}')
+                                   f'Takes an integer from 0 (lossless) to 51 (lossy). ')
     video_parser.add_argument('-vdim', '--video-dimensions', dest='video_dimensions', type=int, nargs=2,
                               help='The pixel dimensions for the music video, width and height. '
                                    'All video segments will be resized (cropped and/or scaled) appropriately '
@@ -422,42 +477,39 @@ def parse_args(args):
                               help='Save all the individual segments that compose the music video.')
 
     # Audio Common Parameters
-    audio_parser.add_argument('-a', '--audio-source', dest='audio_source',
+    audio_parser.add_argument('-a', '--audio-source', dest='audio_source', required=True,
                               help='The audio file for the music video. '
                                    'Supports any audio format supported by ffmpeg, '
                                    'such as wav, aiff, flac, ogg, mp3, etc...')
     audio_parser.add_argument('-uoa', '--use-original-audio', dest='use_original_audio', action='store_true',
                               default=False,
-                              help=f"Whether or not to use the original audio from video segments for the music video. "
-                                   f"Defaults to False.")
+                              help=f'Whether or not to use the original audio from video segments for the music video.')
 
-    audio_parser.add_argument('-aem', '--audio-events-mode', dest='audio_events_mode', default=None,
+    audio_parser.add_argument('-aem', '--audio-events-mode', dest='audio_events_mode', default=AudioEventsMode.BEATS,
                               help=f'Method of generating events from the audio file. '
-                                   f'Default is {AudioEventsMode.BEATS}, if no event locations are provided.'
                                    f'Supported values are {[e.value for e in AudioEventsMode]}.')
 
     audio_parser.add_argument('-bm', '--beats-mode', dest='beats_mode', default=BeatsMode.BEATS,
                               help=f'Method of generating beat events from the audio file. '
-                                   f'Default is {BeatsMode.BEATS}. '
                                    f'Supported values are {[e.value for e in BeatsMode]}.')
     audio_parser.add_argument('-om', '--onsets-mode', dest='onsets_mode', default=OnsetsMode.ONSETS,
                               help=f'Method of generating onset events from the audio file. '
                                    f'Supported values are {[e.value for e in OnsetsMode]}.')
 
-    audio_parser.add_argument('-ac', '--audio-codec', dest='audio_codec',
-                              help=f'The audio codec for the music video if the original audio is used. '
-                                   f'Default is {VideoWriter.AUDIO_CODEC}')
+    audio_parser.add_argument('-ac', '--audio-codec', dest='audio_codec', default=VideoWriter.AUDIO_CODEC,
+                              help=f'The audio codec for the music video if the original audio is used.')
     audio_parser.add_argument('-ab', '--audio-bitrate', dest='audio_bitrate', type=int,
-                              help='The audio bitrate for the music video if no audio_file is given. '
-                                   f'Default is {VideoWriter.AUDIO_BITRATE} (kbps)')
+                              default=VideoWriter.AUDIO_BITRATE,
+                              help='The audio bitrate (kbps) for the music video, if no audio_file is given.')
 
     """ COMMANDS """
 
     # Create Command Parameters
     create_parser = subparsers.add_parser('create', parents=[audio_parser, video_parser, event_parser],
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                           help='Create a new music video.')
     create_parser.set_defaults(func=create_music_video)
-    create_parser.add_argument('-v', '--video-sources', dest='video_sources', nargs='+',
+    create_parser.add_argument('-v', '--video-sources', dest='video_sources', nargs='+', required=True,
                                help='The video sources for the music video. '
                                     'Takes a list of files and folders separated by spaces. '
                                     'Supports any video format supported by ffmpeg, '
@@ -470,16 +522,17 @@ def parse_args(args):
                                     '(a series of 26 episodes) 60%% of the time, and the second video source '
                                     '(a movie) 40%% of the time.')
     create_parser.add_argument('-fi', '--fade-in', dest='fade_in', type=float,
-                               help='Fade-in for the music video, in seconds')
+                               help='Fade-in for the music video (seconds)')
     create_parser.add_argument('-fo', '--fade-out', dest='fade_out', type=float,
-                               help='Fade-out for the music video, in seconds')
+                               help='Fade-out for the music video (seconds)')
 
     # Preview Command Parameters
     preview_parser = subparsers.add_parser('preview', parents=[audio_parser, event_parser],
+                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                            help="Create an audio preview of events for a music video by marking "
                                                 "the audio with bleeps.")
     preview_parser.add_argument('-pm', '--preview-mode', dest='preview_mode', default=PreviewMode.VISUAL,
-                                help=f'The method of previewing events. Default is {PreviewMode.VISUAL}. '
+                                help=f'The method of previewing events. '
                                      f'Supported values are {[e.value for e in PreviewMode]}')
     preview_parser.set_defaults(func=preview_audio)
 
@@ -491,12 +544,15 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-if __name__ == '__main__':
+def main():
     args = parse_args(sys.argv[1:])
     args = prepare_args(args)
     setup(args)
     args.func(args)
 
     message("All Done!")
+
+if __name__ == '__main__':
+    main()
 
 

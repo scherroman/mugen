@@ -1,7 +1,7 @@
 import pytest
 
-from mugen.lists import MugenList
 from mugen import lists
+from mugen.lists import MugenList
 
 
 class Dummy(object):

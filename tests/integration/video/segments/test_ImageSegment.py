@@ -1,7 +1,6 @@
 import pytest
 
 from mugen.video.segments.ImageSegment import ImageSegment
-
 from tests import DATA_PATH
 
 

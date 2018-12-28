@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TypeVar, Union, Tuple
+from typing import Union, Tuple
 
 """
 SEC.MIL or 'SEC.MIL'

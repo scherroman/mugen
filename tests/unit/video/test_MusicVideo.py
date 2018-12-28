@@ -1,7 +1,6 @@
 import pytest
 
 from mugen import MusicVideo
-
 from tests.unit.video.segments.test_ColorSegment import black_segment, white_segment, orange_segment
 
 

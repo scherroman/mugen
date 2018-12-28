@@ -2,12 +2,12 @@ import bisect
 import copy
 from fractions import Fraction
 from functools import wraps
-from typing import List, Optional as Opt, Union
 from itertools import groupby, zip_longest
 from operator import attrgetter
+from typing import List, Optional as Opt, Union
 
-import mugen.utility as util
 import mugen.location_utility as loc_util
+import mugen.utility as util
 from mugen import lists
 from mugen.constants import TIME_FORMAT
 from mugen.lists import MugenList
