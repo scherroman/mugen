@@ -28,7 +28,6 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 ## Requirements
 
 - A Python 3.7+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
-- [ffmpeg](https://www.ffmpeg.org/)
 
 **Optional:** 
 
@@ -78,12 +77,6 @@ git clone https://github.com/scherroman/mugen
 pip install -e mugen
 ```
 
-**6. Install ffmpeg**
-
-```
-imageio_download_bin ffmpeg
-```
-
 ## Full Install  (MacOS)
 
 **1. [Install Homebrew](http://brew.sh/)**
@@ -118,12 +111,6 @@ git clone https://github.com/scherroman/mugen
 
 ```
 pip install -e mugen[full]
-```
-
-**8. Install ffmpeg**
-
-```
-imageio_download_bin ffmpeg
 ```
 
 ## Examples
