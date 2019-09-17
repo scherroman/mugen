@@ -27,7 +27,7 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 
 ## Requirements
 
-- A Python 3.6+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
+- A Python 3.7+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
 - [ffmpeg](https://www.ffmpeg.org/)
 
 **Optional:** 
@@ -54,10 +54,10 @@ pip install -e mugen
 
 **1. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
 
-**2. Create a Python 3.6 virtual environment**
+**2. Create a Python 3.7 virtual environment**
 
 ```
-conda create --yes --name mugen python=3.6
+conda create --yes --name mugen python=3.7
 ```
 
 **3. Activate the virtual environment**
@@ -96,10 +96,10 @@ brew install tesseract --with-all-languages
 
 **3. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
 
-**4. Create a Python 3.6 virtual environment**
+**4. Create a Python 3.7 virtual environment**
 
 ```
-conda create --yes --name mugen python=3.6
+conda create --yes --name mugen python=3.7
 ```
 
 **5. Activate the virtual environment**

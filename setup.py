@@ -4,8 +4,8 @@ version = dict()
 with open("mugen/version.py") as f:
     exec(f.read(), version)
 
-optional_requirements = ['tesserocr>=2.1.3']
-tests_requirements = ['pytest>=3.0.7', 'pytest-cov>=2.4.0']
+optional_requirements = ['tesserocr==2.2.1']
+tests_requirements = ['pytest==3.0.7', 'pytest-cov==2.4.0']
 
 setup(
     name='mugen',
@@ -24,19 +24,20 @@ setup(
         'Topic :: Multimedia :: Sound/Audio',
         'Topic :: Multimedia :: Video',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     packages=find_packages(),
     install_requires=[
-        'moviepy>=0.2.3.5',
-        'librosa>=0.5.0',
-        'Pillow>=4.2.0',
-        'numpy>=1.12.0',
-        'pysrt>=1.1.1',
-        'tqdm>=4.10.0',
-        'decorator>=4.0.11',
-        'dill>=0.2.7.1',
-        'requests>=2.21.0'
+        'moviepy==0.2.3.5',
+        'librosa==0.7.0',
+        'Pillow==4.2.0',
+        'numpy==1.17.2',
+        'pysrt==1.1.1',
+        'tqdm==4.11.2',
+        'decorator==4.0.11',
+        'dill==0.2.7.1',
+        'requests==2.21.0',
+        'imageio==2.4.1'
     ],
     extras_require={
         'full': optional_requirements,
