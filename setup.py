@@ -30,7 +30,7 @@ setup(
     install_requires=[
         'moviepy==0.2.3.5',
         'librosa==0.7.0',
-        'Pillow==4.2.0',
+        'Pillow==6.2.0',
         'numpy==1.17.2',
         'pysrt==1.1.1',
         'tqdm==4.11.2',
