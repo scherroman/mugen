@@ -31,7 +31,7 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 
 **Optional:** 
 
-- Install [tesseract](https://github.com/tesseract-ocr/tesseract) >= 3.04 and `pip install tesserocr>=2.2.1` for text detection features.
+- [Tesseract](https://github.com/tesseract-ocr/tesseract) for text detection features.
 
 Mugen has not been tested on Windows, but should work provided the dependencies are compiled and installed properly.
 
@@ -84,7 +84,7 @@ pip install -e mugen
 **2. [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
 
 ```
-brew install tesseract --with-all-languages
+brew install tesseract tesseract-lang
 ```
 
 **3. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**

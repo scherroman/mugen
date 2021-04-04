@@ -4,7 +4,7 @@ version = dict()
 with open("mugen/version.py") as f:
     exec(f.read(), version)
 
-optional_requirements = ['tesserocr==2.2.1']
+optional_requirements = ['tesserocr==2.5.1']
 tests_requirements = ['pytest==3.0.7', 'pytest-cov==2.4.0']
 
 setup(
@@ -29,8 +29,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         'moviepy==0.2.3.5',
-        'librosa==0.7.0',
-        'Pillow==4.2.0',
+        "librosa==0.8.0",
+        "Pillow==8.2.0",
         'numpy==1.17.2',
         'pysrt==1.1.1',
         'tqdm==4.11.2',
