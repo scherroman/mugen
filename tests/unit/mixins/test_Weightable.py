@@ -2,7 +2,7 @@ from fractions import Fraction
 
 import pytest
 
-from mugen.mixins import Weightable, WeightableList
+from mugen.mixins.Weightable import Weightable, WeightableList
 
 
 @pytest.fixture

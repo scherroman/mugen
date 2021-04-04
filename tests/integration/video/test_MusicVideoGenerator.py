@@ -1,5 +1,7 @@
 from mugen import MusicVideoGenerator
 
+from tests.integration.video.sources.test_VideoSource import shinsekai_source
+
 from tests import DATA_PATH
 
 

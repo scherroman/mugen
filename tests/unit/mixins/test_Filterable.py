@@ -1,6 +1,6 @@
 import pytest
 
-from mugen.mixins import Filterable, Filter, ContextFilter
+from mugen.mixins.Filterable import Filterable, Filter, ContextFilter
 
 
 def is_repeat(x, memory):

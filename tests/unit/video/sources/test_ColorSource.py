@@ -1,6 +1,6 @@
 import pytest
 
-from mugen.video.sources import ColorSource
+from mugen.video.sources.ColorSource import ColorSource
 
 
 @pytest.fixture

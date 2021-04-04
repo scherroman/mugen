@@ -1,6 +1,9 @@
 import pytest
 
 from mugen import MusicVideo
+from tests.integration.video.segments.test_VideoSegment import shinsekai_segment
+from tests.integration.video.segments.test_ImageSegment import tatami_segment
+from tests.unit.video.segments.test_ColorSegment import orange_segment
 
 
 @pytest.fixture

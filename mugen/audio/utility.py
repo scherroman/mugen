@@ -1,6 +1,7 @@
 from typing import List, Optional as Opt, Union
 
 import librosa
+import soundfile
 import numpy as np
 
 from mugen.utility import temp_file_enabled
@@ -22,6 +23,6 @@ def create_marked_audio_file(mark_locations: Union[List[float], np.ndarray], out
     else:
         raise ParameterError("Must provide either audio file or duration.")
 
-    librosa.output.write_wav(path=output_path, y=marked_audio, sr=sr)
+    soundfile.write(output_path, marked_audio, sr, 'PCM_24')
 
     return output_path

@@ -2,6 +2,7 @@ import pytest
 
 from mugen import MusicVideoGenerator
 from mugen.exceptions import ParameterError
+from tests.unit.video.sources.test_ColorSource import orange_source
 
 
 def test_music_video_generator__requires_audio_file_or_duration(orange_source):
