@@ -2,10 +2,10 @@ from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.io.ffmpeg_reader import FFMPEG_VideoReader
 
-import mugen.utility as util
 from mugen import paths
+from mugen import utilities
 from mugen.constants import TIME_FORMAT
-from mugen.utility import convert_time_to_seconds
+from mugen.utilities import convert_time_to_seconds
 from mugen.video.segments.Segment import Segment
 
 
@@ -77,7 +77,7 @@ class VideoSegment(Segment, VideoFileClip):
 
     @property
     def source_start_time_time_code(self) -> str:
-        return util.seconds_to_time_code(self.source_start_time)
+        return utilities.seconds_to_time_code(self.source_start_time)
 
     """ METHODS """
 
@@ -113,5 +113,5 @@ class VideoSegment(Segment, VideoFileClip):
         if not self.file == segment.file:
             return False
 
-        return util.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
+        return utilities.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
                                    segment.source_end_time)

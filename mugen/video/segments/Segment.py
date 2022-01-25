@@ -4,9 +4,10 @@ import copy
 
 from moviepy.editor import VideoClip
 
-import mugen.utility as util
-import mugen.video.sizing as v_sizing
-import mugen.video.effects as v_effects
+
+import mugen.video.sizing as video_sizing
+import mugen.video.effects as video_effects
+from mugen import utilities
 from mugen.mixins.Filterable import Filterable
 from mugen.mixins.Persistable import Persistable
 from mugen.video.effects import VideoEffectList
@@ -80,7 +81,7 @@ class Segment(Filterable, Persistable, ABC):
 
     @property
     def duration_time_code(self) -> str:
-        return util.seconds_to_time_code(self.duration)
+        return utilities.seconds_to_time_code(self.duration)
 
     @property
     def first_frame(self) -> LIST_3D:
@@ -112,7 +113,7 @@ class Segment(Filterable, Persistable, ABC):
 
         if segment.aspect_ratio != aspect_ratio:
             # Crop video to match desired aspect ratio
-            x1, y1, x2, y2 = v_sizing.crop_coordinates_for_aspect_ratio(segment.dimensions,
+            x1, y1, x2, y2 = video_sizing.crop_coordinates_for_aspect_ratio(segment.dimensions,
                                                                         aspect_ratio)
             segment = segment.crop(x1=x1, y1=y1, x2=x2, y2=y2)
 
@@ -148,11 +149,11 @@ class Segment(Filterable, Persistable, ABC):
         segment = self.copy()
 
         for effect in self.effects:
-            if isinstance(effect, v_effects.FadeIn):
+            if isinstance(effect, video_effects.FadeIn):
                 segment = segment.fadein(effect.duration, effect.rgb_color)
                 if segment.audio:
                     segment.audio = segment.audio.audio_fadein(effect.duration)
-            elif isinstance(effect, v_effects.FadeOut):
+            elif isinstance(effect, video_effects.FadeOut):
                 segment = segment.fadeout(effect.duration, effect.rgb_color)
                 if segment.audio:
                     segment.audio = segment.audio.audio_fadeout(effect.duration)

@@ -1,4 +1,4 @@
-from typing import List, Optional as Opt
+from typing import List, Optional
 
 
 class Taggable:
@@ -7,7 +7,7 @@ class Taggable:
     """
     tags: List[str]
 
-    def __init__(self, *args, tags: Opt[List[str]] = None, **kwargs):
+    def __init__(self, *args, tags: Optional[List[str]] = None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.tags = tags or []

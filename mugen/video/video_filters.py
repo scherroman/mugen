@@ -1,27 +1,28 @@
 from enum import Enum
 from typing import Any
 
-import mugen.video.detect as v_detect
-from mugen.mixins.Filterable import Filter, ContextFilter
+import mugen.video.detect as video_detect
 from mugen.video.segments import Segment
+from mugen.mixins.Filterable import Filter, ContextFilter
+
 
 """ FILTER FUNCTIONS """
 
 
 def is_repeat(segment: Segment, memory: Any) -> bool:
-    return v_detect.video_segment_is_repeat(segment, video_segments_used=memory)
+    return video_detect.video_segment_is_repeat(segment, video_segments_used=memory)
 
 
 def has_text(segment: Segment) -> bool:
-    return v_detect.video_segment_has_text(segment)
+    return video_detect.video_segment_has_text(segment)
 
 
 def has_cut(segment: Segment) -> bool:
-    return v_detect.video_segment_has_cut(segment)
+    return video_detect.video_segment_has_cut(segment)
 
 
 def has_low_contrast(segment: Segment) -> bool:
-    return v_detect.video_segment_has_low_contrast(segment)
+    return video_detect.video_segment_has_low_contrast(segment)
 
 
 """ NEGATION FILTER FUNCTIONS """
@@ -80,7 +81,7 @@ VIDEO_FILTERS_DEFAULT = [VideoFilter.not_is_repeat.name, VideoFilter.not_has_low
                          VideoFilter.not_has_text.name, VideoFilter.not_has_cut.name]
 
 # Remove unavailable filters
-if not v_detect.text_detection_available:
+if not video_detect.is_text_detection_available:
     VIDEO_FILTERS_DEFAULT.remove(VideoFilter.not_has_text.name)
 
 

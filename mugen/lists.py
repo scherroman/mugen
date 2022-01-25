@@ -1,5 +1,5 @@
 import collections
-from typing import List, Any, Optional as Opt
+from typing import List, Any, Optional
 
 
 class MugenList(list):
@@ -7,7 +7,7 @@ class MugenList(list):
     A subclass of list with extra functionality, used internally
     """
 
-    def __init__(self, items: Opt[List[Any]] = None):
+    def __init__(self, items: Optional[List[Any]] = None):
         if items is None:
             items = []
 

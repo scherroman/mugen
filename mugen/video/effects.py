@@ -1,9 +1,9 @@
-from typing import List, Optional as Opt
+from typing import List, Optional
 
-from mugen import utility as util
+from mugen import utilities
 from mugen.constants import Color
 from mugen.lists import MugenList
-from mugen.utility import convert_color_to_hex_code
+from mugen.utilities import convert_color_to_hex_code
 from mugen.video.events import VideoEvent
 
 ONE_SECOND = 1
@@ -21,7 +21,7 @@ class VideoEffectList(MugenList):
     Wrapper for a list of Effects, providing convenience methods
     """
 
-    def __init__(self, effects: Opt[List[VideoEffect]] = None):
+    def __init__(self, effects: Optional[List[VideoEffect]] = None):
         super().__init__(effects)
 
     def add_crossfade(self, duration: float = ONE_SECOND):
@@ -76,7 +76,7 @@ class Fade(VideoEffect):
 
     @property
     def rgb_color(self) -> List[int]:
-        return util.hex_to_rgb(self.color)
+        return utilities.hex_to_rgb(self.color)
 
 
 class FadeIn(Fade):

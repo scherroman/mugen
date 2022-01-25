@@ -4,14 +4,13 @@ from fractions import Fraction
 from functools import wraps
 from itertools import groupby, zip_longest
 from operator import attrgetter
-from typing import List, Optional as Opt, Union
+from typing import List, Optional, Union
 
-import mugen.location_utility as loc_util
-import mugen.utility as util
 from mugen import lists
-from mugen.constants import TIME_FORMAT
+from mugen import utilities, location_utilities
 from mugen.lists import MugenList
-from mugen.utility import convert_float_to_fraction, convert_time_to_seconds
+from mugen.constants import TIME_FORMAT
+from mugen.utilities import convert_float_to_fraction, convert_time_to_seconds
 
 
 class Event:
@@ -41,7 +40,7 @@ class Event:
     def __repr__(self):
         return self.index_repr()
 
-    def index_repr(self, index: Opt[int] = None):
+    def index_repr(self, index: Optional[int] = None):
         if index is None:
             repr_str = f'<{self.__class__.__name__}'
         else:
@@ -80,9 +79,9 @@ class EventList(MugenList):
     """
     A list of Events which occur in some time sequence
     """
-    end: Opt[float]
+    end: Optional[float]
 
-    def __init__(self, events: Opt[List[Union[Event, TIME_FORMAT]]] = None, *, end: TIME_FORMAT = None):
+    def __init__(self, events: Optional[List[Union[Event, TIME_FORMAT]]] = None, *, end: TIME_FORMAT = None):
         """
         Parameters
         ----------
@@ -142,7 +141,7 @@ class EventList(MugenList):
 
     @property
     def intervals(self) -> List[float]:
-        return loc_util.intervals_from_locations(self.locations)
+        return location_utilities.intervals_from_locations(self.locations)
 
     @property
     def segment_locations(self):
@@ -161,7 +160,7 @@ class EventList(MugenList):
         -------
         durations of segments between events
         """
-        return loc_util.intervals_from_locations(self.locations + [self.end])
+        return location_utilities.intervals_from_locations(self.locations + [self.end])
 
     @property
     def durations(self) -> List[float]:
@@ -186,7 +185,7 @@ class EventList(MugenList):
 
     @convert_float_to_fraction('speed')
     def speed_multiply(self, speed: Union[float, Fraction],
-                       offset: Opt[int] = None):
+                       offset: Optional[int] = None):
         """
         Speeds up or slows down events by grouping them together or splitting them up.
         For slowdowns, event type group boundaries and isolated events are preserved.
@@ -248,7 +247,7 @@ class EventList(MugenList):
 
         self[:] = splintered_events
 
-    def _merge(self, pieces_per_merge: int, offset: Opt[int] = None):
+    def _merge(self, pieces_per_merge: int, offset: Optional[int] = None):
         """
         Merges adjacent events of identical type to form longer intervals
 
@@ -317,7 +316,7 @@ class EventList(MugenList):
         slices = [slice(sl[0], sl[1]) for sl in slices]
 
         # Fill in rest of slices
-        all_slices = util.fill_slices(slices, len(self))
+        all_slices = utilities.fill_slices(slices, len(self))
         target_indexes = [index for index, sl in enumerate(all_slices) if sl in slices]
 
         # Group events by slices
@@ -334,7 +333,7 @@ class EventGroupList(MugenList):
     """
     _selected_groups: List[EventList]
 
-    def __init__(self, groups: Opt[Union[List[EventList], List[List[TIME_FORMAT]]]] = None, *,
+    def __init__(self, groups: Optional[Union[List[EventList], List[List[TIME_FORMAT]]]] = None, *,
                  selected: List[EventList] = None):
         """
         Parameters
@@ -385,7 +384,7 @@ class EventGroupList(MugenList):
         """
         return EventGroupList([group for group in self if group not in self.selected_groups])
 
-    def speed_multiply(self, speeds: List[float], offsets: Opt[List[float]] = None):
+    def speed_multiply(self, speeds: List[float], offsets: Optional[List[float]] = None):
         """
         Speed multiplies event groups, in order
 

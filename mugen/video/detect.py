@@ -1,4 +1,4 @@
-from typing import List, Optional as Opt
+from typing import List, Optional
 
 from PIL import Image
 from moviepy.video.tools.cuts import detect_scenes
@@ -6,10 +6,10 @@ from moviepy.video.tools.cuts import detect_scenes
 try:
     import tesserocr
 
-    text_detection_available = True
+    is_text_detection_available = True
 except ImportError:
     tesserocr = None
-    text_detection_available = False
+    is_text_detection_available = False
 
 from mugen.video.constants import LIST_3D
 from mugen.video.segments.VideoSegment import VideoSegment
@@ -84,7 +84,7 @@ def image_has_text(image: LIST_3D):
     return True if len(text.strip()) > 0 else False
 
 
-def image_has_low_contrast(image: LIST_3D, threshold: Opt[float] = DEFAULT_CONTRAST_THRESHOLD) -> bool:
+def image_has_low_contrast(image: LIST_3D, threshold: Optional[float] = DEFAULT_CONTRAST_THRESHOLD) -> bool:
     """
     Parameters
     ----------

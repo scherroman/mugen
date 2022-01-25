@@ -3,13 +3,13 @@ import pytest
 from mugen.video.sources.VideoSource import VideoSource, TimeRange, VideoSourceList
 from tests import DATA_PATH
 
-SHINSEKAI_VIDEO_FILE = f'{DATA_PATH}/video/shinsekai.mp4'
-SHINSEKAI_VIDEO_GLOB = f'{DATA_PATH}/video/shin*'
+SHINSEKAI_VIDEO_FILE = f'{DATA_PATH}/video/wolf.mp4'
+SHINSEKAI_VIDEO_GLOB = f'{DATA_PATH}/video/wolf*'
 VIDEO_DIRECTORY = f'{DATA_PATH}/video'
 
 
 @pytest.fixture
-def shinsekai_source() -> VideoSource:
+def wolf_source() -> VideoSource:
     return VideoSource(SHINSEKAI_VIDEO_FILE)
 
 
@@ -21,14 +21,14 @@ def five_percent_duration(video_source) -> float:
 
 
 def test_sample():
-    video_source = shinsekai_source()
+    video_source = wolf_source()
     duration = five_percent_duration(video_source)
 
     assert video_source.sample(duration).duration == pytest.approx(duration)
 
 
 def test_time_boundaries__single_boundary():
-    video_source = shinsekai_source()
+    video_source = wolf_source()
     duration = five_percent_duration(video_source)
     boundary = TimeRange(duration * 2, duration * 3.01)
     video_source.time_boundaries.append(boundary)
@@ -37,7 +37,7 @@ def test_time_boundaries__single_boundary():
 
 
 def test_time_boundaries__multiple_boundaries():
-    video_source = shinsekai_source()
+    video_source = wolf_source()
     duration = five_percent_duration(video_source)
     boundary = TimeRange(duration * 2, duration * 3.01)
     boundary_b = TimeRange(duration * 4, duration * 5.01)

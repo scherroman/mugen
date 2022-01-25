@@ -1,4 +1,4 @@
-from typing import List, Callable, Optional as Opt, Any, Tuple
+from typing import List, Callable, Optional, Any, Tuple
 
 
 class Filter:
@@ -40,7 +40,7 @@ class ContextFilter(Filter):
     """
     memory: List[Any] = None
 
-    def __init__(self, function, memory: Opt[List[Any]] = None):
+    def __init__(self, function, memory: Optional[List[Any]] = None):
         super().__init__(function)
 
         if memory:

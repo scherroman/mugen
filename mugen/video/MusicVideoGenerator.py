@@ -1,24 +1,25 @@
 import copy
 from enum import Enum
-from typing import Optional as Opt, List, Union, Any
+from typing import Optional, List, Union, Any
 
 from tqdm import tqdm
 
-import mugen.audio.utility as a_util
-import mugen.video.io.subtitles as v_io
-import mugen.video.video_filters as vf
-from mugen.audio.Audio import Audio
-from mugen.constants import TIME_FORMAT
+import mugen.audio.utilities as audio_utilities
+import mugen.video.io.subtitles as subtitles
 from mugen.events import EventList
+from mugen.constants import TIME_FORMAT
 from mugen.exceptions import MugenError, ParameterError
 from mugen.mixins.Filterable import Filter, ContextFilter
-from mugen.utility import convert_time_to_seconds, temp_file_enabled
+from mugen.utilities import convert_time_to_seconds, temp_file_enabled
+from mugen.audio.Audio import Audio
 from mugen.video.MusicVideo import MusicVideo
-from mugen.video.io.subtitles import SubtitleTrack
 from mugen.video.segments.ColorSegment import ColorSegment
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.SourceSampler import SourceSampler
 from mugen.video.sources.VideoSource import VideoSource, VideoSourceList
+from mugen.video.io.subtitles import SubtitleTrack
+from mugen.video.video_filters import VIDEO_FILTERS_DEFAULT, VideoFilter
+
 
 
 class PreviewMode(str, Enum):
@@ -57,11 +58,11 @@ class MusicVideoGenerator:
         REJECTED_SEGMENT_STATS = 'rejected_segment_stats'
 
     @convert_time_to_seconds(['duration'])
-    def __init__(self, audio_file: Opt[str] = None,
-                 video_sources: Opt[Union[VideoSourceList, List[Union[VideoSource, str, List[Any]]]]] = None, *,
-                 duration: TIME_FORMAT = None, video_filters: Opt[List[str]] = None,
-                 exclude_video_filters: Opt[List[str]] = None, include_video_filters: Opt[List[str]] = None,
-                 custom_video_filters: Opt[List[Filter]] = None):
+    def __init__(self, audio_file: Optional[str] = None,
+                 video_sources: Optional[Union[VideoSourceList, List[Union[VideoSource, str, List[Any]]]]] = None, *,
+                 duration: TIME_FORMAT = None, video_filters: Optional[List[str]] = None,
+                 exclude_video_filters: Optional[List[str]] = None, include_video_filters: Optional[List[str]] = None,
+                 custom_video_filters: Optional[List[Filter]] = None):
         """
         Parameters
         ----------
@@ -100,7 +101,7 @@ class MusicVideoGenerator:
             self.video_sources = VideoSourceList(video_sources)
 
         # Assemble list of video filter names
-        video_filter_names = video_filters if video_filters is not None else vf.VIDEO_FILTERS_DEFAULT
+        video_filter_names = video_filters if video_filters is not None else VIDEO_FILTERS_DEFAULT
         if exclude_video_filters:
             for video_filter in exclude_video_filters:
                 video_filter_names.remove(video_filter)
@@ -112,9 +113,9 @@ class MusicVideoGenerator:
         self.video_filters = []
         for filter_name in video_filter_names:
             try:
-                self.video_filters.append(vf.VideoFilter[filter_name].value)
-            except KeyError as e:
-                raise MugenError(f"Unknown video filter '{filter_name}'") from e
+                self.video_filters.append(VideoFilter[filter_name].value)
+            except KeyError as error:
+                raise MugenError(f"Unknown video filter '{filter_name}'") from error
         self.video_filters.extend(custom_video_filters)
 
         self.meta = {self.Meta.REJECTED_SEGMENT_STATS: []}
@@ -192,7 +193,7 @@ class MusicVideoGenerator:
         return video_segments
 
     @temp_file_enabled('output_path', '.mkv')
-    def preview_events(self, events: Union[EventList, List[TIME_FORMAT]], output_path: Opt[str] = None,
+    def preview_events(self, events: Union[EventList, List[TIME_FORMAT]], output_path: Optional[str] = None,
                        mode: str = PreviewMode.AUDIOVISUAL, progress_bar: bool =True, **kwargs):
         """
         Creates a new audio file with audible bleeps at event locations
@@ -216,13 +217,13 @@ class MusicVideoGenerator:
             events = EventList(events, end=self.duration)
 
         if mode == PreviewMode.AUDIO:
-            a_util.create_marked_audio_file(events.locations, output_path,
-                                            audio_file=self.audio.file if self.audio else None,
-                                            duration=self.duration)
+            audio_utilities.create_marked_audio_file(events.locations, output_path,
+                                     audio_file=self.audio.file if self.audio else None,
+                                     duration=self.duration)
         elif mode == PreviewMode.AUDIOVISUAL:
-            temp_marked_audio_file = a_util.create_marked_audio_file(events.locations,
-                                                                     audio_file=self.audio.file if self.audio else None,
-                                                                     duration=self.duration)
+            temp_marked_audio_file = audio_utilities.create_marked_audio_file(events.locations,
+                                                              audio_file=self.audio.file if self.audio else None,
+                                                              duration=self.duration)
 
             composite_segments = []
             for index, duration in enumerate(events.segment_durations):
@@ -261,5 +262,5 @@ class MusicVideoGenerator:
         subtitle_track_events = SubtitleTrack.create(events_str, 'events', locations=locations, default=True)
 
         subtitle_tracks = [subtitle_track_events]
-        v_io.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
+        subtitles.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
 

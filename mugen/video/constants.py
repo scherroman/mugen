@@ -1,5 +1,5 @@
-import numpy as np
+import numpy
 
-LIST_3D = np.ndarray
+LIST_3D = numpy.ndarray
 
 SPEC_EXTENSION = '.json'

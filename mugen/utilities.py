@@ -1,20 +1,19 @@
-import json
-import operator
 import os
 import re
+import json
 import shutil
-import subprocess as sp
-from collections import OrderedDict
-from fractions import Fraction
+import operator
+import subprocess
 from functools import wraps
+from fractions import Fraction
+from collections import OrderedDict
 from typing import List, Callable, Any, Type
 
 import decorator
 
-import mugen.exceptions as ex
 import mugen.paths as paths
 from mugen.constants import TIME_FORMAT, Color
-from mugen.exceptions import ParameterError
+from mugen.exceptions import ParameterError, FFMPEGError
 
 """ SYSTEM """
 
@@ -57,11 +56,11 @@ def execute_ffmpeg_command(cmd):
     """
     Executes an ffmpeg command
     """
-    p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p_out, p_err = p.communicate()
 
     if p.returncode != 0:
-        raise ex.FFMPEGError(f"Error executing ffmpeg command. Error code: {p.returncode}, Error: {p_err}",
+        raise FFMPEGError(f"Error executing ffmpeg command. Error code: {p.returncode}, Error: {p_err}",
                              p.returncode, p_out, p_err)
 
 
@@ -315,8 +314,8 @@ def ensure_json_serializable(*dicts: dict):
     def _ensure_json_serializable(dictionary):
         try:
             json.dumps(dictionary)
-        except TypeError as e:
-            print(f"{dictionary} is not json serializable. Error: {e}")
+        except TypeError as error:
+            print(f"{dictionary} is not json serializable. Error: {error}")
             raise
 
         return dictionary

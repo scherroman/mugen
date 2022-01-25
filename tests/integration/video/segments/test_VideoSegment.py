@@ -5,5 +5,5 @@ from tests import DATA_PATH
 
 
 @pytest.fixture
-def shinsekai_segment() -> VideoSegment:
-    return VideoSegment(f'{DATA_PATH}/video/shinsekai.mp4')
+def wolf_segment() -> VideoSegment:
+    return VideoSegment(f'{DATA_PATH}/video/wolf.mp4')

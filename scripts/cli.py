@@ -7,13 +7,13 @@ from enum import Enum
 from fractions import Fraction
 from typing import List
 
-import mugen.video.video_filters as vf
-from mugen import MusicVideoGenerator, VideoFilter
+import mugen.video.video_filters as video_filters
 from mugen import paths
-from mugen import utility as util
-from mugen.events import EventList, EventGroupList
-from mugen.exceptions import ParameterError
+from mugen import utilities
+from mugen import MusicVideoGenerator, VideoFilter
 from mugen.mixins import Persistable
+from mugen.exceptions import ParameterError
+from mugen.events import EventList, EventGroupList
 from mugen.video.MusicVideoGenerator import PreviewMode
 from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.sources.VideoSource import VideoSourceList
@@ -94,8 +94,8 @@ def create_music_video(args):
 
     try:
         events = prepare_events(generator, args)
-    except ParameterError as e:
-        shutdown(str(e))
+    except ParameterError as error:
+        shutdown(str(error))
 
     message("Generating music video from video segments and audio...")
 
@@ -115,7 +115,7 @@ def create_music_video(args):
     music_video_directory = os.path.join(output_directory, music_video_name)
     music_video_output_path = os.path.join(music_video_directory, music_video_name + VideoWriter.VIDEO_EXTENSION)
     music_video_pickle_path = os.path.join(music_video_directory, music_video_name + Persistable.PICKLE_EXTENSION)
-    util.ensure_dir(music_video_directory)
+    utilities.ensure_dir(music_video_directory)
 
     message(f"Writing music video '{music_video_output_path}'...")
 
@@ -163,8 +163,8 @@ def preview_audio(args):
     generator = MusicVideoGenerator(audio_source, duration=duration)
     try:
         events = prepare_events(generator, args)
-    except ParameterError as e:
-        shutdown(str(e))
+    except ParameterError as error:
+        shutdown(str(error))
 
     message(f"Creating audio preview '{paths.filename_from_path(output_path)}'...")
 
@@ -286,7 +286,7 @@ def files_from_source(source: str) -> List[str]:
 
     # Check if source is file or directory
     if source_is_dir:
-        files.append([file for file in util.listdir_nohidden(source) if os.path.isfile(file)])
+        files.append([file for file in utilities.listdir_nohidden(source) if os.path.isfile(file)])
     else:
         files.append(source)
 
@@ -338,7 +338,7 @@ def setup(args):
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
     # Make sure output folder is created
-    util.ensure_dir(args.output_directory)
+    utilities.ensure_dir(args.output_directory)
 
 
 def prepare_args(args):
@@ -446,7 +446,7 @@ def parse_args(args):
                                    f'<music_video_name>_1, etc...')
 
     video_parser.add_argument('-vf', '--video-filters', dest='video_filters', nargs='+',
-                              default=vf.VIDEO_FILTERS_DEFAULT,
+                              default=video_filters.VIDEO_FILTERS_DEFAULT,
                               help=f'Video filters that each segment in the music video must pass. '
                                    f'Supported values are {[filter.name for filter in VideoFilter]}')
     video_parser.add_argument('-evf', '--exclude-video-filters', dest='exclude_video_filters', nargs='+',

@@ -1,8 +1,8 @@
 from functools import lru_cache
 from typing import List
 
+import numpy
 import librosa
-import numpy as np
 
 from mugen import paths
 from mugen.events import EventList, Event
@@ -63,7 +63,7 @@ class Audio:
     """
     file: str
     sample_rate: int
-    samples: np.ndarray
+    samples: numpy.ndarray
     duration: float
 
     def __init__(self, file: str, *, sample_rate: int = 44100):

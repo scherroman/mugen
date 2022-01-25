@@ -1,6 +1,6 @@
 import pytest
 
-import mugen.location_utility as loc_util
+from mugen import location_utilities
 
 
 @pytest.mark.parametrize("locations, expected_intervals", [
@@ -9,7 +9,7 @@ import mugen.location_utility as loc_util
     ([5, 10, 15, 25, 26], [5, 5, 5, 10, 1])
 ])
 def test_intervals_from_locations(locations, expected_intervals):
-    assert loc_util.intervals_from_locations(locations) == expected_intervals
+    assert location_utilities.intervals_from_locations(locations) == expected_intervals
 
 
 @pytest.mark.parametrize("intervals, expected_locations", [
@@ -18,7 +18,7 @@ def test_intervals_from_locations(locations, expected_intervals):
     ([5, 5, 5, 10, 1], [5, 10, 15, 25, 26])
 ])
 def test_locations_from_intervals(intervals, expected_locations):
-    assert loc_util.locations_from_intervals(intervals) == expected_locations
+    assert location_utilities.locations_from_intervals(intervals) == expected_locations
 
 
 @pytest.mark.parametrize("locations, expected_start_locations, expected_end_locations", [
@@ -28,7 +28,7 @@ def test_locations_from_intervals(intervals, expected_locations):
     ([1, 2, 5, 10], [1, 2, 5, 10], [2, 5, 10, 10]),
 ])
 def test_start_end_locations_from_locations(locations, expected_start_locations, expected_end_locations):
-    assert loc_util.start_end_locations_from_locations(locations) == (expected_start_locations, expected_end_locations)
+    assert location_utilities.start_end_locations_from_locations(locations) == (expected_start_locations, expected_end_locations)
 
 
 @pytest.mark.parametrize("intervals, expected_start_locations, expected_end_locations", [
@@ -37,4 +37,4 @@ def test_start_end_locations_from_locations(locations, expected_start_locations,
     ([1, 2, 5, 10], [0, 1, 3, 8], [1, 3, 8, 18]),
 ])
 def test_start_end_locations_from_intervals(intervals, expected_start_locations, expected_end_locations):
-    assert loc_util.start_end_locations_from_intervals(intervals) == (expected_start_locations, expected_end_locations)
+    assert location_utilities.start_end_locations_from_intervals(intervals) == (expected_start_locations, expected_end_locations)

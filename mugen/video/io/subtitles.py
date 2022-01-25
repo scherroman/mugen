@@ -1,11 +1,10 @@
-from typing import List, NamedTuple, Optional as Opt, Any
+from typing import List, NamedTuple, Optional, Any
 
 import pysrt
 
-import mugen.exceptions as ex
-import mugen.location_utility as loc_util
-import mugen.utility as util
-from mugen.utility import temp_file_enabled
+from mugen import utilities, location_utilities
+from mugen.exceptions import FFMPEGError, ParameterError
+from mugen.utilities import temp_file_enabled
 
 SUBTITLES_EXTENSION = '.srt'
 
@@ -34,15 +33,15 @@ class SubtitleTrack:
         self.default = default
 
     @classmethod
-    def create(cls, texts: List[Any], name: str, *, locations: Opt[List[float]] = None,
-               durations: Opt[List[float]] = None, default: bool = False) -> 'SubtitleTrack':
+    def create(cls, texts: List[Any], name: str, *, locations: Optional[List[float]] = None,
+               durations: Optional[List[float]] = None, default: bool = False) -> 'SubtitleTrack':
         subtitles = []
         if locations:
-            start_times, end_times = loc_util.start_end_locations_from_locations(locations)
+            start_times, end_times = location_utilities.start_end_locations_from_locations(locations)
         elif durations:
-            start_times, end_times = loc_util.start_end_locations_from_intervals(durations)
+            start_times, end_times = location_utilities.start_end_locations_from_intervals(durations)
         else:
-            raise ex.ParameterError(f"Must provide either locations or durations for the subtitle track {name}")
+            raise ParameterError(f"Must provide either locations or durations for the subtitle track {name}")
 
         for index, (text, start_time, end_time) in enumerate(zip(texts, start_times, end_times)):
             subtitle = Subtitle(str(text), start_time, end_time)
@@ -53,8 +52,8 @@ class SubtitleTrack:
         return subtitle_track
 
     @temp_file_enabled('output_path', SUBTITLES_EXTENSION)
-    def write_to_file(self, output_path: Opt[str] = None):
-        util.touch(output_path)
+    def write_to_file(self, output_path: Optional[str] = None):
+        utilities.touch(output_path)
         sub_rip_file = pysrt.open(output_path, encoding='utf-8')
 
         for index, sub in enumerate(self.subtitles):
@@ -77,10 +76,10 @@ class AudioTrack:
         self.name = name
 
 
-def add_tracks_to_video(video_file: str, output_path: str, *, subtitle_tracks: Opt[List[SubtitleTrack]] = None,
-                        audio_tracks: Opt[List[AudioTrack]] = None):
+def add_tracks_to_video(video_file: str, output_path: str, *, subtitle_tracks: Optional[List[SubtitleTrack]] = None,
+                        audio_tracks: Optional[List[AudioTrack]] = None):
     """
-    Adds metadata subtitle tracks to a video
+    Adds subtitle and audio tracks to a video
     """
     if subtitle_tracks is None:
         subtitle_tracks = []
@@ -95,7 +94,7 @@ def add_tracks_to_video(video_file: str, output_path: str, *, subtitle_tracks: O
 
     # Create new music video with auxiliary audio & subtitle tracks mixed in
     ffmpeg_cmd = [
-                       util.get_ffmpeg_binary(),
+                       utilities.get_ffmpeg_binary(),
                        '-y',
                        '-i', video_file
           ]
@@ -130,8 +129,8 @@ def add_tracks_to_video(video_file: str, output_path: str, *, subtitle_tracks: O
                   ]
 
     try:
-        util.execute_ffmpeg_command(ffmpeg_cmd)
-    except ex.FFMPEGError as e:
-        print(f"Failed to add subtitle tracks to music video. Error Code: {e.return_code}, "
-              f"Error: {e}")
+        utilities.execute_ffmpeg_command(ffmpeg_cmd)
+    except FFMPEGError as error:
+        print(f"Failed to add subtitle tracks to music video. Error Code: {error.return_code}, "
+              f"Error: {error}")
         raise

@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 version = dict()
-with open("mugen/version.py") as f:
-    exec(f.read(), version)
+with open("mugen/version.py") as file:
+    exec(file.read(), version)
 
 optional_requirements = ['tesserocr==2.5.1']
 tests_requirements = ['pytest==3.0.7', 'pytest-cov==2.4.0']

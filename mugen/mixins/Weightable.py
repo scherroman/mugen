@@ -1,9 +1,9 @@
 from copy import deepcopy
 from fractions import Fraction
-from typing import Optional as Opt, Union, List, Any
+from typing import Optional, Union, List, Any
 
-import mugen.utility as util
 from mugen import lists
+from mugen import utilities
 from mugen.lists import MugenList
 
 
@@ -29,7 +29,7 @@ class WeightableList(Weightable, MugenList):
     A list of Weightables with extended functionality
     """
 
-    def __init__(self, weightables: Opt[List[Union[Weightable, List[Any]]]] = None, **kwargs):
+    def __init__(self, weightables: Optional[List[Union[Weightable, List[Any]]]] = None, **kwargs):
         """
         Parameters
         ----------
@@ -69,7 +69,7 @@ class WeightableList(Weightable, MugenList):
         -------
         Weights in simplest fraction form
         """
-        return [util.float_to_fraction(weight) for weight in self.normalized_weights]
+        return [utilities.float_to_fraction(weight) for weight in self.normalized_weights]
 
     def flatten(self) -> 'WeightableList':
         """

@@ -2,7 +2,7 @@ from fractions import Fraction
 
 import pytest
 
-import mugen.utility as util
+from mugen import utilities
 
 
 class DummyList(list):
@@ -13,7 +13,7 @@ class DummyList(list):
     ([1, 2, 3, 4, 5, 6, 7], [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
 ])
 def test_window(iterable, expected_list):
-    assert list(util.window(iterable, 2)) == expected_list
+    assert list(utilities.window(iterable, 2)) == expected_list
 
 
 @pytest.mark.parametrize("a_start, a_end, b_start, b_end, do_overlap", [
@@ -27,7 +27,7 @@ def test_window(iterable, expected_list):
     (5, 10, 4, 6, True)     # overlaps left
 ])
 def test_ranges_overlap(a_start, a_end, b_start, b_end, do_overlap):
-    assert util.ranges_overlap(a_start, a_end, b_start, b_end) == do_overlap
+    assert utilities.ranges_overlap(a_start, a_end, b_start, b_end) == do_overlap
 
 
 @pytest.mark.parametrize("float_var, expected_fraction", [
@@ -36,7 +36,7 @@ def test_ranges_overlap(a_start, a_end, b_start, b_end, do_overlap):
     (5, Fraction(numerator=5, denominator=1))
 ])
 def test_float_to_fraction(float_var, expected_fraction):
-    assert util.float_to_fraction(float_var) == expected_fraction
+    assert utilities.float_to_fraction(float_var) == expected_fraction
 
 
 @pytest.mark.parametrize("slices, length, expected_slices", [
@@ -48,7 +48,7 @@ def test_float_to_fraction(float_var, expected_fraction):
     ([slice(1, 3), slice(5, 7)], 8, [slice(0, 1), slice(1, 3), slice(3, 5), slice(5, 7), slice(7, 8)]),
 ])
 def test_fill_slices(slices, length, expected_slices):
-    assert util.fill_slices(slices, length) == expected_slices
+    assert utilities.fill_slices(slices, length) == expected_slices
 
 
 @pytest.mark.parametrize("time, expected_seconds", [
@@ -67,7 +67,7 @@ def test_fill_slices(slices, length, expected_slices):
     ('01:01:33,5', 3693.5)
 ])
 def test_time_to_seconds(time, expected_seconds):
-    assert util.time_to_seconds(time) == expected_seconds
+    assert utilities.time_to_seconds(time) == expected_seconds
 
 
 @pytest.mark.parametrize("seconds, expected_time_code", [
@@ -76,7 +76,7 @@ def test_time_to_seconds(time, expected_seconds):
     (50000.085, '13:53:20.085')
 ])
 def test_seconds_to_time_code(seconds, expected_time_code):
-    assert util.seconds_to_time_code(seconds) == expected_time_code
+    assert utilities.seconds_to_time_code(seconds) == expected_time_code
 
 
 @pytest.mark.parametrize("hex_value, expected_rgb", [
@@ -86,7 +86,7 @@ def test_seconds_to_time_code(seconds, expected_time_code):
     ('#FF4500', [255, 69, 0])
 ])
 def test_hex_to_rgb(hex_value, expected_rgb):
-    assert util.hex_to_rgb(hex_value) == expected_rgb
+    assert utilities.hex_to_rgb(hex_value) == expected_rgb
 
 
 @pytest.mark.parametrize("color, expected_hex_code", [
@@ -95,9 +95,9 @@ def test_hex_to_rgb(hex_value, expected_rgb):
     ('white', '#ffffff')
 ])
 def test_color_to_hex_code(color, expected_hex_code):
-    assert util.color_to_hex_code(color) == expected_hex_code
+    assert utilities.color_to_hex_code(color) == expected_hex_code
 
 
 def test_list_to_subclass():
-    dummy_list = util.list_to_subclass([1], DummyList)
+    dummy_list = utilities.list_to_subclass([1], DummyList)
     assert type(dummy_list) == DummyList

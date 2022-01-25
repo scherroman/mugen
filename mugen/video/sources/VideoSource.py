@@ -1,14 +1,14 @@
-import glob as globber
 import os
 import random
-from typing import Union, List, Optional as Opt, NamedTuple, Tuple
+import glob as globber
+from typing import Union, List, Optional, NamedTuple, Tuple
 
 from numpy.random import choice
 
-import mugen.utility as util
 from mugen import paths
+from mugen import utilities
 from mugen.constants import TIME_FORMAT
-from mugen.utility import convert_time_to_seconds
+from mugen.utilities import convert_time_to_seconds
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.Source import Source, SourceList
 
@@ -37,7 +37,7 @@ class VideoSource(Source):
     """
     time_boundaries: List[Tuple[(TIME_FORMAT, TIME_FORMAT)]]
 
-    def __init__(self, file: str, *, time_boundaries: Opt[List[Tuple[(TIME_FORMAT, TIME_FORMAT)]]] = None,
+    def __init__(self, file: str, *, time_boundaries: Optional[List[Tuple[(TIME_FORMAT, TIME_FORMAT)]]] = None,
                  **kwargs):
         """
         Parameters
@@ -94,9 +94,9 @@ class VideoSourceList(SourceList):
     """
     A list of VideoSources
     """
-    name: Opt[str]
+    name: Optional[str]
 
-    def __init__(self, sources=Opt[Union[List[Union[Source, 'VideoSourceList']], str]], **kwargs):
+    def __init__(self, sources=Optional[Union[List[Union[Source, 'VideoSourceList']], str]], **kwargs):
         """
         Parameters
         ----------
@@ -111,7 +111,7 @@ class VideoSourceList(SourceList):
 
             # Build list of sources from directory or file glob
             if os.path.isdir(sources):
-                sources = self._sources_from_files(util.files_from_directory(sources))
+                sources = self._sources_from_files(utilities.files_from_directory(sources))
             else:
                 sources = self._sources_from_files(globber.glob(sources))
         else:

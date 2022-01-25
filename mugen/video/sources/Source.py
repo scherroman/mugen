@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional as Opt, List, Union
+from typing import Optional, List, Union
 
 from mugen.mixins.Taggable import Taggable
 from mugen.mixins.Weightable import Weightable, WeightableList
@@ -29,7 +29,7 @@ class SourceList(WeightableList):
     A list of sources
     """
 
-    def __init__(self, sources: Opt[List[Union[Source, 'SourceList']]] = None, *, weights: List[float] = None,
+    def __init__(self, sources: Optional[List[Union[Source, 'SourceList']]] = None, *, weights: List[float] = None,
                  **kwargs):
         """
         Parameters

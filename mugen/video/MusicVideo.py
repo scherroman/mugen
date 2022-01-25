@@ -1,18 +1,17 @@
 import operator
 import os
 from functools import wraps
-from typing import List, Optional as Opt, Union
+from typing import List, Optional, Union
 
 from moviepy.editor import AudioFileClip, VideoClip
 
-import mugen.location_utility as loc_util
-import mugen.utility as util
-import mugen.video.effects as v_effects
-import mugen.video.io.subtitles as v_io
-import mugen.video.sizing as v_sizing
+import mugen.video.effects as video_effects
+import mugen.video.sizing as video_sizing
+import mugen.video.io.subtitles as subtitles
+from mugen import utilities, location_utilities
 from mugen.events import EventList
 from mugen.mixins.Persistable import Persistable
-from mugen.utility import ensure_json_serializable, temp_file_enabled
+from mugen.utilities import ensure_json_serializable, temp_file_enabled
 from mugen.video.cuts import Cut
 from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.io.subtitles import SubtitleTrack
@@ -49,17 +48,17 @@ class MusicVideo(Persistable):
     meta
         Json serializable dictionary with extra metadata
     """
-    audio_file: Opt[str]
+    audio_file: Optional[str]
     segments: List[Segment]
     writer: VideoWriter
-    _dimensions: Opt[Dimensions]
-    aspect_ratio: Opt[float]
+    _dimensions: Optional[Dimensions]
+    aspect_ratio: Optional[float]
 
     meta: dict
 
     @ensure_json_serializable('meta')
-    def __init__(self, segments: List[Segment], audio_file: Opt[str] = None, *,
-                 dimensions: Opt[Dimensions] = None, aspect_ratio: Opt[float] = None, **kwargs):
+    def __init__(self, segments: List[Segment], audio_file: Optional[str] = None, *,
+                 dimensions: Optional[Dimensions] = None, aspect_ratio: Optional[float] = None, **kwargs):
         """
         Parameters
         ----------
@@ -103,7 +102,7 @@ class MusicVideo(Persistable):
     @property
     def cuts(self) -> EventList:
         durations = [segment.duration for segment in self.segments]
-        locations = loc_util.locations_from_intervals(durations)
+        locations = location_utilities.locations_from_intervals(durations)
         return EventList([Cut(location) for location in locations[:-1]], end=locations[-1])
 
     """ METHODS """
@@ -116,7 +115,7 @@ class MusicVideo(Persistable):
         The largest dimensions available for the music video's aspect ratio
         """
         if self.aspect_ratio:
-            dimensions = v_sizing.largest_dimensions_for_aspect_ratio(
+            dimensions = video_sizing.largest_dimensions_for_aspect_ratio(
                 [segment.dimensions for segment in self.segments], self.aspect_ratio)
         else:
             dimensions = max([segment.dimensions for segment in self.segments],
@@ -143,7 +142,7 @@ class MusicVideo(Persistable):
             next_segment = segments[index + 1]
 
             for effect in next_segment.effects:
-                if isinstance(effect, v_effects.CrossFade):
+                if isinstance(effect, video_effects.CrossFade):
                     buffer = segment.trailing_buffer(effect.duration)
                     if buffer.audio:
                         buffer = buffer.set_audio(buffer.audio.audio_fadeout(effect.duration))
@@ -160,7 +159,7 @@ class MusicVideo(Persistable):
 
             # Apply any crossfade for the current segment
             for effect in segment.effects:
-                if isinstance(effect, v_effects.CrossFade):
+                if isinstance(effect, video_effects.CrossFade):
                     segment = segment.set_start(previous_segment.end - effect.duration)
                     segment = segment.crossfadein(effect.duration)
                     if segment.audio:
@@ -177,7 +176,7 @@ class MusicVideo(Persistable):
 
     @requires_video_segments
     @temp_file_enabled('output_path', VideoWriter.VIDEO_EXTENSION)
-    def write_to_video_file(self, output_path: Opt[str] = None, *, audio: Opt[Union[bool, str]] = None,
+    def write_to_video_file(self, output_path: Optional[str] = None, *, audio: Optional[Union[bool, str]] = None,
                             add_auxiliary_tracks: bool = True, verbose: bool = False, progress_bar: bool = True,
                             **kwargs):
         """
@@ -242,7 +241,7 @@ class MusicVideo(Persistable):
 
         subtitle_tracks = [subtitle_track_segment_numbers, subtitle_track_segment_locations,
                            subtitle_track_segment_durations]
-        v_io.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
+        subtitles.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
 
     @requires_video_segments
     def write_video_segments(self, directory: str):
@@ -255,7 +254,7 @@ class MusicVideo(Persistable):
             location to save video segments
         """
         directory = os.path.join(directory, SEGMENTS_DIRECTORY)
-        util.recreate_dir(directory)
+        utilities.recreate_dir(directory)
 
         video_segments = [segment.crop_scale(self.dimensions) for segment in self.segments]
 

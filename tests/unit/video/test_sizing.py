@@ -1,6 +1,6 @@
 import pytest
 
-import mugen.video.sizing as v_sizing
+import mugen.video.sizing as video_sizing
 from mugen.video.sizing import Dimensions
 
 
@@ -30,7 +30,7 @@ def list_of_dimensions():
     (dimensions_4_3(), 16/9, (720, 405))
 ])
 def test_crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio, expected_dimensions):
-    assert v_sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio) == expected_dimensions
+    assert video_sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio) == expected_dimensions
 
 
 @pytest.mark.parametrize("dimensions, desired_aspect_ratio, expected_coordinates", [
@@ -39,7 +39,7 @@ def test_crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio, expected_dime
     (dimensions_4_3(), 16/9, (0, 67.5, 720, 472.5))
 ])
 def test_crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio, expected_coordinates):
-    assert v_sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio) == expected_coordinates
+    assert video_sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio) == expected_coordinates
 
 
 @pytest.mark.parametrize("dimensions_list, desired_aspect_ratio, default, expected_dimensions", [
@@ -49,5 +49,5 @@ def test_crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio, exp
     (list_of_dimensions(), 21/9, None, (1920, 822))
 ])
 def test_largest_dimensions_for_aspect_ratio(dimensions_list, desired_aspect_ratio, default, expected_dimensions):
-    assert v_sizing.largest_dimensions_for_aspect_ratio(dimensions_list, desired_aspect_ratio,
+    assert video_sizing.largest_dimensions_for_aspect_ratio(dimensions_list, desired_aspect_ratio,
                                                         default) == expected_dimensions

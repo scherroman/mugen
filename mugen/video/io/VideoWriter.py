@@ -1,10 +1,10 @@
 import os
-from typing import Optional as Opt, List, Union
+from typing import Optional, List, Union
 
 from moviepy.editor import VideoClip
 from tqdm import tqdm
 
-from mugen.utility import temp_file_enabled
+from mugen.utilities import temp_file_enabled
 
 
 class VideoWriter:
@@ -51,7 +51,7 @@ class VideoWriter:
 
     def __init__(self, preset: str = VIDEO_PRESET, codec: str = VIDEO_CODEC, crf: int = VIDEO_CRF,
                  audio_codec: str = AUDIO_CODEC, audio_bitrate: int = AUDIO_BITRATE,
-                 ffmpeg_params: Opt[List[str]] = None):
+                 ffmpeg_params: Optional[List[str]] = None):
         self.preset = preset
         self.codec = codec
         self.crf = crf
@@ -71,7 +71,7 @@ class VideoWriter:
                                           **kwargs)
 
     @temp_file_enabled('output_path', VIDEO_EXTENSION)
-    def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Opt[str] = None, *,
+    def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Optional[str] = None, *,
                                  audio: Union[str, bool] = True, verbose: bool = False, progress_bar: bool = True,
                                  **kwargs):
         """
