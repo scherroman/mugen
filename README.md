@@ -1,10 +1,10 @@
 ```
-                                   
- _ __ ___  _   _  __ _  ___ _ __  
-| '_ ` _ \| | | |/ _` |/ _ \ '_ \ 
+
+ _ __ ___  _   _  __ _  ___ _ __
+| '_ ` _ \| | | |/ _` |/ _ \ '_ \
 | | | | | | |_| | (_| |  __/ | | |
 |_| |_| |_|\__,_|\__, |\___|_| |_|
-                  |___/            
+                  |___/
 ```
 
 A music video generator based on rhythm
@@ -27,15 +27,15 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 
 ## Requirements
 
-- A Python 3.7+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
+-   A Python 3.7+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
 
-**Optional:** 
+**Optional:**
 
-- [Tesseract](https://github.com/tesseract-ocr/tesseract) for text detection features.
+-   [Tesseract](https://github.com/tesseract-ocr/tesseract) for text detection features.
 
 Mugen has not been tested on Windows, but should work provided the dependencies are compiled and installed properly.
 
-## Installation 
+## Installation
 
 **1. Download this repository**
 
@@ -53,7 +53,7 @@ pip install -e mugen
 
 **1. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
 
-**2. Create a Python 3.7 virtual environment**
+**2. Create a Python 3.7 or higher virtual environment**
 
 ```
 conda create --yes --name mugen python=3.7
@@ -77,7 +77,7 @@ git clone https://github.com/scherroman/mugen
 pip install -e mugen
 ```
 
-## Full Install  (MacOS)
+## Full Install (MacOS)
 
 **1. [Install Homebrew](http://brew.sh/)**
 
@@ -89,7 +89,7 @@ brew install tesseract tesseract-lang
 
 **3. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
 
-**4. Create a Python 3.7 virtual environment**
+**4. Create a Python 3.7 or higher virtual environment**
 
 ```
 conda create --yes --name mugen python=3.7
@@ -113,9 +113,10 @@ git clone https://github.com/scherroman/mugen
 pip install -e mugen[full]
 ```
 
-## Examples
+## Usage
 
 ### Help Menu
+
 ---
 
 ```
@@ -124,7 +125,10 @@ mugen create --help
 mugen preview --help
 ```
 
+Use the above commands at any time to clarify the examples below and view the full list of available options.
+
 ### Create a music video
+
 ---
 
 ```
@@ -168,7 +172,10 @@ mugen create --video-filters has_text
 ```
 
 ### Preview a music video
+
 ---
+
+Create a quick preview of your music video by marking cut locations with beeps and flashes.
 
 ```
 mugen preview --audio-source Spazzkid_Goodbye.mp3
@@ -186,9 +193,10 @@ mugen preview --event-locations 2 4 6 10 11 12
 mugen preview --audio-events-mode onsets --events-speed 1/2 --events-speed-offset 1
 ```
 
-## Python Examples
+## Python Usage
 
 ### Preview a music video
+
 ---
 
 ```
@@ -202,6 +210,7 @@ generator.preview_events(beats, "forget-preview.mkv")
 ```
 
 ### Create a music video
+
 ---
 
 ```
@@ -219,6 +228,7 @@ music_video.save("flowers.pickle")
 ```
 
 ### Replace a segment in a music video
+
 ---
 
 ```
@@ -234,6 +244,7 @@ music_video.write_to_video_file("flowers.mkv")
 ```
 
 ### Preview a segment in a music video
+
 ---
 
 ```
@@ -256,3 +267,11 @@ music_video.segments[1].ipython_display(autoplay=1, loop=1, width=400)
 # Preview a frame at a specific time (seconds)
 music_video.segments[1].ipython_display(t=.5, width=400)
 ```
+
+## Troubleshooting
+
+### Progress is stuck
+
+---
+
+The most common reason progress gets stuck is that mugen is trying but can't find any more segments from your video source(s) that pass the default video filters listed under `mugen create --help`. The `not_is_repeat` and `not_has_cut` filters in particular could be causing this if your video source is especially short and/or with little to no time between scene changes. The first one throws out segments that have already been used, and the latter throws out segments where there are scene changes detected. Try using one or more videos that are longer than your music, or otherwise disable the filters with `--exclude-video-filters not_has_cut not_is_repeat`.

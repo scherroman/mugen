@@ -27,7 +27,7 @@ class PreviewMode(str, Enum):
     visual: Produce an audio-visual preview
     """
     AUDIO = 'audio'
-    VISUAL = 'visual'
+    AUDIOVISUAL = 'audiovisual'
 
 
 class MusicVideoGenerator:
@@ -193,7 +193,7 @@ class MusicVideoGenerator:
 
     @temp_file_enabled('output_path', '.mkv')
     def preview_events(self, events: Union[EventList, List[TIME_FORMAT]], output_path: Opt[str] = None,
-                       mode: str = PreviewMode.VISUAL, progress_bar: bool =True, **kwargs):
+                       mode: str = PreviewMode.AUDIOVISUAL, progress_bar: bool =True, **kwargs):
         """
         Creates a new audio file with audible bleeps at event locations
 
@@ -219,7 +219,7 @@ class MusicVideoGenerator:
             a_util.create_marked_audio_file(events.locations, output_path,
                                             audio_file=self.audio.file if self.audio else None,
                                             duration=self.duration)
-        elif mode == PreviewMode.VISUAL:
+        elif mode == PreviewMode.AUDIOVISUAL:
             temp_marked_audio_file = a_util.create_marked_audio_file(events.locations,
                                                                      audio_file=self.audio.file if self.audio else None,
                                                                      duration=self.duration)

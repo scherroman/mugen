@@ -389,29 +389,29 @@ def parse_args(args):
     """ PARSERS """
 
     parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False,
-                        help='Pass in this argument to print useful debug info.')
+                        help='Pass in this argument to print useful debug info')
     parser.add_argument('-od', '--output-directory', dest='output_directory', default=os.path.expanduser("~/Desktop"),
-                        help='The directory in which to store any output from this program. '
-                             f'Will create the directory if non-existent.')
+                        help='The directory in which to store any output from this application. '
+                             f'Will create the directory if non-existent')
 
     # Event Common Parameters
     event_parser.add_argument('-d', '--duration', dest='duration', type=float,
-                              help='Manually set the duration of the music video.')
+                              help='Manually set the duration of the music video')
     event_parser.add_argument('-el', '--event-locations', dest='event_locations', type=float, nargs='+',
                               help='Manually enter Event locations for the audio file. '
                                    'Usually this corresponds to beats in the music, or any location where one feels '
                                    'there should be a cut between clips in the music video. '
                                    'If this option is specified alongside --audio-events-mode, both will be combined. '
-                                   'Takes a list of numerical values separated by spaces.')
+                                   'Takes a list of numerical values separated by spaces')
     event_parser.add_argument('-eo', '--events-offset', dest='events_offset', type=float,
-                              help='Global offset for event locations.')
+                              help='Global offset for event locations')
     event_parser.add_argument('-es', '--events-speed', dest='events_speed', type=Fraction,
                               help='Global speed up or slow down for events in the music video. '
                                    'Should be of the form x or 1/x, where x is a natural number. '
-                                   '(e.g.) 2 for double speed, or 1/2 for half speed.')
+                                   '(e.g.) 2 for double speed, or 1/2 for half speed')
     event_parser.add_argument('-eso', '--events-speed-offset', dest='events_speed_offset', type=int,
                               help='Offset for the merging of events on a slowdown speed multiplier. '
-                                   'Takes an integer, with a max offset of x - 1 for a slowdown of 1/x.')
+                                   'Takes an integer, with a max offset of x - 1 for a slowdown of 1/x')
     event_parser.add_argument('-gebs', '--group-events-by-slices', dest='group_events_by_slices', type=slice, nargs='+',
                               help='Group events by one or more slices. '
                                    'Must be of the form start,stop or (start,stop). '
@@ -428,16 +428,16 @@ def parse_args(args):
     event_parser.add_argument('-tg', '--target-groups', dest='target_groups', default=TargetGroups.SELECTED,
                               help='Which groups "--group-by" modifiers should apply to. '
                                    'Either all groups, only selected groups, or only unselected groups. '
-                                   f'Supported values are {[e.value for e in TargetGroups]}.')
+                                   f'Supported values are {[e.value for e in TargetGroups]}')
     event_parser.add_argument('-gs', '--group-speeds', dest='group_speeds', type=Fraction, nargs='+',
                               default=[],
                               help='Speed multipliers for event groups created by "--group-by" options. '
                                    f'e.g.) 1/2 1/4 1/8 will speed multiply all of (0,20) (20,30) (30,39), in order. '
                                    f'But 1/2 with --target-groups {TargetGroups.SELECTED} will speed multiply only '
-                                   f'(20,30).')
+                                   f'(20,30)')
     event_parser.add_argument('-gso', '--group-speed-offsets', dest='group_speed_offsets', type=int,
                               default=[], nargs='+',
-                              help='Speed multiplier offsets for event group speeds.')
+                              help='Speed multiplier offsets for event group speeds')
 
     # Video Common Parameters
     video_parser.add_argument('-vn', '--video-name', dest='video_name', default=DEFAULT_MUSIC_VIDEO_NAME,
@@ -448,7 +448,7 @@ def parse_args(args):
     video_parser.add_argument('-vf', '--video-filters', dest='video_filters', nargs='+',
                               default=vf.VIDEO_FILTERS_DEFAULT,
                               help=f'Video filters that each segment in the music video must pass. '
-                                   f'Supported values are {[filter.name for filter in VideoFilter]}. ')
+                                   f'Supported values are {[filter.name for filter in VideoFilter]}')
     video_parser.add_argument('-evf', '--exclude-video-filters', dest='exclude_video_filters', nargs='+',
                               help=f'Video filters to exclude from the default video filters. '
                                    f'See video_filters for supported values')
@@ -458,12 +458,12 @@ def parse_args(args):
 
     video_parser.add_argument('-vpre', '--video-preset', dest='video_preset', default=VideoWriter.VIDEO_PRESET,
                               help=f'Tunes the time that FFMPEG will spend optimizing compression while writing '
-                                   f'the music video to file.')
+                                   f'the music video to file. See FFMPEG documentation for more info')
     video_parser.add_argument('-vcod', '--video-codec', dest='video_codec', default=VideoWriter.VIDEO_CODEC,
-                              help=f'The video codec for the music video.')
+                              help=f'The video codec for the music video')
     video_parser.add_argument('-vcrf', '--video-crf', dest='video_crf', type=int, default=VideoWriter.VIDEO_CRF,
                               help=f'The crf quality value for the music video. '
-                                   f'Takes an integer from 0 (lossless) to 51 (lossy). ')
+                                   f'Takes an integer from 0 (lossless) to 51 (lossy)')
     video_parser.add_argument('-vdim', '--video-dimensions', dest='video_dimensions', type=int, nargs=2,
                               help='The pixel dimensions for the music video, width and height. '
                                    'All video segments will be resized (cropped and/or scaled) appropriately '
@@ -483,31 +483,31 @@ def parse_args(args):
                                    'such as wav, aiff, flac, ogg, mp3, etc...')
     audio_parser.add_argument('-uoa', '--use-original-audio', dest='use_original_audio', action='store_true',
                               default=False,
-                              help=f'Whether or not to use the original audio from video segments for the music video.')
+                              help=f'Whether or not to use the original audio from the video segments for the music video')
 
     audio_parser.add_argument('-aem', '--audio-events-mode', dest='audio_events_mode', default=AudioEventsMode.BEATS,
                               help=f'Method of generating events from the audio file. '
-                                   f'Supported values are {[e.value for e in AudioEventsMode]}.')
+                                   f'Supported values are {[e.value for e in AudioEventsMode]}')
 
     audio_parser.add_argument('-bm', '--beats-mode', dest='beats_mode', default=BeatsMode.BEATS,
                               help=f'Method of generating beat events from the audio file. '
-                                   f'Supported values are {[e.value for e in BeatsMode]}.')
+                                   f'Supported values are {[e.value for e in BeatsMode]}')
     audio_parser.add_argument('-om', '--onsets-mode', dest='onsets_mode', default=OnsetsMode.ONSETS,
                               help=f'Method of generating onset events from the audio file. '
-                                   f'Supported values are {[e.value for e in OnsetsMode]}.')
+                                   f'Supported values are {[e.value for e in OnsetsMode]}')
 
     audio_parser.add_argument('-ac', '--audio-codec', dest='audio_codec', default=VideoWriter.AUDIO_CODEC,
-                              help=f'The audio codec for the music video if the original audio is used.')
+                              help=f'The audio codec for the music video if --use-original-audio is enabled')
     audio_parser.add_argument('-ab', '--audio-bitrate', dest='audio_bitrate', type=int,
                               default=VideoWriter.AUDIO_BITRATE,
-                              help='The audio bitrate (kbps) for the music video, if no audio_file is given.')
+                              help='The audio bitrate (kbps) for the music video if --use-original-audio is enabled')
 
     """ COMMANDS """
 
     # Create Command Parameters
     create_parser = subparsers.add_parser('create', parents=[audio_parser, video_parser, event_parser],
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                          help='Create a new music video.')
+                                          help='Create a new music video')
     create_parser.set_defaults(func=create_music_video)
     create_parser.add_argument('-v', '--video-sources', dest='video_sources', nargs='+', required=True,
                                help='The video sources for the music video. '
@@ -520,7 +520,7 @@ def parse_args(args):
                                     'in the music video. Takes a list of numbers separated by spaces. '
                                     '(i.e.) Pass --weights .6 .4 or --weights 6 4 to use the first video source '
                                     '(a series of 26 episodes) 60%% of the time, and the second video source '
-                                    '(a movie) 40%% of the time.')
+                                    '(a movie) 40%% of the time')
     create_parser.add_argument('-fi', '--fade-in', dest='fade_in', type=float,
                                help='Fade-in for the music video (seconds)')
     create_parser.add_argument('-fo', '--fade-out', dest='fade_out', type=float,
@@ -529,9 +529,9 @@ def parse_args(args):
     # Preview Command Parameters
     preview_parser = subparsers.add_parser('preview', parents=[audio_parser, event_parser],
                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                           help="Create an audio preview of events for a music video by marking "
-                                                "the audio with bleeps.")
-    preview_parser.add_argument('-pm', '--preview-mode', dest='preview_mode', default=PreviewMode.VISUAL,
+                                           help="Create a quick preview of your music video by marking cut "
+                                                "locations with beeps and flashes")
+    preview_parser.add_argument('-pm', '--preview-mode', dest='preview_mode', default=PreviewMode.AUDIOVISUAL,
                                 help=f'The method of previewing events. '
                                      f'Supported values are {[e.value for e in PreviewMode]}')
     preview_parser.set_defaults(func=preview_audio)
