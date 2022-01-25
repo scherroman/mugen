@@ -31,7 +31,7 @@ setup(
         'moviepy==0.2.3.5',
         "librosa==0.8.0",
         "Pillow==9.0.0",
-        'numpy==1.17.2',
+        'numpy==1.21.0',
         'pysrt==1.1.1',
         'tqdm==4.11.2',
         'decorator==4.0.11',
