@@ -1,7 +1,7 @@
 import dill
 from typing import Optional
 
-from mugen.utilities import temp_file_enabled
+from mugen.utilities.system import use_temporary_file_fallback
 
 PICKLE_EXTENSION = '.pickle'
 
@@ -11,7 +11,7 @@ class Persistable:
     Mixin for persisting objects
     """
 
-    @temp_file_enabled('output_path', PICKLE_EXTENSION)
+    @use_temporary_file_fallback('output_path', PICKLE_EXTENSION)
     def save(self, output_path: Optional[str] = None):
         with open(output_path, "wb") as output_file:
             dill.dump(self, output_file)

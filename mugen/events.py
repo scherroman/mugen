@@ -7,10 +7,10 @@ from operator import attrgetter
 from typing import List, Optional, Union
 
 from mugen import lists
-from mugen import utilities, location_utilities
 from mugen.lists import MugenList
 from mugen.constants import TIME_FORMAT
-from mugen.utilities import convert_float_to_fraction, convert_time_to_seconds
+from mugen.utilities import general, location
+from mugen.utilities.conversion import convert_float_to_fraction, convert_time_to_seconds
 
 
 class Event:
@@ -141,7 +141,7 @@ class EventList(MugenList):
 
     @property
     def intervals(self) -> List[float]:
-        return location_utilities.intervals_from_locations(self.locations)
+        return location.intervals_from_locations(self.locations)
 
     @property
     def segment_locations(self):
@@ -160,7 +160,7 @@ class EventList(MugenList):
         -------
         durations of segments between events
         """
-        return location_utilities.intervals_from_locations(self.locations + [self.end])
+        return location.intervals_from_locations(self.locations + [self.end])
 
     @property
     def durations(self) -> List[float]:
@@ -316,7 +316,7 @@ class EventList(MugenList):
         slices = [slice(sl[0], sl[1]) for sl in slices]
 
         # Fill in rest of slices
-        all_slices = utilities.fill_slices(slices, len(self))
+        all_slices = general.fill_slices(slices, len(self))
         target_indexes = [index for index, sl in enumerate(all_slices) if sl in slices]
 
         # Group events by slices

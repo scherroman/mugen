@@ -1,11 +1,12 @@
+from pathlib import Path
+
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.io.ffmpeg_reader import FFMPEG_VideoReader
 
-from mugen import paths
-from mugen import utilities
 from mugen.constants import TIME_FORMAT
-from mugen.utilities import convert_time_to_seconds
+from mugen.utilities import general, conversion
+from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.video.segments.Segment import Segment
 
 
@@ -69,7 +70,7 @@ class VideoSegment(Segment, VideoFileClip):
 
     @property
     def name(self) -> str:
-        return paths.filename_from_path(self.file)
+        return Path(self.file).stem
 
     @property
     def source_end_time(self) -> float:
@@ -77,7 +78,7 @@ class VideoSegment(Segment, VideoFileClip):
 
     @property
     def source_start_time_time_code(self) -> str:
-        return utilities.seconds_to_time_code(self.source_start_time)
+        return conversion.seconds_to_time_code(self.source_start_time)
 
     """ METHODS """
 
@@ -113,5 +114,5 @@ class VideoSegment(Segment, VideoFileClip):
         if not self.file == segment.file:
             return False
 
-        return utilities.ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
+        return general.check_if_ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
                                    segment.source_end_time)

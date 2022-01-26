@@ -6,9 +6,6 @@ from mugen.video.segments import Segment
 from mugen.mixins.Filterable import Filter, ContextFilter
 
 
-""" FILTER FUNCTIONS """
-
-
 def is_repeat(segment: Segment, memory: Any) -> bool:
     return video_detect.video_segment_is_repeat(segment, video_segments_used=memory)
 
@@ -23,9 +20,6 @@ def has_cut(segment: Segment) -> bool:
 
 def has_low_contrast(segment: Segment) -> bool:
     return video_detect.video_segment_has_low_contrast(segment)
-
-
-""" NEGATION FILTER FUNCTIONS """
 
 
 def not_is_repeat(*args, **kwargs):
@@ -77,11 +71,11 @@ class VideoFilter(Enum):
 
 
 # Order is significant when short-circuiting. Order filters from least expensive to most expensive.
-VIDEO_FILTERS_DEFAULT = [VideoFilter.not_is_repeat.name, VideoFilter.not_has_low_contrast.name,
+DEFAULT_VIDEO_FILTERS = [VideoFilter.not_is_repeat.name, VideoFilter.not_has_low_contrast.name,
                          VideoFilter.not_has_text.name, VideoFilter.not_has_cut.name]
 
 # Remove unavailable filters
 if not video_detect.is_text_detection_available:
-    VIDEO_FILTERS_DEFAULT.remove(VideoFilter.not_has_text.name)
+    DEFAULT_VIDEO_FILTERS.remove(VideoFilter.not_has_text.name)
 
 

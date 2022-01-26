@@ -1,14 +1,14 @@
 import os
 import random
 import glob as globber
+from pathlib import Path
 from typing import Union, List, Optional, NamedTuple, Tuple
 
 from numpy.random import choice
 
-from mugen import paths
-from mugen import utilities
+from mugen.utilities import system
 from mugen.constants import TIME_FORMAT
-from mugen.utilities import convert_time_to_seconds
+from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.Source import Source, SourceList
 
@@ -107,11 +107,11 @@ class VideoSourceList(SourceList):
         self.name = None
 
         if isinstance(sources, str):
-            self.name = paths.filename_from_path(sources)
+            self.name = Path(sources).stem
 
             # Build list of sources from directory or file glob
             if os.path.isdir(sources):
-                sources = self._sources_from_files(utilities.files_from_directory(sources))
+                sources = self._sources_from_files(system.list_directory_files(sources))
             else:
                 sources = self._sources_from_files(globber.glob(sources))
         else:

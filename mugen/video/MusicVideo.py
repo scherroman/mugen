@@ -7,14 +7,15 @@ from moviepy.editor import AudioFileClip, VideoClip
 
 import mugen.video.effects as video_effects
 import mugen.video.sizing as video_sizing
-import mugen.video.io.subtitles as subtitles
-from mugen import utilities, location_utilities
 from mugen.events import EventList
 from mugen.mixins.Persistable import Persistable
-from mugen.utilities import ensure_json_serializable, temp_file_enabled
+from mugen.utilities import system, location
+from mugen.utilities.system import use_temporary_file_fallback 
+from mugen.utilities.validation import ensure_json_serializable
 from mugen.video.cuts import Cut
 from mugen.video.io.VideoWriter import VideoWriter
-from mugen.video.io.subtitles import SubtitleTrack
+from mugen.video.io import tracks
+from mugen.video.io.tracks import SubtitleTrack
 from mugen.video.moviepy.CompositeVideoClip import CompositeVideoClip
 from mugen.video.segments.Segment import Segment
 from mugen.video.sizing import Dimensions
@@ -102,7 +103,7 @@ class MusicVideo(Persistable):
     @property
     def cuts(self) -> EventList:
         durations = [segment.duration for segment in self.segments]
-        locations = location_utilities.locations_from_intervals(durations)
+        locations = location.locations_from_intervals(durations)
         return EventList([Cut(location) for location in locations[:-1]], end=locations[-1])
 
     """ METHODS """
@@ -175,7 +176,7 @@ class MusicVideo(Persistable):
         return music_video
 
     @requires_video_segments
-    @temp_file_enabled('output_path', VideoWriter.VIDEO_EXTENSION)
+    @use_temporary_file_fallback('output_path', VideoWriter.VIDEO_EXTENSION)
     def write_to_video_file(self, output_path: Optional[str] = None, *, audio: Optional[Union[bool, str]] = None,
                             add_auxiliary_tracks: bool = True, verbose: bool = False, progress_bar: bool = True,
                             **kwargs):
@@ -232,16 +233,17 @@ class MusicVideo(Persistable):
         # Subtitle Tracks
         cuts = self.cuts
         numbers = [index for index, _ in enumerate(self.segments)]
-        intervals = cuts.segment_durations
-        locations = cuts.segment_locations
+        locations = [round(location, 2) for location in cuts.segment_locations]
+        durations = cuts.segment_durations
+        rounded_durations = [round(interval, 2) for interval in cuts.segment_durations]
 
-        subtitle_track_segment_numbers = SubtitleTrack.create(numbers, 'segment_numbers', durations=intervals)
-        subtitle_track_segment_locations = SubtitleTrack.create(locations, 'segment_locations', durations=intervals)
-        subtitle_track_segment_durations = SubtitleTrack.create(intervals, 'segment_intervals', durations=intervals)
+        subtitle_track_segment_numbers = SubtitleTrack.create(numbers, 'segment_numbers', durations=durations)
+        subtitle_track_segment_locations = SubtitleTrack.create(locations, 'segment_locations_seconds', durations=durations)
+        subtitle_track_segment_durations = SubtitleTrack.create(rounded_durations, 'segment_durations_seconds', durations=durations)
 
         subtitle_tracks = [subtitle_track_segment_numbers, subtitle_track_segment_locations,
                            subtitle_track_segment_durations]
-        subtitles.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
+        tracks.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
 
     @requires_video_segments
     def write_video_segments(self, directory: str):
@@ -254,7 +256,7 @@ class MusicVideo(Persistable):
             location to save video segments
         """
         directory = os.path.join(directory, SEGMENTS_DIRECTORY)
-        utilities.recreate_dir(directory)
+        system.recreate_directory(directory)
 
         video_segments = [segment.crop_scale(self.dimensions) for segment in self.segments]
 

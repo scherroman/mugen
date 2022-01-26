@@ -5,20 +5,21 @@ from typing import Optional, List, Union, Any
 from tqdm import tqdm
 
 import mugen.audio.utilities as audio_utilities
-import mugen.video.io.subtitles as subtitles
 from mugen.events import EventList
 from mugen.constants import TIME_FORMAT
 from mugen.exceptions import MugenError, ParameterError
 from mugen.mixins.Filterable import Filter, ContextFilter
-from mugen.utilities import convert_time_to_seconds, temp_file_enabled
+from mugen.utilities.system import use_temporary_file_fallback
+from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.audio.Audio import Audio
 from mugen.video.MusicVideo import MusicVideo
 from mugen.video.segments.ColorSegment import ColorSegment
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.SourceSampler import SourceSampler
 from mugen.video.sources.VideoSource import VideoSource, VideoSourceList
-from mugen.video.io.subtitles import SubtitleTrack
-from mugen.video.video_filters import VIDEO_FILTERS_DEFAULT, VideoFilter
+from mugen.video.io import tracks
+from mugen.video.io.tracks import SubtitleTrack
+from mugen.video.filters import DEFAULT_VIDEO_FILTERS, VideoFilter
 
 
 
@@ -101,7 +102,7 @@ class MusicVideoGenerator:
             self.video_sources = VideoSourceList(video_sources)
 
         # Assemble list of video filter names
-        video_filter_names = video_filters if video_filters is not None else VIDEO_FILTERS_DEFAULT
+        video_filter_names = video_filters if video_filters is not None else DEFAULT_VIDEO_FILTERS
         if exclude_video_filters:
             for video_filter in exclude_video_filters:
                 video_filter_names.remove(video_filter)
@@ -192,7 +193,7 @@ class MusicVideoGenerator:
 
         return video_segments
 
-    @temp_file_enabled('output_path', '.mkv')
+    @use_temporary_file_fallback('output_path', '.mkv')
     def preview_events(self, events: Union[EventList, List[TIME_FORMAT]], output_path: Optional[str] = None,
                        mode: str = PreviewMode.AUDIOVISUAL, progress_bar: bool =True, **kwargs):
         """
@@ -262,5 +263,5 @@ class MusicVideoGenerator:
         subtitle_track_events = SubtitleTrack.create(events_str, 'events', locations=locations, default=True)
 
         subtitle_tracks = [subtitle_track_events]
-        subtitles.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
+        tracks.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
 

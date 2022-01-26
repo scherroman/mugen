@@ -4,7 +4,7 @@ from typing import Optional, List, Union
 from moviepy.editor import VideoClip
 from tqdm import tqdm
 
-from mugen.utilities import temp_file_enabled
+from mugen.utilities.system import use_temporary_file_fallback
 
 
 class VideoWriter:
@@ -70,7 +70,7 @@ class VideoWriter:
             self.write_video_clip_to_file(segment, output_path, audio=audio, verbose=False, progress_bar=False,
                                           **kwargs)
 
-    @temp_file_enabled('output_path', VIDEO_EXTENSION)
+    @use_temporary_file_fallback('output_path', VIDEO_EXTENSION)
     def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Optional[str] = None, *,
                                  audio: Union[str, bool] = True, verbose: bool = False, progress_bar: bool = True,
                                  **kwargs):

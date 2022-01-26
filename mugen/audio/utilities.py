@@ -5,12 +5,12 @@ import librosa
 import soundfile
 
 from mugen.exceptions import ParameterError
-from mugen.utilities import temp_file_enabled
+from mugen.utilities.system import use_temporary_file_fallback
 
 MARKED_AUDIO_EXTENSION = '.wav'
 
 
-@temp_file_enabled('output_path', MARKED_AUDIO_EXTENSION)
+@use_temporary_file_fallback('output_path', MARKED_AUDIO_EXTENSION)
 def create_marked_audio_file(mark_locations: Union[List[float], numpy.ndarray], output_path: Optional[str] = None, *,
                              audio_file: Optional[str] = None, duration: float = None):
     if audio_file:

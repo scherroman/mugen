@@ -2,9 +2,9 @@ from typing import Tuple, Optional
 
 from moviepy.video.VideoClip import ColorClip
 
-from mugen import utilities
+from mugen.utilities import conversion
+from mugen.utilities.conversion import convert_color_to_hex_code
 from mugen.video.segments.Segment import Segment
-from mugen.utilities import convert_color_to_hex_code
 
 
 class ColorSegment(Segment, ColorClip):
@@ -22,7 +22,7 @@ class ColorSegment(Segment, ColorClip):
             hex code of the color, i.e. #000000 for black.
             OR the special inputs 'black' and 'white'.
         """
-        super().__init__(size, utilities.hex_to_rgb(color), duration=duration, **kwargs)
+        super().__init__(size, conversion.hex_to_rgb(color), duration=duration, **kwargs)
 
         self.color = color
         self.fps = Segment.DEFAULT_VIDEO_FPS

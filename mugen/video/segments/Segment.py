@@ -7,7 +7,7 @@ from moviepy.editor import VideoClip
 
 import mugen.video.sizing as video_sizing
 import mugen.video.effects as video_effects
-from mugen import utilities
+from mugen.utilities import conversion
 from mugen.mixins.Filterable import Filterable
 from mugen.mixins.Persistable import Persistable
 from mugen.video.effects import VideoEffectList
@@ -81,7 +81,7 @@ class Segment(Filterable, Persistable, ABC):
 
     @property
     def duration_time_code(self) -> str:
-        return utilities.seconds_to_time_code(self.duration)
+        return conversion.seconds_to_time_code(self.duration)
 
     @property
     def first_frame(self) -> LIST_3D:

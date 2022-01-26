@@ -3,8 +3,8 @@ from fractions import Fraction
 from typing import Optional, Union, List, Any
 
 from mugen import lists
-from mugen import utilities
 from mugen.lists import MugenList
+from mugen.utilities import conversion
 
 
 class Weightable:
@@ -69,7 +69,7 @@ class WeightableList(Weightable, MugenList):
         -------
         Weights in simplest fraction form
         """
-        return [utilities.float_to_fraction(weight) for weight in self.normalized_weights]
+        return [conversion.float_to_fraction(weight) for weight in self.normalized_weights]
 
     def flatten(self) -> 'WeightableList':
         """

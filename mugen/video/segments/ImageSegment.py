@@ -1,6 +1,7 @@
+from pathlib import Path
+
 from moviepy.video.VideoClip import ImageClip
 
-from mugen import paths
 from mugen.video.segments.Segment import Segment
 
 
@@ -28,7 +29,7 @@ class ImageSegment(Segment, ImageClip):
 
     @property
     def name(self) -> str:
-        return paths.filename_from_path(self.file)
+        return Path(self.file).stem
 
     def trailing_buffer(self, duration) -> 'ImageSegment':
         return ImageSegment(self.file, duration)

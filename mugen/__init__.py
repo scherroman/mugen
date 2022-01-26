@@ -3,7 +3,7 @@
 from mugen.version import __version__
 
 from mugen.mixins.Filterable import Filter, ContextFilter
-from mugen.video.video_filters import VideoFilter
+from mugen.video.filters import VideoFilter
 
 from mugen.audio.Audio import Audio
 from mugen.video.MusicVideo import MusicVideo

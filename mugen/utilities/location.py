@@ -74,7 +74,7 @@ def start_end_locations_from_intervals(intervals: List[float]) -> Tuple[List[flo
     end_locations = []
 
     running_duration = 0
-    for index, duration in enumerate(intervals):
+    for _, duration in enumerate(intervals):
         start_time = running_duration
         end_time = start_time + duration
 

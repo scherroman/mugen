@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from mugen import utilities
 from mugen.constants import Color
 from mugen.lists import MugenList
-from mugen.utilities import convert_color_to_hex_code
+from mugen.utilities import conversion
+from mugen.utilities.conversion import convert_color_to_hex_code
 from mugen.video.events import VideoEvent
 
 ONE_SECOND = 1
@@ -76,7 +76,7 @@ class Fade(VideoEffect):
 
     @property
     def rgb_color(self) -> List[int]:
-        return utilities.hex_to_rgb(self.color)
+        return conversion.hex_to_rgb(self.color)
 
 
 class FadeIn(Fade):

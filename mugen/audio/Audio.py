@@ -1,10 +1,10 @@
-from functools import lru_cache
+from pathlib import Path
 from typing import List
+from functools import lru_cache
 
 import numpy
 import librosa
 
-from mugen import paths
 from mugen.events import EventList, Event
 
 
@@ -79,7 +79,7 @@ class Audio:
         self.duration = librosa.get_duration(y=self.samples, sr=self.sample_rate)
 
     def __repr__(self):
-        filename = paths.filename_from_path(self.file)
+        filename = Path(self.file).stem
         return f'<Audio, file: {filename}, duration: {self.duration}>'
 
     def beats(self, trim: bool = False) -> EventList:
