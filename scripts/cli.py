@@ -155,10 +155,9 @@ def preview_audio(args):
     preview_mode = args.preview_mode
 
     # Prepare Inputs
-    filename = Path(audio_source).stem if audio_source else ''
     output_extension = '.wav' if preview_mode == PreviewMode.AUDIO else VideoWriter.VIDEO_EXTENSION
-    output_path = os.path.join(output_directory, filename + "_marked_audio_preview_" +
-                               (audio_events_mode if audio_events_mode else "") + output_extension)
+    preview_name = get_preview_path(output_directory, output_extension)
+    output_path = os.path.join(output_directory, preview_name)
 
     generator = MusicVideoGenerator(audio_source, duration=duration)
     try:
@@ -268,6 +267,18 @@ def get_music_video_name(directory: str, basename: str):
 
     return music_video_name
 
+def get_preview_path(directory: str, extension: str) -> str:
+    count = 0
+    while True:
+        preview_name = f'music_video_preview_{count}{extension}'
+        preview_path = os.path.join(directory, preview_name)
+
+        if not os.path.exists(preview_path):
+            break
+
+        count += 1
+
+    return preview_name
 
 def files_from_source(source: str) -> List[str]:
     """
@@ -458,7 +469,7 @@ def parse_args(args):
                               help=f'Tunes the time that FFMPEG will spend optimizing compression while writing '
                                    f'the music video to file. See FFMPEG documentation for more info')
     video_parser.add_argument('-vcod', '--video-codec', dest='video_codec', default=VideoWriter.VIDEO_CODEC,
-                              help=f'The video codec for the music video')
+                              help=f'The video codec for the music video. Supports any codec supported by FFMPEG')
     video_parser.add_argument('-vcrf', '--video-crf', dest='video_crf', type=int, default=VideoWriter.VIDEO_CRF,
                               help=f'The crf quality value for the music video. '
                                    f'Takes an integer from 0 (lossless) to 51 (lossy)')
@@ -495,7 +506,7 @@ def parse_args(args):
                                    f'Supported values are {[e.value for e in OnsetsMode]}')
 
     audio_parser.add_argument('-ac', '--audio-codec', dest='audio_codec', default=VideoWriter.AUDIO_CODEC,
-                              help=f'The audio codec for the music video if --use-original-audio is enabled')
+                              help=f'The audio codec for the music video if --use-original-audio is enabled. Supports any codec supported by moviepy.')
     audio_parser.add_argument('-ab', '--audio-bitrate', dest='audio_bitrate', type=int,
                               default=VideoWriter.AUDIO_BITRATE,
                               help='The audio bitrate (kbps) for the music video if --use-original-audio is enabled')
@@ -530,7 +541,7 @@ def parse_args(args):
                                            help="Create a quick preview of your music video by marking cut "
                                                 "locations with beeps and flashes")
     preview_parser.add_argument('-pm', '--preview-mode', dest='preview_mode', default=PreviewMode.AUDIOVISUAL,
-                                help=f'The method of previewing events. '
+                                help=f'The method of previewing events'
                                      f'Supported values are {[e.value for e in PreviewMode]}')
     preview_parser.set_defaults(func=preview_audio)
 

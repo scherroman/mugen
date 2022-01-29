@@ -1,11 +1,13 @@
+import json
 from pathlib import Path
+from typing import List, Optional
 
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.io.ffmpeg_reader import FFMPEG_VideoReader
 
 from mugen.constants import TIME_FORMAT
-from mugen.utilities import general, conversion
+from mugen.utilities import general, system, conversion
 from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.video.segments.Segment import Segment
 
@@ -20,6 +22,7 @@ class VideoSegment(Segment, VideoFileClip):
         Start time of the video segment in the video file (seconds)
     """
     source_start_time: float
+    _streams: List[dict]
 
     def __init__(self, file: str = None, **kwargs):
         """
@@ -34,6 +37,7 @@ class VideoSegment(Segment, VideoFileClip):
         self.source_start_time = 0
         if not self.fps:
             self.fps = Segment.DEFAULT_VIDEO_FPS
+        self._streams = None
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.name}, source_start_time: {self.source_start_time_time_code}, " \
@@ -80,6 +84,36 @@ class VideoSegment(Segment, VideoFileClip):
     def source_start_time_time_code(self) -> str:
         return conversion.seconds_to_time_code(self.source_start_time)
 
+    @property
+    def streams(self) -> List[dict]:
+        if not self._streams:
+            result = system.run_command(f'ffprobe -v quiet -print_format json -show_format -show_streams {self.file}'.split())
+            self._streams = json.loads(result.stdout).get('streams', [])
+        
+        return self._streams
+
+    @property
+    def video_streams(self) -> List[dict]:
+        return [stream for stream in self.streams if stream['codec_type'] == 'video']
+
+    @property
+    def audio_streams(self) -> List[dict]:
+        return [stream for stream in self.streams if stream['codec_type'] == 'audio']
+
+    @property
+    def subtitle_streams(self) -> List[dict]:
+        return [stream for stream in self.streams if stream['codec_type'] == 'subtitle']
+
+    @property
+    def video_stream(self) -> Optional[dict]:
+        """ Returns the primary video stream """
+        return self.video_streams[0] if len(self.video_streams) > 0 else None
+
+    @property
+    def audio_stream(self) -> Optional[dict]:
+        """ Returns the primary audio stream """
+        return self.audio_streams[0] if len(self.audio_streams) > 0 else None
+        
     """ METHODS """
 
     @convert_time_to_seconds(['start_time', 'end_time'])
@@ -116,3 +150,8 @@ class VideoSegment(Segment, VideoFileClip):
 
         return general.check_if_ranges_overlap(self.source_start_time, self.source_end_time, segment.source_start_time,
                                    segment.source_end_time)
+
+    def get_subtitle_stream_content(self, stream: int) -> str:
+        """ Returns the subtitle stream's content """
+        result = system.run_command(f'ffmpeg -v quiet -i {self.file} -map 0:s:{stream} -f srt pipe:1'.split())
+        return result.stdout

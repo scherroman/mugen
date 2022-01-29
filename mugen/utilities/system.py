@@ -3,10 +3,10 @@ import os
 import shutil
 import subprocess
 from typing import List
+from subprocess import CompletedProcess, CalledProcessError
 
 import tempfile
 
-from mugen.exceptions import FFMPEGError
 from mugen.utilities.general import preprocess_args
 
 TEMP_PATH_BASE = tempfile.TemporaryDirectory().name
@@ -75,16 +75,19 @@ def get_ffmpeg_binary():
         raise IOError("Could not find ffmpeg binary for system.")
 
 
-def execute_ffmpeg_command(cmd):
+def run_command(command) -> CompletedProcess:
     """
-    Executes an ffmpeg command
+    Executes a system command
     """
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    process_output, process_error = process.communicate()
-
-    if process.returncode != 0:
-        raise FFMPEGError(f"Error executing ffmpeg command. Error code: {process.returncode}, Error: {process_error}",
-                             process.returncode, process_output, process_error)
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except CalledProcessError as error:
+        print("Error executing command")
+        print(error.stdout)
+        print(error.stderr)
+        raise error
+    
+    return result
 
 
 def generate_temp_file_path(extension: str) -> str:

@@ -1,9 +1,24 @@
-import pytest
-
 from mugen.video.segments.VideoSegment import VideoSegment
+
 from tests import DATA_PATH
 
 
-@pytest.fixture
-def wolf_segment() -> VideoSegment:
-    return VideoSegment(f'{DATA_PATH}/video/wolf.mp4')
+def get_tracking_shot_segment() -> VideoSegment:
+    return VideoSegment(f'{DATA_PATH}/video/tracking_shot.mp4')
+
+
+def get_music_video_segment() -> VideoSegment:
+    return VideoSegment(f'{DATA_PATH}/video/music_video.mkv')
+
+
+def test_video_segment__parses_streams():
+    music_video_segment = get_music_video_segment()
+    assert len(music_video_segment.streams) == 5
+    assert len(music_video_segment.video_streams) == 1
+    assert len(music_video_segment.audio_streams) == 1
+    assert len(music_video_segment.subtitle_streams) == 3
+    assert music_video_segment.video_stream != None
+    assert music_video_segment.audio_stream != None
+    assert len(music_video_segment.get_subtitle_stream_content(0)) > 0
+    assert len(music_video_segment.get_subtitle_stream_content(1)) > 0
+    assert len(music_video_segment.get_subtitle_stream_content(2)) > 0

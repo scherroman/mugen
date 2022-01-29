@@ -93,6 +93,10 @@ class MusicVideo(Persistable):
     """ PROPERTIES """
 
     @property
+    def duration(self) -> int:
+        return sum([segment.duration for segment in self.segments])
+
+    @property
     def dimensions(self) -> Dimensions:
         return self._dimensions or self._calculate_dimensions()
 

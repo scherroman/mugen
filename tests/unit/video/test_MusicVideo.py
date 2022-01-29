@@ -1,12 +1,11 @@
 import pytest
 
 from mugen import MusicVideo
-from tests.unit.video.segments.test_ColorSegment import black_segment, white_segment, orange_segment
+from tests.unit.video.segments.test_ColorSegment import get_black_segment, get_white_segment, get_orange_segment
 
 
-@pytest.fixture
 def music_video():
-    return MusicVideo([black_segment(), white_segment(), orange_segment()])
+    return MusicVideo([get_black_segment(), get_white_segment(), get_orange_segment()])
 
 
 def test_dimensions():

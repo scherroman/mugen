@@ -1,8 +1,9 @@
+from subprocess import CalledProcessError
 from typing import List, NamedTuple, Optional, Any
 
 import pysrt
 
-from mugen.exceptions import FFMPEGError, ParameterError
+from mugen.exceptions import ParameterError
 from mugen.utilities import system, location
 from mugen.utilities.system import use_temporary_file_fallback
 
@@ -90,44 +91,22 @@ def add_tracks_to_video(video_file: str, output_path: str, *, subtitle_tracks: O
         subtitle_files.append(temp_subtitle_file)
 
     # Create new music video with auxiliary audio & subtitle tracks mixed in
-    ffmpeg_cmd = [
-                       system.get_ffmpeg_binary(),
-                       '-y',
-                       '-i', video_file
-          ]
+    ffmpeg_command = [system.get_ffmpeg_binary(), '-y', '-i', video_file]
     for track in audio_tracks:
-        ffmpeg_cmd += [
-                       '-i', track.audio_file
-                      ]
+        ffmpeg_command += ['-i', track.audio_file]
     for file in subtitle_files:
-        ffmpeg_cmd += [
-                       '-i', file
-                      ]
-    ffmpeg_cmd += [
-                       '-map', '0',
-                       '-c', 'copy'
-                  ]
+        ffmpeg_command += ['-i', file]
+    ffmpeg_command += ['-map', '0', '-c', 'copy']
     for index, track in enumerate(audio_tracks):
-        ffmpeg_cmd += [
-                       '-map', f'{index + 1}',
-                       '-c', 'copy', f'-metadata:s:a:{index}', f'title={track.name}',
-                      ]
+        ffmpeg_command += ['-map', f'{index + 1}', '-c', 'copy', f'-metadata:s:a:{index}', f'title={track.name}',]
     for index, track in enumerate(subtitle_tracks):
-        ffmpeg_cmd += [
-                       '-map', f'{index + 1 + len(audio_tracks)}',
-                       f'-c:s:{index}', 'srt', f'-metadata:s:s:{index}', f'title={track.name}',
-                      ]
+        ffmpeg_command += ['-map', f'{index + 1 + len(audio_tracks)}', f'-c:s:{index}', 'srt', f'-metadata:s:s:{index}', f'title={track.name}']
         if track.default:
-            ffmpeg_cmd += [
-                       f'-disposition:s:{index}', 'default'
-                          ]
-    ffmpeg_cmd += [
-                       output_path
-                  ]
+            ffmpeg_command += [f'-disposition:s:{index}', 'default']
+    ffmpeg_command += [output_path]
 
     try:
-        system.execute_ffmpeg_command(ffmpeg_cmd)
-    except FFMPEGError as error:
-        print(f"Failed to add subtitle tracks to music video. Error Code: {error.return_code}, "
-              f"Error: {error}")
-        raise
+        system.run_command(ffmpeg_command)
+    except CalledProcessError as error:
+        print(f"Failed to add subtitle tracks to music video. \n Error: {error}")
+        raise error

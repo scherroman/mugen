@@ -258,9 +258,9 @@ class MusicVideoGenerator:
             The final music video output file with added auxiliary tracks
         """
         locations = events.locations
-        events_str = [event.index_repr(index) for index, event in enumerate(events)]
+        events_strings = [f'{event.index_repr(index)}'.replace("<", "").replace(">", "") for index, event in enumerate(events)]
 
-        subtitle_track_events = SubtitleTrack.create(events_str, 'events', locations=locations, default=True)
+        subtitle_track_events = SubtitleTrack.create(events_strings, 'events', locations=locations, default=True)
 
         subtitle_tracks = [subtitle_track_events]
         tracks.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)

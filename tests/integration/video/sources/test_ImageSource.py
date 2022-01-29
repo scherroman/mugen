@@ -4,12 +4,9 @@ from mugen.video.sources.ImageSource import ImageSource
 from tests import DATA_PATH
 
 
-@pytest.fixture
-def tatami_source() -> ImageSource:
-    return ImageSource(f'{DATA_PATH}/image/tatami.jpg')
+def get_dark_image_source() -> ImageSource:
+    return ImageSource(f'{DATA_PATH}/image/dark_image.jpg')
 
 
-def test_sample():
-    image_source = tatami_source()
-
-    assert image_source.sample(1).duration == pytest.approx(1)
+def test_sample__has_correct_duration():
+    assert get_dark_image_source().sample(1).duration == pytest.approx(1)

@@ -8,13 +8,12 @@ class Dummy(object):
     foo = 1
 
 
-@pytest.fixture
-def mugen_list() -> MugenList:
+def get_mugen_list():
     return MugenList([Dummy(), Dummy(), Dummy(), Dummy(), Dummy(), Dummy()])
 
 
 @pytest.mark.parametrize("l, expected_foo", [
-    (mugen_list(), [1, 1, 1, 1, 1, 1])
+    (get_mugen_list(), [1, 1, 1, 1, 1, 1])
 ])
 def test_lget(l, expected_foo):
     assert l.lget('foo') == expected_foo

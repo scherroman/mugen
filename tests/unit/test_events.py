@@ -11,8 +11,7 @@ class Silence(Event):
     pass
 
 
-@pytest.fixture
-def events() -> EventList:
+def get_events() -> EventList:
     return EventList([Silence(6),
                       Beat(12),
                       Beat(18),
@@ -20,15 +19,13 @@ def events() -> EventList:
                       Silence(30)])
 
 
-@pytest.fixture
-def events_grouped_by_type() -> EventGroupList:
+def get_events_grouped_by_type() -> EventGroupList:
     return EventGroupList([EventList([Silence(6)]),
                            EventList([Beat(12), Beat(18), Beat(24)]),
                            EventList([Silence(30)])])
 
 
-@pytest.fixture
-def events_speed_multiplied_2x() -> EventList:
+def get_events_speed_multiplied_2x() -> EventList:
     return EventList([Silence(6),
                       Beat(12), Beat(15),
                       Beat(18), Beat(21),
@@ -36,23 +33,20 @@ def events_speed_multiplied_2x() -> EventList:
                       Silence(30)])
 
 
-@pytest.fixture
-def events_speed_multiplied_1_2x() -> EventList:
+def get_events_speed_multiplied_1_2x() -> EventList:
     return EventList([Silence(6),
                       Beat(12),
                       Beat(24),
                       Silence(30)])
 
 
-@pytest.fixture
-def events_speed_multiplied_1_2x_offset_1() -> EventList:
+def get_events_speed_multiplied_1_2x_offset_1() -> EventList:
     return EventList([Silence(6),
                       Beat(18),
                       Silence(30)])
 
 
-@pytest.fixture
-def events_speed_multiplied_1_3x() -> EventList:
+def get_events_speed_multiplied_1_3x() -> EventList:
     return EventList([Silence(6),
                       Beat(12),
                       Silence(30)])
@@ -68,11 +62,11 @@ def test_event_list__initializes_non_uniform_inputs_successfully():
     (EventList([6]), 3, None, EventList([6])),
     (EventList([6, 12]), 1 / 3, None, EventList([6])),
     (EventList([1, 2, 3, 4, 5, 6, 7, 8]), 1 / 2, None, EventList([1, 3, 5, 7])),
-    (events(), 1, None, events()),
-    (events(), 1 / 2, None, events_speed_multiplied_1_2x()),
-    (events(), 1 / 2, 1, events_speed_multiplied_1_2x_offset_1()),
-    (events(), 1 / 3, None, events_speed_multiplied_1_3x()),
-    (events(), 2, None, events_speed_multiplied_2x())
+    (get_events(), 1, None, get_events()),
+    (get_events(), 1 / 2, None, get_events_speed_multiplied_1_2x()),
+    (get_events(), 1 / 2, 1, get_events_speed_multiplied_1_2x_offset_1()),
+    (get_events(), 1 / 3, None, get_events_speed_multiplied_1_3x()),
+    (get_events(), 2, None, get_events_speed_multiplied_2x())
 ])
 def test_speed_multiply_events(events, speed, offset, expected_events):
     events.speed_multiply(speed, offset)
@@ -80,8 +74,8 @@ def test_speed_multiply_events(events, speed, offset, expected_events):
 
 
 @pytest.mark.parametrize("events, offset, expected_locations", [
-    (events(), .5, [6.5, 12.5, 18.5, 24.5, 30.5]),
-    (events(), -1, [5, 11, 17, 23, 29])
+    (get_events(), .5, [6.5, 12.5, 18.5, 24.5, 30.5]),
+    (get_events(), -1, [5, 11, 17, 23, 29])
 ])
 def test_offset_events(events, offset, expected_locations):
     events.offset(offset)
@@ -109,7 +103,7 @@ def test_event_group_list__initializes_non_uniform_inputs_successfully():
 
 
 @pytest.mark.parametrize("events, expected_event_group_list", [
-    (events(), events_grouped_by_type()),
+    (get_events(), get_events_grouped_by_type()),
     (EventList([1]), EventGroupList([EventList([1])]))
 ])
 def test_group_by_type(events, expected_event_group_list):
@@ -135,7 +129,8 @@ def test_event_group_list__group_by_slices_resulting_groups():
     assert event_groups.unselected_groups == EventGroupList([[1], [4, 5], [8]])
 
 
-def test_event_group_list__group_by_types_resulting_groups(events):
+def test_event_group_list__group_by_types_resulting_groups():
+    events = get_events()
     event_groups = events.group_by_type(['Silence'])
     assert event_groups.selected_groups == EventGroupList([EventList([Silence(6)]),
                                                           EventList([Silence(30)])])

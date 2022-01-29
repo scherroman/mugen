@@ -43,7 +43,7 @@ class VideoWriter:
     ffmpeg_params: list
 
     AUDIO_BITRATE = 320
-    AUDIO_CODEC = 'mp3'
+    AUDIO_CODEC = 'libmp3lame'
     VIDEO_PRESET = 'medium'
     VIDEO_CODEC = 'libx264'
     VIDEO_CRF = 18

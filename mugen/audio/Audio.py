@@ -76,7 +76,7 @@ class Audio:
 
         self.file = file
         self.samples, self.sample_rate = librosa.load(file, sr=sample_rate)
-        self.duration = librosa.get_duration(y=self.samples, sr=self.sample_rate)
+        self.duration = librosa.get_duration(filename=self.file)
 
     def __repr__(self):
         filename = Path(self.file).stem

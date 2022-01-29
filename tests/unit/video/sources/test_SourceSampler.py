@@ -2,12 +2,11 @@ import pytest
 
 from mugen.video.sources.Source import SourceList
 from mugen.video.sources.SourceSampler import SourceSampler
-from tests.unit.video.sources.test_ColorSource import black_source, white_source, orange_source, purple_source
+from tests.unit.video.sources.test_ColorSource import get_black_source, get_white_source, get_orange_source, get_purple_source
 
 
-@pytest.fixture
 def source_sampler(weights) -> SourceSampler:
-    return SourceSampler(SourceList([black_source(), white_source(), orange_source(), purple_source()],
+    return SourceSampler(SourceList([get_black_source(), get_white_source(), get_orange_source(), get_purple_source()],
                                     weights=weights))
 
 

@@ -5,7 +5,7 @@ with open("mugen/version.py") as file:
     exec(file.read(), version)
 
 optional_requirements = ['tesserocr==2.5.1']
-tests_requirements = ['pytest==3.0.7', 'pytest-cov==2.4.0']
+tests_requirements = ['pytest==6.2.5', 'pytest-cov==3.0.0']
 
 setup(
     name='mugen',
@@ -29,7 +29,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'moviepy==0.2.3.5',
-        "librosa==0.8.0",
+        "librosa==0.8.1",
         "Pillow==9.0.0",
         'numpy==1.21.0',
         'pysrt==1.1.1',
