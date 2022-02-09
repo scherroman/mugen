@@ -1,9 +1,14 @@
+.env
 *.pyc
 .idea
 .cache
 .coverage
+.coverage.*
+coverage.xml
 *.egg-info
+.pytest_cache
 
 tests/testing.py
 
+build/
 output/

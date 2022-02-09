@@ -1,0 +1,48 @@
+name: Test
+
+on:
+    push:
+        branches: [master]
+        paths-ignore:
+            - 'README.md'
+    pull_request:
+        branches: [master]
+        paths-ignore:
+            - 'README.md'
+
+jobs:
+    test:
+        name: ${{ matrix.operating-system }}
+        runs-on: ${{ matrix.operating-system }}-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                operating-system: ['ubuntu', 'macos', 'windows']
+        defaults:
+            run:
+                # Ensure conda environment is activated for each step
+                shell: bash -l {0}
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v2
+
+            - name: Set up Miniconda
+              uses: conda-incubator/setup-miniconda@v2
+              with:
+                  miniconda-version: 'latest'
+                  auto-activate-base: false
+                  environment-file: environment.yml
+                  activate-environment: mugen
+
+            - name: Install dependencies
+              run: pip install .[tests]
+
+            - name: Run tests
+              run: pytest --cov mugen --cov-report xml
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v2
+              with:
+                  files: coverage.xml
+                  fail_ci_if_error: true
+                  token: ${{ secrets.CODECOV_TOKEN }}

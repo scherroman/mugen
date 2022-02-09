@@ -1,15 +1,8 @@
 from typing import List, Optional
 
+import pytesseract
 from PIL import Image
 from moviepy.video.tools.cuts import detect_scenes
-
-try:
-    import tesserocr
-
-    is_text_detection_available = True
-except ImportError:
-    tesserocr = None
-    is_text_detection_available = False
 
 from mugen.video.constants import LIST_3D
 from mugen.video.segments.VideoSegment import VideoSegment
@@ -36,7 +29,7 @@ def video_segment_has_cut(video_segment: VideoSegment) -> bool:
     -------
     True if a video segment has a cut between shots, False otherwise
     """
-    cuts, luminosities = detect_scenes(video_segment, progress_bar=False)
+    cuts, luminosities = detect_scenes(video_segment, logger=None)
 
     return len(cuts) > 1
 
@@ -48,7 +41,7 @@ def video_segment_has_text(video_segment: VideoSegment) -> bool:
     True if a video segment has text, False otherwise
     """
     for frame in video_segment.first_middle_last_frames:
-        if image_has_text(frame):
+        if image_has_text(Image.fromarray(frame)):
             return True
 
     return False
@@ -61,35 +54,33 @@ def video_segment_has_low_contrast(video_segment: VideoSegment, *args, **kwargs)
     True if a video segment has low contrast (solid color, dark scene, etc...), False otherwise
     """
     for frame in video_segment.first_middle_last_frames:
-        if image_has_low_contrast(frame, *args, **kwargs):
+        if image_has_low_contrast(Image.fromarray(frame), *args, **kwargs):
             return True
 
     return False
 
 
-def image_has_text(image: LIST_3D):
+def image_has_text(image: Image):
     """
     Parameters
     ----------
     image
-        A 3D array with the RGB values for the image
+        A Pillow image
 
     Returns
     -------
     True if the image has text, False otherwise
     """
-    image = Image.fromarray(image)
-    text = tesserocr.image_to_text(image)
-
+    text = pytesseract.image_to_string(image)
     return True if len(text.strip()) > 0 else False
 
 
-def image_has_low_contrast(image: LIST_3D, threshold: Optional[float] = DEFAULT_CONTRAST_THRESHOLD) -> bool:
+def image_has_low_contrast(image: Image, threshold: Optional[float] = DEFAULT_CONTRAST_THRESHOLD) -> bool:
     """
     Parameters
     ----------
     image 
-        A 3D array with the RGB values for the image
+        A Pillow image
         
     threshold
         The maximum difference in luma that is considered low contrast
@@ -99,7 +90,5 @@ def image_has_low_contrast(image: LIST_3D, threshold: Optional[float] = DEFAULT_
     True if the image has low contrast, False otherwise
     """
     # Convert the image to grayscale, find the difference in luma
-    image = Image.fromarray(image)
     extrema = image.convert("L").getextrema()
-
     return True if abs(extrema[1] - extrema[0]) <= threshold else False

@@ -73,9 +73,3 @@ class VideoFilter(Enum):
 # Order is significant when short-circuiting. Order filters from least expensive to most expensive.
 DEFAULT_VIDEO_FILTERS = [VideoFilter.not_is_repeat.name, VideoFilter.not_has_low_contrast.name,
                          VideoFilter.not_has_text.name, VideoFilter.not_has_cut.name]
-
-# Remove unavailable filters
-if not video_detect.is_text_detection_available:
-    DEFAULT_VIDEO_FILTERS.remove(VideoFilter.not_has_text.name)
-
-

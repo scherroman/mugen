@@ -25,92 +25,28 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 
 5. Combine the segments in order, overlay the audio, and output the resulting music video.
 
-## Requirements
-
--   A Python 3.7+ virtual environment. Using [Miniconda](http://conda.pydata.org/miniconda.html) is recommended.
-
-**Optional:**
-
--   [Tesseract](https://github.com/tesseract-ocr/tesseract) for text detection features.
-
-Mugen has not been tested on Windows, but should work provided the dependencies are compiled and installed properly.
-
 ## Installation
 
-**1. Download this repository**
+**1. Install [Miniconda](http://conda.pydata.org/miniconda.html)**
+
+Miniconda helps create an isolated virtual environment and install the project's dependencies.
+
+**2. Download this repository**
 
 ```
 git clone https://github.com/scherroman/mugen
 ```
 
-**2. Install mugen**
+**3. Create the project's virtual environment**
 
 ```
-pip install -e mugen
+conda env create --file mugen/environment.yml
 ```
 
-## Practical Install
-
-**1. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
-
-**2. Create a Python 3.7 or higher virtual environment**
-
-```
-conda create --yes --name mugen python=3.7
-```
-
-**3. Activate the virtual environment**
+**4. Activate the virtual environment**
 
 ```
 source activate mugen
-```
-
-**4. Download this repository**
-
-```
-git clone https://github.com/scherroman/mugen
-```
-
-**5. Install mugen**
-
-```
-pip install -e mugen
-```
-
-## Full Install (macOS)
-
-**1. [Install Homebrew](http://brew.sh/)**
-
-**2. [Install tesseract](https://github.com/tesseract-ocr/tesseract) via Homebrew**
-
-```
-brew install tesseract tesseract-lang
-```
-
-**3. [Install Miniconda 3](http://conda.pydata.org/miniconda.html)**
-
-**4. Create a Python 3.7 or higher virtual environment**
-
-```
-conda create --yes --name mugen python=3.7
-```
-
-**5. Activate the virtual environment**
-
-```
-source activate mugen
-```
-
-**6. Download this repository**
-
-```
-git clone https://github.com/scherroman/mugen
-```
-
-**7. Install mugen**
-
-```
-pip install -e mugen[full]
 ```
 
 ## Usage
@@ -126,6 +62,8 @@ mugen preview --help
 ```
 
 Use the above commands at any time to clarify the examples below and view the full list of available options.
+
+By default output files are sent to the desktop. This can be changed with the `-od --output-directory` option.
 
 ### Create a music video
 

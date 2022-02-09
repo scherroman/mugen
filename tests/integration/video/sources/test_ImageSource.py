@@ -1,11 +1,12 @@
 import pytest
 
 from mugen.video.sources.ImageSource import ImageSource
-from tests import DATA_PATH
+
+from tests import DARK_IMAGE_PATH
 
 
 def get_dark_image_source() -> ImageSource:
-    return ImageSource(f'{DATA_PATH}/image/dark_image.jpg')
+    return ImageSource(DARK_IMAGE_PATH)
 
 
 def test_sample__has_correct_duration():

@@ -3,12 +3,12 @@ import pytest
 import subprocess
 from subprocess import CalledProcessError
 
-from mugen import VideoSegment, MusicVideo, Audio
+from mugen import VideoSegment, Audio
 
-from tests import DATA_PATH
+from tests import TWO_BEATS_AUDIO_PATH
 
 def test_preview__generates_audiovisual_preview_successfully(tmp_path):
-    audio_path = f'{DATA_PATH}/audio/two_beats.mp3'
+    audio_path = TWO_BEATS_AUDIO_PATH
     try:
         subprocess.run(f'mugen --output-directory {tmp_path} preview --audio-source {audio_path}'.split(), check=True, timeout=30, capture_output=True, text=True)
     except CalledProcessError as error:
@@ -16,7 +16,7 @@ def test_preview__generates_audiovisual_preview_successfully(tmp_path):
         print(error.stderr)
         raise error
 
-    preview_path = f'{tmp_path}/music_video_preview_0.mkv'
+    preview_path = os.path.join(tmp_path, 'music_video_preview_0.mkv')
 
     # Check that output file exists
     assert os.path.isfile(preview_path)
@@ -37,7 +37,7 @@ def test_preview__generates_audiovisual_preview_successfully(tmp_path):
 
 
 def test_preview__generates_audio_preview_successfully(tmp_path):
-    audio_path = f'{DATA_PATH}/audio/two_beats.mp3'
+    audio_path = TWO_BEATS_AUDIO_PATH
     try:
         subprocess.run(f'mugen --output-directory {tmp_path} preview --audio-source {audio_path} --preview-mode audio'.split(), check=True, timeout=30, capture_output=True, text=True)
     except CalledProcessError as error:
@@ -45,7 +45,7 @@ def test_preview__generates_audio_preview_successfully(tmp_path):
         print(error.stderr)
         raise error
 
-    preview_path = f'{tmp_path}/music_video_preview_0.wav'
+    preview_path = os.path.join(tmp_path, 'music_video_preview_0.wav')
 
     # Check that output file exists
     assert os.path.isfile(preview_path)
