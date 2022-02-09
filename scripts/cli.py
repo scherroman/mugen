@@ -399,7 +399,7 @@ def parse_args(args):
 
     parser.add_argument('-db', '--debug', dest='debug', action='store_true', default=False,
                         help='Pass in this argument to print useful debug info')
-    parser.add_argument('-od', '--output-directory', dest='output_directory', default=os.path.expanduser("~/Desktop"),
+    parser.add_argument('-od', '--output-directory', dest='output_directory', default=os.path.join(Path.home(), 'Desktop'),
                         help='The directory in which to store any output from this application. '
                              f'Will create the directory if non-existent')
 

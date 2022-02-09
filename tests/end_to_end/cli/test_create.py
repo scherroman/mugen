@@ -5,18 +5,18 @@ from subprocess import CalledProcessError
 
 from mugen import VideoSegment, MusicVideo, Audio
 
-from tests import DATA_PATH
+from tests import TWO_BEATS_AUDIO_PATH, TRACKING_SHOT_VIDEO_PATH
 
 def test_create__creates_music_video_successfully(tmp_path):
-    audio_path = f'{DATA_PATH}/audio/two_beats.mp3'
+    audio_path = TWO_BEATS_AUDIO_PATH
     try:
-        subprocess.run(f'mugen --output-directory {tmp_path} create --audio-source {audio_path} --video-sources {DATA_PATH}/video/tracking_shot.mp4 --video-dimensions 1500 600 --video-codec libx265'.split(), check=True, timeout=60, capture_output=True, text=True)
+        subprocess.run(f'mugen --output-directory {tmp_path} create --audio-source {audio_path} --video-sources {TRACKING_SHOT_VIDEO_PATH} --video-dimensions 1500 600 --video-codec libx265'.split(), check=True, timeout=60, capture_output=True, text=True)
     except CalledProcessError as error:
         print(error.stdout)
         print(error.stderr)
         raise error
 
-    music_video_path_base = f'{tmp_path}/music_video_0/music_video_0'
+    music_video_path_base = os.path.join(tmp_path, 'music_video_0', 'music_video_0')
     music_video_path = f'{music_video_path_base}.mkv'
     music_video_save_file_path = f'{music_video_path_base}.pickle'
 

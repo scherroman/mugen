@@ -10,6 +10,7 @@ import mugen.video.sizing as video_sizing
 from mugen.events import EventList
 from mugen.mixins.Persistable import Persistable
 from mugen.utilities import system, location
+from mugen.utilities.logger import logger
 from mugen.utilities.system import use_temporary_file_fallback 
 from mugen.utilities.validation import ensure_json_serializable
 from mugen.video.cuts import Cut
@@ -182,7 +183,7 @@ class MusicVideo(Persistable):
     @requires_video_segments
     @use_temporary_file_fallback('output_path', VideoWriter.VIDEO_EXTENSION)
     def write_to_video_file(self, output_path: Optional[str] = None, *, audio: Optional[Union[bool, str]] = None,
-                            add_auxiliary_tracks: bool = True, verbose: bool = False, progress_bar: bool = True,
+                            add_auxiliary_tracks: bool = True, verbose: bool = False, show_progress: bool = True,
                             **kwargs):
         """
         writes the music video to a video file
@@ -202,7 +203,7 @@ class MusicVideo(Persistable):
         verbose
             Whether output to stdout should include extra information during writing
 
-        progress_bar
+        show_progress
             Whether to output progress information to stdout
 
         Use this method over moviepy's write_videofile to preserve the audio file's codec and bitrate.
@@ -213,12 +214,12 @@ class MusicVideo(Persistable):
 
         if add_auxiliary_tracks:
             temp_output_path = self.writer.write_video_clip_to_file(composed_music_video, audio=audio, verbose=verbose,
-                                                                    progress_bar=progress_bar, **kwargs)
+                                                                    show_progress=show_progress, **kwargs)
             # Add helpful subtitle/audio tracks to video file
             self._add_auxiliary_tracks(temp_output_path, output_path)
         else:
             self.writer.write_video_clip_to_file(composed_music_video, output_path, audio=audio, verbose=verbose,
-                                                 progress_bar=progress_bar, **kwargs)
+                                                 show_progress=show_progress, **kwargs)
 
         return output_path
 

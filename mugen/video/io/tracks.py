@@ -91,7 +91,7 @@ def add_tracks_to_video(video_file: str, output_path: str, *, subtitle_tracks: O
         subtitle_files.append(temp_subtitle_file)
 
     # Create new music video with auxiliary audio & subtitle tracks mixed in
-    ffmpeg_command = [system.get_ffmpeg_binary(), '-y', '-i', video_file]
+    ffmpeg_command = ['ffmpeg', '-y', '-i', video_file]
     for track in audio_tracks:
         ffmpeg_command += ['-i', track.audio_file]
     for file in subtitle_files:

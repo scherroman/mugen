@@ -1,0 +1,11 @@
+name: mugen
+channels:
+    - conda-forge
+dependencies:
+    - python=3.9
+    - pip
+    - ffmpeg
+    - libsndfile
+    - tesseract
+    - pip:
+          - .

@@ -1,15 +1,16 @@
+import os
 import pytest
 
 from mugen.video.sources.VideoSource import VideoSource, TimeRange, VideoSourceList
-from tests import DATA_PATH
 
-TRACKING_SHOT_VIDEO_FILE = f'{DATA_PATH}/video/tracking_shot.mp4'
-TRACKING_SHOT_VIDEO_GLOB = f'{DATA_PATH}/video/tracking_shot*'
-VIDEO_DIRECTORY = f'{DATA_PATH}/video'
+from tests import DATA_PATH, TRACKING_SHOT_VIDEO_PATH
+
+TRACKING_SHOT_VIDEO_GLOB = os.path.join(DATA_PATH, 'video', 'tracking_shot*')
+VIDEO_DIRECTORY = os.path.join(DATA_PATH, 'video')
 
 
 def get_tracking_shot_source() -> VideoSource:
-    return VideoSource(TRACKING_SHOT_VIDEO_FILE)
+    return VideoSource(TRACKING_SHOT_VIDEO_PATH)
 
 
 def get_five_percent_duration(video_source) -> float:
@@ -48,7 +49,7 @@ def test_time_boundaries__multiple_boundaries():
 
 
 def test_video_source_list__populates_from_video_files():
-    video_source_list = VideoSourceList([TRACKING_SHOT_VIDEO_FILE])
+    video_source_list = VideoSourceList([TRACKING_SHOT_VIDEO_PATH])
 
     assert type(video_source_list[0]) == VideoSource
 
@@ -66,7 +67,7 @@ def test_video_source_list__populates_from_file_glob():
 
 
 def test_video_source_list__populates_from_nested_sources():
-    video_source_list = VideoSourceList([TRACKING_SHOT_VIDEO_FILE, VIDEO_DIRECTORY,
-                                         [TRACKING_SHOT_VIDEO_FILE, TRACKING_SHOT_VIDEO_GLOB]])
+    video_source_list = VideoSourceList([TRACKING_SHOT_VIDEO_PATH, VIDEO_DIRECTORY,
+                                         [TRACKING_SHOT_VIDEO_PATH, TRACKING_SHOT_VIDEO_GLOB]])
 
     assert type(video_source_list[0]) == VideoSource

@@ -5,12 +5,13 @@ from typing import Optional, List, Union, Any
 from tqdm import tqdm
 
 import mugen.audio.utilities as audio_utilities
-from mugen.events import EventList
 from mugen.constants import TIME_FORMAT
 from mugen.exceptions import MugenError, ParameterError
-from mugen.mixins.Filterable import Filter, ContextFilter
+from mugen.utilities.logger import logger
 from mugen.utilities.system import use_temporary_file_fallback
 from mugen.utilities.conversion import convert_time_to_seconds
+from mugen.events import EventList
+from mugen.mixins.Filterable import Filter, ContextFilter
 from mugen.audio.Audio import Audio
 from mugen.video.MusicVideo import MusicVideo
 from mugen.video.segments.ColorSegment import ColorSegment
@@ -126,7 +127,7 @@ class MusicVideoGenerator:
         return self.audio.duration if self.audio else self._duration
 
     def generate_from_events(self, events: Union[EventList, List[TIME_FORMAT]],
-                             progress_bar: bool = True) -> MusicVideo:
+                             show_progress: bool = True) -> MusicVideo:
         """
         Generates a MusicVideo from a list of events
         
@@ -136,7 +137,7 @@ class MusicVideoGenerator:
             Events corresponding to cuts which occur in the music video.
             Either a list of events or event locations.
 
-        progress_bar
+        logger
             Whether to output progress information to stdout
         """
         if not isinstance(events, EventList):
@@ -145,7 +146,7 @@ class MusicVideoGenerator:
         # Get segment durations from cut locations
         segment_durations = events.segment_durations
 
-        music_video_segments = self._generate_music_video_segments(segment_durations, progress_bar=progress_bar)
+        music_video_segments = self._generate_music_video_segments(segment_durations, show_progress=show_progress)
 
         # Assemble music video from music video segments and audio
         music_video = MusicVideo(music_video_segments, self.audio.file if self.audio else None)
@@ -153,7 +154,7 @@ class MusicVideoGenerator:
         return music_video
 
     def _generate_music_video_segments(self, durations: List[float], *,
-                                       progress_bar: bool = True) -> List[VideoSegment]:
+                                       show_progress: bool = True) -> List[VideoSegment]:
         """
         Generates a list of sampled video segments which pass all trait filters
 
@@ -161,6 +162,9 @@ class MusicVideoGenerator:
         ----------
         durations 
             durations for each sampled video segment
+
+        show_progress
+            Whether to output progress information to stdout
 
         Returns
         -------
@@ -177,7 +181,7 @@ class MusicVideoGenerator:
             if isinstance(video_filter, ContextFilter) and video_filter.memory is None:
                 video_filter.memory = video_segments
 
-        for duration in tqdm(durations, disable=not progress_bar):
+        for duration in tqdm(durations, disable=not show_progress):
             video_segment = None
 
             while not video_segment:
@@ -195,7 +199,7 @@ class MusicVideoGenerator:
 
     @use_temporary_file_fallback('output_path', '.mkv')
     def preview_events(self, events: Union[EventList, List[TIME_FORMAT]], output_path: Optional[str] = None,
-                       mode: str = PreviewMode.AUDIOVISUAL, progress_bar: bool =True, **kwargs):
+                       mode: str = PreviewMode.AUDIOVISUAL, show_progress: bool = True, **kwargs):
         """
         Creates a new audio file with audible bleeps at event locations
 
@@ -211,7 +215,7 @@ class MusicVideoGenerator:
             Method of previewing. Visual by default.
             See :class:`~mugen.audio.Audio.PreviewMode` for supported values.
 
-        progress_bar
+        show_progress
             Whether to output progress information to stdout
         """
         if not isinstance(events, EventList):
@@ -236,7 +240,7 @@ class MusicVideoGenerator:
             preview.writer.preset = 'ultrafast'
 
             temp_output_path = preview.write_to_video_file(audio=True, add_auxiliary_tracks=False,
-                                                           progress_bar=progress_bar, **kwargs)
+                                                           show_progress=show_progress, **kwargs)
             self._add_preview_auxiliary_tracks(temp_output_path, events, output_path)
 
         return output_path

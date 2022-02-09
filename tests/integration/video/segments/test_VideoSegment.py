@@ -1,14 +1,14 @@
 from mugen.video.segments.VideoSegment import VideoSegment
 
-from tests import DATA_PATH
+from tests import TRACKING_SHOT_VIDEO_PATH, MUSIC_VIDEO_PATH
 
 
 def get_tracking_shot_segment() -> VideoSegment:
-    return VideoSegment(f'{DATA_PATH}/video/tracking_shot.mp4')
+    return VideoSegment(TRACKING_SHOT_VIDEO_PATH)
 
 
 def get_music_video_segment() -> VideoSegment:
-    return VideoSegment(f'{DATA_PATH}/video/music_video.mkv')
+    return VideoSegment(MUSIC_VIDEO_PATH)
 
 
 def test_video_segment__parses_streams():

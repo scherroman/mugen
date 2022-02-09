@@ -1,9 +1,10 @@
 import os
 from typing import Optional, List, Union
 
-from moviepy.editor import VideoClip
 from tqdm import tqdm
+from moviepy.editor import VideoClip
 
+from mugen.utilities.logger import logger
 from mugen.utilities.system import use_temporary_file_fallback
 
 
@@ -67,12 +68,12 @@ class VideoWriter:
         """
         for index, segment in enumerate(tqdm(video_clips)):
             output_path = os.path.join(directory, str(index) + file_extension)
-            self.write_video_clip_to_file(segment, output_path, audio=audio, verbose=False, progress_bar=False,
+            self.write_video_clip_to_file(segment, output_path, audio=audio, verbose=False, show_progress=False,
                                           **kwargs)
 
     @use_temporary_file_fallback('output_path', VIDEO_EXTENSION)
     def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Optional[str] = None, *,
-                                 audio: Union[str, bool] = True, verbose: bool = False, progress_bar: bool = True,
+                                 audio: Union[str, bool] = True, verbose: bool = False, show_progress: bool = True,
                                  **kwargs):
         """
         Writes a video clip to file in the specified directory
@@ -89,7 +90,7 @@ class VideoWriter:
         verbose
             Whether output to stdout should include extra information during writing
 
-        progress_bar
+        show_progress
             Whether to output progress information to stdout
 
         kwargs
@@ -102,6 +103,6 @@ class VideoWriter:
         video_clip.write_videofile(output_path, audio=audio,
                                    preset=self.preset, codec=self.codec, audio_codec=self.audio_codec,
                                    audio_bitrate=audio_bitrate, ffmpeg_params=ffmpeg_params, **kwargs, verbose=verbose,
-                                   progress_bar=progress_bar)
+                                   logger=logger if show_progress else None)
 
         return output_path
