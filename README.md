@@ -7,29 +7,36 @@
                   |___/
 ```
 
+[![tests](https://img.shields.io/github/workflow/status/scherroman/mugen/Test?label=tests&logo=github)](https://github.com/scherroman/mugen/actions/workflows/test.yml)
+[![coverage](https://img.shields.io/codecov/c/github/scherroman/mugen?label=coverage&logo=codecov)](https://codecov.io/gh/scherroman/mugen)
+[![license](https://img.shields.io/github/license/scherroman/mugen?color=blue)](https://github.com/scherroman/mugen/blob/master/LICENSE)
+[![Ko-Fi](https://img.shields.io/badge/buy%20me%20a%20coffee-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/scherroman)
+
 A music video generator based on rhythm
 
 Use it to brainstorm AMVs, montages, and more! [Check it out](https://youtu.be/ZlTR6XULe5M).
 
-Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editing, and [librosa](https://github.com/librosa/librosa) audio analysis.
+Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editing and [librosa](https://github.com/librosa/librosa) audio analysis.
 
 ## Basic Strategy
 
-1. Provide an audio file and a set of video files.
+1. Provide an audio file and a set of video files
 
-2. Perform rhythm analysis to identify beat locations.
+2. Perform rhythm analysis to identify beat locations
 
-3. Generate a set of random video segments syced to the beat.
+3. Generate a set of random video segments syced to the beat
 
-4. Discard segments with scene changes, detectable text (e.g. credits), or low contrast (i.e. solid colors, very dark scenes).
+4. Discard segments with scene changes, detectable text (e.g. credits), or low contrast (i.e. solid colors, very dark scenes)
 
-5. Combine the segments in order, overlay the audio, and output the resulting music video.
+5. Combine the segments in order, overlay the audio, and output the resulting music video
 
 ## Installation
 
+Mugen is supported across Linux, macOS, and Windows.
+
 **1. Install [Miniconda](http://conda.pydata.org/miniconda.html)**
 
-Miniconda helps create an isolated virtual environment and install the project's dependencies.
+Miniconda helps create an isolated virtual environment and install the project's dependencies across platforms.
 
 **2. Download this repository**
 
