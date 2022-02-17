@@ -11,10 +11,10 @@ assignees: ''
 <!-- A clear and concise description of the feature or enhancement you'd like to see -->
 
 **Rationale**
-<!-- A clear and concise description of why we need this feature or why it would be cool -->
+<!-- A clear and concise description of why we need this or why it would be cool -->
 
 **Alternatives**
-<!-- A clear and concise description of any alternative solutions or features you've considered -->
+<!-- A clear and concise description of any alternative solutions you've tried or considered -->
 
 **Additional context**
-<!-- Add any other context or screenshots about the feature request here -->
+<!-- Add any other relevant context or screenshots here -->
