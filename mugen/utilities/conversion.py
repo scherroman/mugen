@@ -12,19 +12,21 @@ def float_to_fraction(float_var: float) -> Fraction:
 
 
 def time_to_seconds(time: TIME_FORMAT) -> float:
-    """ 
+    """
     Convert any time into seconds.
     """
 
     if isinstance(time, str):
         expr = r"(?:(?:(\d+):)?(?:(\d+):))?(\d+)?(?:[,|.](\d+))?"
         finds = re.findall(expr, time)[0]
-        finds = [find if find else '0' for find in finds]
+        finds = [find if find else "0" for find in finds]
 
-        seconds = (3600*int(finds[0]) +
-                   60*int(finds[1]) +
-                   int(finds[2]) +
-                   int(finds[3])/(10**len(finds[3])))
+        seconds = (
+            3600 * int(finds[0])
+            + 60 * int(finds[1])
+            + int(finds[2])
+            + int(finds[3]) / (10 ** len(finds[3]))
+        )
     elif isinstance(time, tuple):
         if len(time) == 3:
             hr, mn, sec = time
@@ -48,13 +50,16 @@ def seconds_to_time_code(seconds: float) -> str:
 
 def hex_to_rgb(hex_value) -> List[int]:
     """Return [red, green, blue] for the color given as #rrggbb."""
-    hex_value = hex_value.lstrip('#')
+    hex_value = hex_value.lstrip("#")
     len_hex_value = len(hex_value)
-    return [int(hex_value[i:i + len_hex_value // 3], 16) for i in range(0, len_hex_value, len_hex_value // 3)]
+    return [
+        int(hex_value[i : i + len_hex_value // 3], 16)
+        for i in range(0, len_hex_value, len_hex_value // 3)
+    ]
 
 
 def color_to_hex_code(color):
-    if color.startswith('#'):
+    if color.startswith("#"):
         return color
     else:
         return Color(color).hex_code()

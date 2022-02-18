@@ -13,6 +13,7 @@ class VideoEffect(VideoEvent):
     """
     A visual effect in a video
     """
+
     pass
 
 
@@ -69,7 +70,7 @@ class VideoEffectList(MugenList):
 class Fade(VideoEffect):
     color: str
 
-    @convert_color_to_hex_code(['color'])
+    @convert_color_to_hex_code(["color"])
     def __init__(self, color: str, **kwargs):
         super().__init__(**kwargs)
         self.color = color
@@ -80,18 +81,15 @@ class Fade(VideoEffect):
 
 
 class FadeIn(Fade):
-
     def __init__(self, duration: float, color: str, **kwargs):
         super().__init__(duration=duration, color=color, **kwargs)
 
 
 class FadeOut(Fade):
-
     def __init__(self, duration: float, color: str, **kwargs):
         super().__init__(duration=duration, color=color, **kwargs)
 
 
 class CrossFade(VideoEffect):
-
     def __init__(self, duration: float, **kwargs):
         super().__init__(duration=duration, **kwargs)

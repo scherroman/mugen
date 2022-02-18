@@ -1,7 +1,4 @@
-import pytest
-
 from mugen import Audio
-
 from tests import TWO_BEATS_AUDIO_PATH
 
 

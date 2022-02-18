@@ -1,17 +1,16 @@
+import copy
 from abc import ABC, abstractmethod
 from typing import List, Tuple
-import copy
 
 from moviepy.editor import VideoClip
 
-
-import mugen.video.sizing as video_sizing
 import mugen.video.effects as video_effects
-from mugen.utilities import conversion
+import mugen.video.sizing as video_sizing
 from mugen.mixins.Filterable import Filterable
 from mugen.mixins.Persistable import Persistable
-from mugen.video.effects import VideoEffectList
+from mugen.utilities import conversion
 from mugen.video.constants import LIST_3D
+from mugen.video.effects import VideoEffectList
 from mugen.video.sizing import Dimensions
 
 
@@ -25,6 +24,7 @@ class Segment(Filterable, Persistable, ABC):
     effects
         A list of effects to apply to the segment when composed
     """
+
     effects: VideoEffectList
 
     DEFAULT_VIDEO_FPS = 24
@@ -50,7 +50,7 @@ class Segment(Filterable, Persistable, ABC):
     def __deepcopy__(self, memo):
         return self.copy()
 
-    def copy(self) -> 'Segment':
+    def copy(self) -> "Segment":
         new_segment = super().copy()
 
         # Deepcopy effects
@@ -103,7 +103,7 @@ class Segment(Filterable, Persistable, ABC):
     def first_middle_last_frames(self) -> List[LIST_3D]:
         return [self.first_frame, self.middle_frame, self.last_frame]
 
-    def crop_to_aspect_ratio(self, aspect_ratio: float) -> 'Segment':
+    def crop_to_aspect_ratio(self, aspect_ratio: float) -> "Segment":
         """
         Returns
         -------
@@ -113,13 +113,14 @@ class Segment(Filterable, Persistable, ABC):
 
         if segment.aspect_ratio != aspect_ratio:
             # Crop video to match desired aspect ratio
-            x1, y1, x2, y2 = video_sizing.crop_coordinates_for_aspect_ratio(segment.dimensions,
-                                                                        aspect_ratio)
+            x1, y1, x2, y2 = video_sizing.crop_coordinates_for_aspect_ratio(
+                segment.dimensions, aspect_ratio
+            )
             segment = segment.crop(x1=x1, y1=y1, x2=x2, y2=y2)
 
         return segment
 
-    def crop_scale(self, dimensions: Tuple[int, int]) -> 'Segment':
+    def crop_scale(self, dimensions: Tuple[int, int]) -> "Segment":
         """
         Returns
         -------
@@ -138,7 +139,7 @@ class Segment(Filterable, Persistable, ABC):
 
         return segment
 
-    def apply_effects(self) -> 'Segment':
+    def apply_effects(self) -> "Segment":
         """
         Composes the segment, applying all effects
 
@@ -169,7 +170,7 @@ class Segment(Filterable, Persistable, ABC):
         pass
 
     @abstractmethod
-    def trailing_buffer(self, duration) -> 'Segment':
+    def trailing_buffer(self, duration) -> "Segment":
         """
         Parameters
         ----------

@@ -9,6 +9,7 @@ class ImageSegment(Segment, ImageClip):
     """
     A segment with an image
     """
+
     file: str
 
     def __init__(self, file: str, duration: float = 1, **kwargs):
@@ -31,5 +32,5 @@ class ImageSegment(Segment, ImageClip):
     def name(self) -> str:
         return Path(self.file).stem
 
-    def trailing_buffer(self, duration) -> 'ImageSegment':
+    def trailing_buffer(self, duration) -> "ImageSegment":
         return ImageSegment(self.file, duration)

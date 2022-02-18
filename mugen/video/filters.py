@@ -2,8 +2,8 @@ from enum import Enum
 from typing import Any
 
 import mugen.video.detect as video_detect
+from mugen.mixins.Filterable import ContextFilter, Filter
 from mugen.video.segments import Segment
-from mugen.mixins.Filterable import Filter, ContextFilter
 
 
 def is_repeat(segment: Segment, memory: Any) -> bool:
@@ -43,18 +43,19 @@ class VideoFilter(Enum):
     Attributes
     ----------
     has_text
-        video segment has detectable text (letters, words, numbers, etc...). 
+        video segment has detectable text (letters, words, numbers, etc...).
         Supports foreign langauges
-        
+
     has_cut
         video segment has a detectable cut between shots
-        
+
     has_low_contrast
         video segment has low contrast (solid color, dark scene, etc...)
-        
+
     is_repeat
         video segment is a repeat of a video segment already used
     """
+
     # Content Filters
     has_text = Filter(has_text)
     has_cut = Filter(has_cut)
@@ -71,5 +72,9 @@ class VideoFilter(Enum):
 
 
 # Order is significant when short-circuiting. Order filters from least expensive to most expensive.
-DEFAULT_VIDEO_FILTERS = [VideoFilter.not_is_repeat.name, VideoFilter.not_has_low_contrast.name,
-                         VideoFilter.not_has_text.name, VideoFilter.not_has_cut.name]
+DEFAULT_VIDEO_FILTERS = [
+    VideoFilter.not_is_repeat.name,
+    VideoFilter.not_has_low_contrast.name,
+    VideoFilter.not_has_text.name,
+    VideoFilter.not_has_cut.name,
+]

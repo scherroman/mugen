@@ -1,16 +1,17 @@
 from typing import List, Optional
 
 import pytesseract
-from PIL import Image
 from moviepy.video.tools.cuts import detect_scenes
+from PIL import Image
 
-from mugen.video.constants import LIST_3D
 from mugen.video.segments.VideoSegment import VideoSegment
 
 DEFAULT_CONTRAST_THRESHOLD = 30
 
 
-def video_segment_is_repeat(video_segment: VideoSegment, video_segments_used: List[VideoSegment]) -> bool:
+def video_segment_is_repeat(
+    video_segment: VideoSegment, video_segments_used: List[VideoSegment]
+) -> bool:
     """
     Returns
     -------
@@ -47,7 +48,9 @@ def video_segment_has_text(video_segment: VideoSegment) -> bool:
     return False
 
 
-def video_segment_has_low_contrast(video_segment: VideoSegment, *args, **kwargs) -> bool:
+def video_segment_has_low_contrast(
+    video_segment: VideoSegment, *args, **kwargs
+) -> bool:
     """
     Returns
     -------
@@ -75,13 +78,15 @@ def image_has_text(image: Image):
     return True if len(text.strip()) > 0 else False
 
 
-def image_has_low_contrast(image: Image, threshold: Optional[float] = DEFAULT_CONTRAST_THRESHOLD) -> bool:
+def image_has_low_contrast(
+    image: Image, threshold: Optional[float] = DEFAULT_CONTRAST_THRESHOLD
+) -> bool:
     """
     Parameters
     ----------
-    image 
+    image
         A Pillow image
-        
+
     threshold
         The maximum difference in luma that is considered low contrast
 

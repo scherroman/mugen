@@ -1,5 +1,5 @@
 import collections
-from typing import List, Any, Optional
+from typing import Any, List, Optional
 
 
 class MugenList(list):
@@ -30,14 +30,14 @@ class MugenList(list):
         repr_str = ""
         for index, element_repr in enumerate(item_reprs):
             if index != 0:
-                repr_str += ' '
+                repr_str += " "
             repr_str += element_repr
             if index != len(self) - 1:
-                repr_str += ', \n'
-        return f'[{repr_str}]'
+                repr_str += ", \n"
+        return f"[{repr_str}]"
 
     def lget(self, attr) -> List[Any]:
-        """    
+        """
         Returns
         -------
         A list of values for the attribute, taken from each element in the array
@@ -54,16 +54,18 @@ class MugenList(list):
         return type(self)(flatten(self))
 
 
-def flatten(l: List[Any]) -> List[Any]:
+def flatten(list: List[Any]) -> List[Any]:
     """
     Flattens an arbitrarily nested irregular list of objects
     """
-    l_flattened = []
+    list_flattened = []
 
-    for element in l:
-        if isinstance(element, collections.Iterable) and not isinstance(element, (str, bytes)):
-            l_flattened.extend(flatten(element))
+    for element in list:
+        if isinstance(element, collections.Iterable) and not isinstance(
+            element, (str, bytes)
+        ):
+            list_flattened.extend(flatten(element))
         else:
-            l_flattened.append(element)
+            list_flattened.append(element)
 
-    return l_flattened
+    return list_flattened

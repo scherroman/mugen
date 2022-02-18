@@ -7,20 +7,24 @@ from operator import attrgetter
 from typing import List, Optional, Union
 
 from mugen import lists
-from mugen.lists import MugenList
 from mugen.constants import TIME_FORMAT
+from mugen.lists import MugenList
 from mugen.utilities import general, location
-from mugen.utilities.conversion import convert_float_to_fraction, convert_time_to_seconds
+from mugen.utilities.conversion import (
+    convert_float_to_fraction,
+    convert_time_to_seconds,
+)
 
 
 class Event:
     """
     An event which occurs in some time sequence (i.e a song, or music video)
     """
+
     location: float
     duration: float
 
-    @convert_time_to_seconds(['location', 'duration'])
+    @convert_time_to_seconds(["location", "duration"])
     def __init__(self, location: TIME_FORMAT = None, duration: float = 0):
         """
         Parameters
@@ -42,14 +46,14 @@ class Event:
 
     def index_repr(self, index: Optional[int] = None):
         if index is None:
-            repr_str = f'<{self.__class__.__name__}'
+            repr_str = f"<{self.__class__.__name__}"
         else:
-            repr_str = f'<{self.__class__.__name__} {index}'
+            repr_str = f"<{self.__class__.__name__} {index}"
         if self.location:
-            repr_str += f', location: {self.location:.3f}'
+            repr_str += f", location: {self.location:.3f}"
         if self.duration:
-            repr_str += f', duration:{self.duration:.3f}'
-        repr_str += '>'
+            repr_str += f", duration:{self.duration:.3f}"
+        repr_str += ">"
 
         return repr_str
 
@@ -68,7 +72,9 @@ def requires_end(func):
     @wraps(func)
     def _requires_end(self, *args, **kwargs):
         if not self.end:
-            raise ValueError(f"EventList's {func} method requires the 'end' attribute to be set.")
+            raise ValueError(
+                f"EventList's {func} method requires the 'end' attribute to be set."
+            )
 
         return func(self, *args, **kwargs)
 
@@ -79,9 +85,15 @@ class EventList(MugenList):
     """
     A list of Events which occur in some time sequence
     """
+
     end: Optional[float]
 
-    def __init__(self, events: Optional[List[Union[Event, TIME_FORMAT]]] = None, *, end: TIME_FORMAT = None):
+    def __init__(
+        self,
+        events: Optional[List[Union[Event, TIME_FORMAT]]] = None,
+        *,
+        end: TIME_FORMAT = None,
+    ):
         """
         Parameters
         ----------
@@ -117,14 +129,16 @@ class EventList(MugenList):
     def __repr__(self):
         event_reprs = [event.index_repr(index) for index, event in enumerate(self)]
         pretty_repr = super().pretty_repr(event_reprs)
-        return f'<{pretty_repr}, end: {self.end}>'
+        return f"<{pretty_repr}, end: {self.end}>"
 
     def list_repr(self, indexes: range, selected: bool):
         """
         Repr for use in lists
         """
-        return f'<{self.__class__.__name__} {indexes.start}-{indexes.stop} ({len(self)}), ' \
-               f'type: {self.type}, selected: {selected}>'
+        return (
+            f"<{self.__class__.__name__} {indexes.start}-{indexes.stop} ({len(self)}), "
+            f"type: {self.type}, selected: {selected}>"
+        )
 
     @property
     def type(self) -> Union[str, None]:
@@ -133,7 +147,7 @@ class EventList(MugenList):
         elif len(set([event.__class__.__name__ for event in self])) == 1:
             return self[0].__class__.__name__
         else:
-            return 'mixed'
+            return "mixed"
 
     @property
     def locations(self) -> List[float]:
@@ -178,14 +192,15 @@ class EventList(MugenList):
 
     def offset(self, offset: float):
         """
-        Offsets all events by the given amount         
+        Offsets all events by the given amount
         """
         for event in self:
             event.location += offset
 
-    @convert_float_to_fraction('speed')
-    def speed_multiply(self, speed: Union[float, Fraction],
-                       offset: Optional[int] = None):
+    @convert_float_to_fraction("speed")
+    def speed_multiply(
+        self, speed: Union[float, Fraction], offset: Optional[int] = None
+    ):
         """
         Speeds up or slows down events by grouping them together or splitting them up.
         For slowdowns, event type group boundaries and isolated events are preserved.
@@ -193,10 +208,10 @@ class EventList(MugenList):
         Parameters
         ----------
         speed
-            Factor to speedup or slowdown by. 
+            Factor to speedup or slowdown by.
             Must be of the form x (speedup) or 1/x (slowdown), where x is a natural number.
             Otherwise, 0 to remove all events.
-            
+
         offset
             Offsets the grouping of events for slowdowns.
             Takes a max offset of x - 1 for a slowdown of 1/x, where x is a natural number
@@ -253,9 +268,9 @@ class EventList(MugenList):
 
         Parameters
         ----------
-        pieces_per_merge 
+        pieces_per_merge
             Number of adjacent events to merge at a time
-            
+
         offset
             Offset for the merging of events
         """
@@ -277,7 +292,7 @@ class EventList(MugenList):
 
         self[:] = combined_events
 
-    def group_by_type(self, select_types: List[str] = None) -> 'EventGroupList':
+    def group_by_type(self, select_types: List[str] = None) -> "EventGroupList":
         """
         Groups events by type
 
@@ -286,7 +301,7 @@ class EventList(MugenList):
         select_types
             A list of types for which to select groups in the resulting EventGroupList.
             If no types are specified, all resulting groups will be selected.
-        
+
         Returns
         -------
         An EventGroupList partitioned by type
@@ -294,7 +309,10 @@ class EventList(MugenList):
         if select_types is None:
             select_types = []
 
-        groups = [EventList(list(group), end=self.end) for index, group in groupby(self, key=attrgetter('__class__'))]
+        groups = [
+            EventList(list(group), end=self.end)
+            for index, group in groupby(self, key=attrgetter("__class__"))
+        ]
         if not select_types:
             selected_groups = groups
         else:
@@ -302,7 +320,7 @@ class EventList(MugenList):
 
         return EventGroupList(groups, selected=selected_groups)
 
-    def group_by_slices(self, slices: (int, int)) -> 'EventGroupList':
+    def group_by_slices(self, slices: (int, int)) -> "EventGroupList":
         """
         Groups events by slices.
         Does not support negative indexing.
@@ -321,7 +339,9 @@ class EventList(MugenList):
 
         # Group events by slices
         groups = [self[sl] for sl in all_slices]
-        selected_groups = [group for index, group in enumerate(groups) if index in target_indexes]
+        selected_groups = [
+            group for index, group in enumerate(groups) if index in target_indexes
+        ]
         groups = EventGroupList(groups, selected=selected_groups)
 
         return groups
@@ -331,10 +351,15 @@ class EventGroupList(MugenList):
     """
     An alternate, more useful representation for a list of EventLists
     """
+
     _selected_groups: List[EventList]
 
-    def __init__(self, groups: Optional[Union[List[EventList], List[List[TIME_FORMAT]]]] = None, *,
-                 selected: List[EventList] = None):
+    def __init__(
+        self,
+        groups: Optional[Union[List[EventList], List[List[TIME_FORMAT]]]] = None,
+        *,
+        selected: List[EventList] = None,
+    ):
         """
         Parameters
         ----------
@@ -358,7 +383,11 @@ class EventGroupList(MugenList):
         index_count = 0
         for group in self:
             group_indexes = range(index_count, index_count + len(group) - 1)
-            group_reprs.append(group.list_repr(group_indexes, True if group in self.selected_groups else False))
+            group_reprs.append(
+                group.list_repr(
+                    group_indexes, True if group in self.selected_groups else False
+                )
+            )
             index_count += len(group)
         return super().pretty_repr(group_reprs)
 
@@ -367,7 +396,7 @@ class EventGroupList(MugenList):
         return self[-1].end if self else None
 
     @property
-    def selected_groups(self) -> 'EventGroupList':
+    def selected_groups(self) -> "EventGroupList":
         """
         Returns
         -------
@@ -376,15 +405,19 @@ class EventGroupList(MugenList):
         return EventGroupList([group for group in self._selected_groups])
 
     @property
-    def unselected_groups(self) -> 'EventGroupList':
+    def unselected_groups(self) -> "EventGroupList":
         """
         Returns
         -------
         Unselected groups
         """
-        return EventGroupList([group for group in self if group not in self.selected_groups])
+        return EventGroupList(
+            [group for group in self if group not in self.selected_groups]
+        )
 
-    def speed_multiply(self, speeds: List[float], offsets: Optional[List[float]] = None):
+    def speed_multiply(
+        self, speeds: List[float], offsets: Optional[List[float]] = None
+    ):
         """
         Speed multiplies event groups, in order
 

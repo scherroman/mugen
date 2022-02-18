@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, NamedTuple, Union, Any, Tuple
+from typing import Any, List, NamedTuple, Tuple, Union
 
 _sentinel = object()
 
@@ -27,7 +27,9 @@ class Dimensions(DimensionsBase):
         return self.width * self.height
 
 
-def crop_dimensions_to_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio: float) -> Dimensions:
+def crop_dimensions_to_aspect_ratio(
+    dimensions: Dimensions, desired_aspect_ratio: float
+) -> Dimensions:
     """
     Returns
     -------
@@ -38,21 +40,27 @@ def crop_dimensions_to_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio
     if dimensions.aspect_ratio > desired_aspect_ratio:
         # Crop sides
         cropped_width = int(desired_aspect_ratio * dimensions.height)
-        nearest_dimensions_to_aspect_ratio = Dimensions(cropped_width, dimensions.height)
+        nearest_dimensions_to_aspect_ratio = Dimensions(
+            cropped_width, dimensions.height
+        )
     elif dimensions.aspect_ratio < desired_aspect_ratio:
         # Crop top & bottom
         cropped_height = int(dimensions.width / desired_aspect_ratio)
-        nearest_dimensions_to_aspect_ratio = Dimensions(dimensions.width, cropped_height)
+        nearest_dimensions_to_aspect_ratio = Dimensions(
+            dimensions.width, cropped_height
+        )
 
     return nearest_dimensions_to_aspect_ratio
 
 
-def crop_coordinates_for_aspect_ratio(dimensions: Dimensions, desired_aspect_ratio: float) -> Tuple[int, int, int, int]:
+def crop_coordinates_for_aspect_ratio(
+    dimensions: Dimensions, desired_aspect_ratio: float
+) -> Tuple[int, int, int, int]:
     """
     Returns
     -------
-    Coordinates at which to crop the given dimensions to reach the desired aspect ratio. 
-    x1, y1, x2, y2 -> (x1, y1) for the top left corner, (x2, y2) for the bottom right corner 
+    Coordinates at which to crop the given dimensions to reach the desired aspect ratio.
+    x1, y1, x2, y2 -> (x1, y1) for the top left corner, (x2, y2) for the bottom right corner
     """
     x1 = 0
     y1 = 0
@@ -75,8 +83,11 @@ def crop_coordinates_for_aspect_ratio(dimensions: Dimensions, desired_aspect_rat
     return x1, y1, x2, y2
 
 
-def largest_dimensions_for_aspect_ratio(dimensions_list: List[Dimensions], desired_aspect_ratio: float,
-                                        default: Any = _sentinel) -> Union[Dimensions, Any]:
+def largest_dimensions_for_aspect_ratio(
+    dimensions_list: List[Dimensions],
+    desired_aspect_ratio: float,
+    default: Any = _sentinel,
+) -> Union[Dimensions, Any]:
     """
     Returns
     -------
@@ -87,13 +98,18 @@ def largest_dimensions_for_aspect_ratio(dimensions_list: List[Dimensions], desir
             return default
         raise ValueError(f"{dimensions_list} must not be empty.")
 
-    largest_dimensions = crop_dimensions_to_aspect_ratio(dimensions_list[0], desired_aspect_ratio)
+    largest_dimensions = crop_dimensions_to_aspect_ratio(
+        dimensions_list[0], desired_aspect_ratio
+    )
     for dimensions in dimensions_list[1:]:
-        nearest_dimensions_to_aspect_ratio = crop_dimensions_to_aspect_ratio(dimensions, desired_aspect_ratio)
+        nearest_dimensions_to_aspect_ratio = crop_dimensions_to_aspect_ratio(
+            dimensions, desired_aspect_ratio
+        )
 
-        if nearest_dimensions_to_aspect_ratio.resolution > largest_dimensions.resolution:
+        if (
+            nearest_dimensions_to_aspect_ratio.resolution
+            > largest_dimensions.resolution
+        ):
             largest_dimensions = nearest_dimensions_to_aspect_ratio
 
     return largest_dimensions
-
-

@@ -1,8 +1,8 @@
 import os
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
-from tqdm import tqdm
 from moviepy.editor import VideoClip
+from tqdm import tqdm
 
 from mugen.utilities.logger import logger
 from mugen.utilities.system import use_temporary_file_fallback
@@ -11,31 +11,32 @@ from mugen.utilities.system import use_temporary_file_fallback
 class VideoWriter:
     """
     Class for writing VideoClips and VideoSegments to file
-    
+
     Parameters
-    ----------   
+    ----------
     preset
         Sets the time that FFMPEG will spend optimizing compression while writing the video to file.
-        Note that this does not impact the quality of the video, only the size of the video file. 
+        Note that this does not impact the quality of the video, only the size of the video file.
         So choose ultrafast when you are in a hurry and file size does not matter.
-        Choices are: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo. 
-          
-    codec 
+        Choices are: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo.
+
+    codec
         Video codec to use when writing the music video to file.
-        
-    crf 
+
+    crf
         Constant rate factor (quality) for the music video (0 - 51).
-        
-    audio_codec 
+
+    audio_codec
         Audio codec to use if no audio_file is provided.
-        
-    audio_bitrate 
+
+    audio_bitrate
         Audio bitrate (kbps) to use if no audio_file is provided.
-        
-    ffmpeg_params 
-        Any additional ffmpeg parameters you would like to pass as a list of terms, 
+
+    ffmpeg_params
+        Any additional ffmpeg parameters you would like to pass as a list of terms,
         like ['-option1', 'value1', '-option2', 'value2']
     """
+
     preset: str
     codec: str
     crf: int
@@ -44,15 +45,21 @@ class VideoWriter:
     ffmpeg_params: list
 
     AUDIO_BITRATE = 320
-    AUDIO_CODEC = 'libmp3lame'
-    VIDEO_PRESET = 'medium'
-    VIDEO_CODEC = 'libx264'
+    AUDIO_CODEC = "libmp3lame"
+    VIDEO_PRESET = "medium"
+    VIDEO_CODEC = "libx264"
     VIDEO_CRF = 18
-    VIDEO_EXTENSION = '.mkv'
+    VIDEO_EXTENSION = ".mkv"
 
-    def __init__(self, preset: str = VIDEO_PRESET, codec: str = VIDEO_CODEC, crf: int = VIDEO_CRF,
-                 audio_codec: str = AUDIO_CODEC, audio_bitrate: int = AUDIO_BITRATE,
-                 ffmpeg_params: Optional[List[str]] = None):
+    def __init__(
+        self,
+        preset: str = VIDEO_PRESET,
+        codec: str = VIDEO_CODEC,
+        crf: int = VIDEO_CRF,
+        audio_codec: str = AUDIO_CODEC,
+        audio_bitrate: int = AUDIO_BITRATE,
+        ffmpeg_params: Optional[List[str]] = None,
+    ):
         self.preset = preset
         self.codec = codec
         self.crf = crf
@@ -60,21 +67,40 @@ class VideoWriter:
         self.audio_bitrate = audio_bitrate
         self.ffmpeg_params = ffmpeg_params or []
 
-    def write_video_clips_to_directory(self, video_clips: List[VideoClip], directory: str, *,
-                                       file_extension: str = VIDEO_EXTENSION, audio: Union[str, bool] = True,
-                                       **kwargs):
+    def write_video_clips_to_directory(
+        self,
+        video_clips: List[VideoClip],
+        directory: str,
+        *,
+        file_extension: str = VIDEO_EXTENSION,
+        audio: Union[str, bool] = True,
+        **kwargs
+    ):
         """
         Writes a list of video segments to files in the specified directory
         """
         for index, segment in enumerate(tqdm(video_clips)):
             output_path = os.path.join(directory, str(index) + file_extension)
-            self.write_video_clip_to_file(segment, output_path, audio=audio, verbose=False, show_progress=False,
-                                          **kwargs)
+            self.write_video_clip_to_file(
+                segment,
+                output_path,
+                audio=audio,
+                verbose=False,
+                show_progress=False,
+                **kwargs
+            )
 
-    @use_temporary_file_fallback('output_path', VIDEO_EXTENSION)
-    def write_video_clip_to_file(self, video_clip: VideoClip, output_path: Optional[str] = None, *,
-                                 audio: Union[str, bool] = True, verbose: bool = False, show_progress: bool = True,
-                                 **kwargs):
+    @use_temporary_file_fallback("output_path", VIDEO_EXTENSION)
+    def write_video_clip_to_file(
+        self,
+        video_clip: VideoClip,
+        output_path: Optional[str] = None,
+        *,
+        audio: Union[str, bool] = True,
+        verbose: bool = False,
+        show_progress: bool = True,
+        **kwargs
+    ):
         """
         Writes a video clip to file in the specified directory
 
@@ -97,12 +123,20 @@ class VideoWriter:
             List of other keyword arguments to pass to moviepy's write_videofile
         """
         # Prepend crf to ffmpeg_params
-        ffmpeg_params = ['-crf', str(self.crf)] + self.ffmpeg_params
-        audio_bitrate = str(self.audio_bitrate) + 'k'
+        ffmpeg_params = ["-crf", str(self.crf)] + self.ffmpeg_params
+        audio_bitrate = str(self.audio_bitrate) + "k"
 
-        video_clip.write_videofile(output_path, audio=audio,
-                                   preset=self.preset, codec=self.codec, audio_codec=self.audio_codec,
-                                   audio_bitrate=audio_bitrate, ffmpeg_params=ffmpeg_params, **kwargs, verbose=verbose,
-                                   logger=logger if show_progress else None)
+        video_clip.write_videofile(
+            output_path,
+            audio=audio,
+            preset=self.preset,
+            codec=self.codec,
+            audio_codec=self.audio_codec,
+            audio_bitrate=audio_bitrate,
+            ffmpeg_params=ffmpeg_params,
+            **kwargs,
+            verbose=verbose,
+            logger=logger if show_progress else None
+        )
 
         return output_path

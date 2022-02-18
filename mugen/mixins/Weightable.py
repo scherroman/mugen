@@ -1,6 +1,6 @@
 from copy import deepcopy
 from fractions import Fraction
-from typing import Optional, Union, List, Any
+from typing import Any, List, Optional, Union
 
 from mugen import lists
 from mugen.lists import MugenList
@@ -16,6 +16,7 @@ class Weightable:
     weight
         assigned weight
     """
+
     weight: float
 
     def __init__(self, *args, weight: float = 1, **kwargs):
@@ -29,7 +30,9 @@ class WeightableList(Weightable, MugenList):
     A list of Weightables with extended functionality
     """
 
-    def __init__(self, weightables: Optional[List[Union[Weightable, List[Any]]]] = None, **kwargs):
+    def __init__(
+        self, weightables: Optional[List[Union[Weightable, List[Any]]]] = None, **kwargs
+    ):
         """
         Parameters
         ----------
@@ -69,9 +72,11 @@ class WeightableList(Weightable, MugenList):
         -------
         Weights in simplest fraction form
         """
-        return [conversion.float_to_fraction(weight) for weight in self.normalized_weights]
+        return [
+            conversion.float_to_fraction(weight) for weight in self.normalized_weights
+        ]
 
-    def flatten(self) -> 'WeightableList':
+    def flatten(self) -> "WeightableList":
         """
         Returns
         -------
@@ -83,7 +88,7 @@ class WeightableList(Weightable, MugenList):
         return type(self)(lists.flatten(weightables_copy))
 
     @staticmethod
-    def _distribute_weight(weightables: 'WeightableList', weight: float):
+    def _distribute_weight(weightables: "WeightableList", weight: float):
         """
         Distributes weight across an arbitrarily nested list of weightables
         """

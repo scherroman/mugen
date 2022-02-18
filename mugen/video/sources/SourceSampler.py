@@ -10,6 +10,7 @@ class SourceSampler:
     """
     A set of content sources for sampling video segments
     """
+
     sources: SourceList
 
     def __init__(self, sources: Union[SourceList, list]):
@@ -30,7 +31,7 @@ class SourceSampler:
     def sample(self, duration: float) -> Segment:
         """
         Randomly samples a segment with the specified duration
-        
+
         Parameters
         ----------
         duration

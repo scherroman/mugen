@@ -1,15 +1,16 @@
 import os
-import pytest
 
 from mugen import MusicVideo
-from tests.integration.video.segments.test_VideoSegment import get_tracking_shot_segment
 from tests.integration.video.segments.test_ImageSegment import get_dark_image_segment
+from tests.integration.video.segments.test_VideoSegment import get_tracking_shot_segment
 from tests.unit.video.segments.test_ColorSegment import get_orange_segment
 
 
 def get_basic_music_video() -> MusicVideo:
-    short_tracking_shot_segment = get_tracking_shot_segment().subclip(end_time = 1)
-    return MusicVideo([short_tracking_shot_segment, get_dark_image_segment(), get_orange_segment()])
+    short_tracking_shot_segment = get_tracking_shot_segment().subclip(end_time=1)
+    return MusicVideo(
+        [short_tracking_shot_segment, get_dark_image_segment(), get_orange_segment()]
+    )
 
 
 def test_music_video__writes_to_file():
