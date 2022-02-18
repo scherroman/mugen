@@ -2,7 +2,6 @@ from mugen.mixins.Persistable import Persistable
 
 
 class CoolClass(Persistable):
-
     def __init__(self, coolness: int = 1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.coolness = coolness

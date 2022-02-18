@@ -9,32 +9,35 @@ import mugen.video.effects as video_effects
 import mugen.video.sizing as video_sizing
 from mugen.events import EventList
 from mugen.mixins.Persistable import Persistable
-from mugen.utilities import system, location
-from mugen.utilities.logger import logger
-from mugen.utilities.system import use_temporary_file_fallback 
+from mugen.utilities import location, system
+from mugen.utilities.system import use_temporary_file_fallback
 from mugen.utilities.validation import ensure_json_serializable
 from mugen.video.cuts import Cut
-from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.io import tracks
 from mugen.video.io.tracks import SubtitleTrack
+from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.moviepy.CompositeVideoClip import CompositeVideoClip
 from mugen.video.segments.Segment import Segment
 from mugen.video.sizing import Dimensions
 
-SEGMENTS_DIRECTORY = 'video_segments'
-REJECTED_SEGMENTS_DIRECTORY = 'rejected_video_segments'
+SEGMENTS_DIRECTORY = "video_segments"
+REJECTED_SEGMENTS_DIRECTORY = "rejected_video_segments"
 
 
 def requires_video_segments(func):
     """
     Decorator raises Error if there are no video segments
     """
+
     @wraps(func)
     def _requires_video_segments(self, *args, **kwargs):
         if not self.segments:
-            raise ValueError(f"MusicVideo's {func} method requires one or more segments.")
+            raise ValueError(
+                f"MusicVideo's {func} method requires one or more segments."
+            )
 
         return func(self, *args, **kwargs)
+
     return _requires_video_segments
 
 
@@ -50,6 +53,7 @@ class MusicVideo(Persistable):
     meta
         Json serializable dictionary with extra metadata
     """
+
     audio_file: Optional[str]
     segments: List[Segment]
     writer: VideoWriter
@@ -58,9 +62,16 @@ class MusicVideo(Persistable):
 
     meta: dict
 
-    @ensure_json_serializable('meta')
-    def __init__(self, segments: List[Segment], audio_file: Optional[str] = None, *,
-                 dimensions: Optional[Dimensions] = None, aspect_ratio: Optional[float] = None, **kwargs):
+    @ensure_json_serializable("meta")
+    def __init__(
+        self,
+        segments: List[Segment],
+        audio_file: Optional[str] = None,
+        *,
+        dimensions: Optional[Dimensions] = None,
+        aspect_ratio: Optional[float] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -109,7 +120,9 @@ class MusicVideo(Persistable):
     def cuts(self) -> EventList:
         durations = [segment.duration for segment in self.segments]
         locations = location.locations_from_intervals(durations)
-        return EventList([Cut(location) for location in locations[:-1]], end=locations[-1])
+        return EventList(
+            [Cut(location) for location in locations[:-1]], end=locations[-1]
+        )
 
     """ METHODS """
 
@@ -122,10 +135,13 @@ class MusicVideo(Persistable):
         """
         if self.aspect_ratio:
             dimensions = video_sizing.largest_dimensions_for_aspect_ratio(
-                [segment.dimensions for segment in self.segments], self.aspect_ratio)
+                [segment.dimensions for segment in self.segments], self.aspect_ratio
+            )
         else:
-            dimensions = max([segment.dimensions for segment in self.segments],
-                             key=operator.attrgetter('resolution'))
+            dimensions = max(
+                [segment.dimensions for segment in self.segments],
+                key=operator.attrgetter("resolution"),
+            )
 
         return dimensions
 
@@ -151,7 +167,9 @@ class MusicVideo(Persistable):
                 if isinstance(effect, video_effects.CrossFade):
                     buffer = segment.trailing_buffer(effect.duration)
                     if buffer.audio:
-                        buffer = buffer.set_audio(buffer.audio.audio_fadeout(effect.duration))
+                        buffer = buffer.set_audio(
+                            buffer.audio.audio_fadeout(effect.duration)
+                        )
                     buffered_video_segments.append(buffer)
 
         segments = buffered_video_segments
@@ -169,7 +187,9 @@ class MusicVideo(Persistable):
                     segment = segment.set_start(previous_segment.end - effect.duration)
                     segment = segment.crossfadein(effect.duration)
                     if segment.audio:
-                        segment = segment.set_audio(segment.audio.audio_fadein(effect.duration))
+                        segment = segment.set_audio(
+                            segment.audio.audio_fadein(effect.duration)
+                        )
 
             composite_video_segments.append(segment)
 
@@ -181,16 +201,23 @@ class MusicVideo(Persistable):
         return music_video
 
     @requires_video_segments
-    @use_temporary_file_fallback('output_path', VideoWriter.VIDEO_EXTENSION)
-    def write_to_video_file(self, output_path: Optional[str] = None, *, audio: Optional[Union[bool, str]] = None,
-                            add_auxiliary_tracks: bool = True, verbose: bool = False, show_progress: bool = True,
-                            **kwargs):
+    @use_temporary_file_fallback("output_path", VideoWriter.VIDEO_EXTENSION)
+    def write_to_video_file(
+        self,
+        output_path: Optional[str] = None,
+        *,
+        audio: Optional[Union[bool, str]] = None,
+        add_auxiliary_tracks: bool = True,
+        verbose: bool = False,
+        show_progress: bool = True,
+        **kwargs,
+    ):
         """
         writes the music video to a video file
-        
+
         Parameters
-        ----------        
-        output_path 
+        ----------
+        output_path
             Path for the video file
 
         audio
@@ -213,25 +240,36 @@ class MusicVideo(Persistable):
         composed_music_video = self.compose()
 
         if add_auxiliary_tracks:
-            temp_output_path = self.writer.write_video_clip_to_file(composed_music_video, audio=audio, verbose=verbose,
-                                                                    show_progress=show_progress, **kwargs)
+            temp_output_path = self.writer.write_video_clip_to_file(
+                composed_music_video,
+                audio=audio,
+                verbose=verbose,
+                show_progress=show_progress,
+                **kwargs,
+            )
             # Add helpful subtitle/audio tracks to video file
             self._add_auxiliary_tracks(temp_output_path, output_path)
         else:
-            self.writer.write_video_clip_to_file(composed_music_video, output_path, audio=audio, verbose=verbose,
-                                                 show_progress=show_progress, **kwargs)
+            self.writer.write_video_clip_to_file(
+                composed_music_video,
+                output_path,
+                audio=audio,
+                verbose=verbose,
+                show_progress=show_progress,
+                **kwargs,
+            )
 
         return output_path
 
     def _add_auxiliary_tracks(self, video_file: str, output_path: str):
         """
         Adds metadata subtitle/audio tracks to the music video
-        
+
         Parameters
         ----------
         video_file
             The temporary music video output file
-            
+
         output_path
             The final music video output file with added auxiliary tracks
         """
@@ -242,19 +280,30 @@ class MusicVideo(Persistable):
         durations = cuts.segment_durations
         rounded_durations = [round(interval, 2) for interval in cuts.segment_durations]
 
-        subtitle_track_segment_numbers = SubtitleTrack.create(numbers, 'segment_numbers', durations=durations)
-        subtitle_track_segment_locations = SubtitleTrack.create(locations, 'segment_locations_seconds', durations=durations)
-        subtitle_track_segment_durations = SubtitleTrack.create(rounded_durations, 'segment_durations_seconds', durations=durations)
+        subtitle_track_segment_numbers = SubtitleTrack.create(
+            numbers, "segment_numbers", durations=durations
+        )
+        subtitle_track_segment_locations = SubtitleTrack.create(
+            locations, "segment_locations_seconds", durations=durations
+        )
+        subtitle_track_segment_durations = SubtitleTrack.create(
+            rounded_durations, "segment_durations_seconds", durations=durations
+        )
 
-        subtitle_tracks = [subtitle_track_segment_numbers, subtitle_track_segment_locations,
-                           subtitle_track_segment_durations]
-        tracks.add_tracks_to_video(video_file, output_path, subtitle_tracks=subtitle_tracks)
+        subtitle_tracks = [
+            subtitle_track_segment_numbers,
+            subtitle_track_segment_locations,
+            subtitle_track_segment_durations,
+        ]
+        tracks.add_tracks_to_video(
+            video_file, output_path, subtitle_tracks=subtitle_tracks
+        )
 
     @requires_video_segments
     def write_video_segments(self, directory: str):
         """
         Saves video_segments or video_segment_rejects to video files in the specified directory
-        
+
         Parameters
         ----------
         directory
@@ -263,6 +312,8 @@ class MusicVideo(Persistable):
         directory = os.path.join(directory, SEGMENTS_DIRECTORY)
         system.recreate_directory(directory)
 
-        video_segments = [segment.crop_scale(self.dimensions) for segment in self.segments]
+        video_segments = [
+            segment.crop_scale(self.dimensions) for segment in self.segments
+        ]
 
         self.writer.write_video_clips_to_directory(video_segments, directory)

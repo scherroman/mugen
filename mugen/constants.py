@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 """
 SEC.MIL or 'SEC.MIL'
@@ -10,21 +10,19 @@ TIME_FORMAT = Union[float, Tuple[int, float], Tuple[int, int, float], str]
 
 
 class Color(str, Enum):
-    BLACK = 'black'
-    WHITE = 'white'
+    BLACK = "black"
+    WHITE = "white"
 
     def hex_code(self):
         if self.value == self.BLACK:
-            return '#000000'
+            return "#000000"
         elif self.value == self.WHITE:
-            return '#ffffff'
+            return "#ffffff"
         else:
-            raise ValueError(f'No Hex code defined for {self}')
+            raise ValueError(f"No Hex code defined for {self}")
 
 
 class FileType(str, Enum):
-    AUDIO = 'audio'
-    VIDEO = 'video'
-    SPEC = 'spec'
-
-
+    AUDIO = "audio"
+    VIDEO = "video"
+    SPEC = "spec"

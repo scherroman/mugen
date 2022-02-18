@@ -5,5 +5,5 @@ class VideoEvent(Event):
     """
     An event in a video
     """
-    pass
 
+    pass

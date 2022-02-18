@@ -1,11 +1,9 @@
 import os
-import os
 import shutil
 import subprocess
-from typing import List
-from subprocess import CompletedProcess, CalledProcessError
-
 import tempfile
+from subprocess import CalledProcessError, CompletedProcess
+from typing import List
 
 from mugen.utilities.general import preprocess_args
 
@@ -16,7 +14,7 @@ def touch(filename):
     """
     Creates an empty file if it does not already exist
     """
-    open(filename, 'a').close()
+    open(filename, "a").close()
 
 
 def ensure_directory_exists(*directories):
@@ -32,20 +30,24 @@ def recreate_directory(*directories):
         os.makedirs(directory)
 
 
-def list_directory(path, include_hidden = False):
+def list_directory(path, include_hidden=False):
     for file in os.listdir(path):
-        if not include_hidden and file.startswith('.'):
+        if not include_hidden and file.startswith("."):
             continue
         yield os.path.join(path, file)
 
 
-def list_directory_files(directory: str, include_hidden = False) -> List[str]:
+def list_directory_files(directory: str, include_hidden=False) -> List[str]:
     """
     Returns
     -------
     A list of all files found in the directory
     """
-    return [item for item in list_directory(directory, include_hidden=include_hidden) if os.path.isfile(item)]
+    return [
+        item
+        for item in list_directory(directory, include_hidden=include_hidden)
+        if os.path.isfile(item)
+    ]
 
 
 def run_command(command) -> CompletedProcess:
@@ -59,7 +61,7 @@ def run_command(command) -> CompletedProcess:
         print(error.stdout)
         print(error.stderr)
         raise error
-    
+
     return result
 
 
@@ -70,15 +72,16 @@ def generate_temp_file_path(extension: str) -> str:
 def use_temporary_file_fallback(path_var: str, extension: str):
     """
     Decorator to set path_var to a temporary file path if it is None. Does not create the file.
-    
+
     Parameters
     ----------
     path_var
         A variable expecting a file path
-        
+
     extension
         extension for the temporary file
     """
+
     def _use_temporary_file_path(path_variable):
         return path_variable or generate_temp_file_path(extension)
 

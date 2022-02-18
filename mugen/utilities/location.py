@@ -30,7 +30,9 @@ def locations_from_intervals(intervals: List[float]) -> List[float]:
     return locations
 
 
-def start_end_locations_from_locations(locations: List[float]) -> Tuple[List[float], List[float]]:
+def start_end_locations_from_locations(
+    locations: List[float],
+) -> Tuple[List[float], List[float]]:
     """
     Calculates the start and end times of each location
 
@@ -58,12 +60,14 @@ def start_end_locations_from_locations(locations: List[float]) -> Tuple[List[flo
     return start_locations, end_locations
 
 
-def start_end_locations_from_intervals(intervals: List[float]) -> Tuple[List[float], List[float]]:
+def start_end_locations_from_intervals(
+    intervals: List[float],
+) -> Tuple[List[float], List[float]]:
     """
     Calculates the start and end times of each interval
-    
+
     Ex) 5, 10, 15
-        start_times == 0, 5, 10 
+        start_times == 0, 5, 10
         end_times == 5, 10, 15
 
     Returns

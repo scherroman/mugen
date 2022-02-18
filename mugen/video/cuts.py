@@ -9,4 +9,3 @@ class Cut(VideoEvent):
 
     def __init__(self, location: TIME_FORMAT, *args, **kwargs):
         super().__init__(location, *args, **kwargs)
-

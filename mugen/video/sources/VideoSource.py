@@ -1,13 +1,13 @@
+import glob as globber
 import os
 import random
-import glob as globber
 from pathlib import Path
-from typing import Union, List, Optional, NamedTuple, Tuple
+from typing import List, NamedTuple, Optional, Tuple, Union
 
 from numpy.random import choice
 
-from mugen.utilities import system
 from mugen.constants import TIME_FORMAT
+from mugen.utilities import system
 from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.Source import Source, SourceList
@@ -21,7 +21,7 @@ class TimeRangeBase(NamedTuple):
 class TimeRange(TimeRangeBase):
     __slots__ = ()
 
-    @convert_time_to_seconds(['start', 'end'])
+    @convert_time_to_seconds(["start", "end"])
     def __new__(cls, start, end):
         self = super().__new__(cls, start, end)
         return self
@@ -35,10 +35,16 @@ class VideoSource(Source):
     """
     A video source for sampling video segments
     """
+
     time_boundaries: List[Tuple[(TIME_FORMAT, TIME_FORMAT)]]
 
-    def __init__(self, file: str, *, time_boundaries: Optional[List[Tuple[(TIME_FORMAT, TIME_FORMAT)]]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        file: str,
+        *,
+        time_boundaries: Optional[List[Tuple[(TIME_FORMAT, TIME_FORMAT)]]] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -54,8 +60,10 @@ class VideoSource(Source):
         self.time_boundaries = time_boundaries if time_boundaries else []
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.name}, duration: {self.segment.duration_time_code}, " \
-               f"weight: {self.weight}>"
+        return (
+            f"<{self.__class__.__name__}: {self.name}, duration: {self.segment.duration_time_code}, "
+            f"weight: {self.weight}>"
+        )
 
     @property
     def file(self):
@@ -77,14 +85,24 @@ class VideoSource(Source):
         if self.time_boundaries:
             # Select a random time boundary to sample from, weighted by duration
             time_ranges = [TimeRange(*boundary) for boundary in self.time_boundaries]
-            time_ranges = [time_range for time_range in time_ranges if time_range.duration >= duration]
+            time_ranges = [
+                time_range
+                for time_range in time_ranges
+                if time_range.duration >= duration
+            ]
             total_duration = sum([time_range.duration for time_range in time_ranges])
-            time_range_weights = [time_range.duration / total_duration for time_range in time_ranges]
-            time_range_to_sample = time_ranges[choice(len(time_ranges), p=time_range_weights)]
+            time_range_weights = [
+                time_range.duration / total_duration for time_range in time_ranges
+            ]
+            time_range_to_sample = time_ranges[
+                choice(len(time_ranges), p=time_range_weights)
+            ]
         else:
             time_range_to_sample = TimeRange(0, self.segment.duration)
 
-        start_time = random.uniform(time_range_to_sample.start, time_range_to_sample.end - duration)
+        start_time = random.uniform(
+            time_range_to_sample.start, time_range_to_sample.end - duration
+        )
         sampled_clip = self.segment.subclip(start_time, start_time + duration)
 
         return sampled_clip
@@ -94,9 +112,14 @@ class VideoSourceList(SourceList):
     """
     A list of VideoSources
     """
+
     name: Optional[str]
 
-    def __init__(self, sources=Optional[Union[List[Union[Source, 'VideoSourceList']], str]], **kwargs):
+    def __init__(
+        self,
+        sources=Optional[Union[List[Union[Source, "VideoSourceList"]], str]],
+        **kwargs,
+    ):
         """
         Parameters
         ----------

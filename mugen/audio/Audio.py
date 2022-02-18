@@ -1,17 +1,18 @@
+from functools import lru_cache
 from pathlib import Path
 from typing import List
-from functools import lru_cache
 
-import numpy
 import librosa
+import numpy
 
-from mugen.events import EventList, Event
+from mugen.events import Event, EventList
 
 
 class AudioEvent(Event):
     """
     An event in some audio
     """
+
     pass
 
 
@@ -19,6 +20,7 @@ class End(AudioEvent):
     """
     The end of some audio
     """
+
     pass
 
 
@@ -26,6 +28,7 @@ class Beat(AudioEvent):
     """
     A beat in some audio
     """
+
     pass
 
 
@@ -33,6 +36,7 @@ class WeakBeat(Beat):
     """
     A weak beat in some audio
     """
+
     pass
 
 
@@ -40,34 +44,36 @@ class Onset(AudioEvent):
     """
     An onset in some audio
     """
+
     pass
 
 
 class Audio:
     """
     Wraps the audio ouput from librosa, providing access to extra features
-    
+
     Attributes
     ----------
         file
             Loaded audio file
-            
+
         samples
             Audio samples
-        
+
         sample_rate
             Audio sample rate
-                        
+
         duration
             Audio duration (seconds)
     """
+
     file: str
     sample_rate: int
     samples: numpy.ndarray
     duration: float
 
     def __init__(self, file: str, *, sample_rate: int = 44100):
-        """        
+        """
         Parameters
         ----------
         file
@@ -80,12 +86,12 @@ class Audio:
 
     def __repr__(self):
         filename = Path(self.file).stem
-        return f'<Audio, file: {filename}, duration: {self.duration}>'
+        return f"<Audio, file: {filename}, duration: {self.duration}>"
 
     def beats(self, trim: bool = False) -> EventList:
         """
         Gets beat events
-        
+
         Parameters
         ----------
         trim
@@ -96,19 +102,31 @@ class Audio:
         Detected beat events from the audio
         """
         untrimmed_beats = self._beats()
-        untrimmed_beats = EventList([Beat(beat) for beat in untrimmed_beats], end=self.duration)
+        untrimmed_beats = EventList(
+            [Beat(beat) for beat in untrimmed_beats], end=self.duration
+        )
 
         if not trim:
             beats = untrimmed_beats
         else:
             trimmed_beats = self._beats(trim=True)
-            trimmed_leading_beats = [beat for beat in untrimmed_beats.locations if beat < trimmed_beats[0]]
-            trimmed_trailing_beats = [beat for beat in untrimmed_beats.locations if beat > trimmed_beats[-1]]
+            trimmed_leading_beats = [
+                beat for beat in untrimmed_beats.locations if beat < trimmed_beats[0]
+            ]
+            trimmed_trailing_beats = [
+                beat for beat in untrimmed_beats.locations if beat > trimmed_beats[-1]
+            ]
 
             # Mark leading & trailing trimmed beats as weak beats
-            trimmed_beats = EventList([Beat(beat) for beat in trimmed_beats], end=self.duration)
-            trimmed_leading_beats = EventList([WeakBeat(beat) for beat in trimmed_leading_beats], end=self.duration)
-            trimmed_trailing_beats = EventList([WeakBeat(beat) for beat in trimmed_trailing_beats], end=self.duration)
+            trimmed_beats = EventList(
+                [Beat(beat) for beat in trimmed_beats], end=self.duration
+            )
+            trimmed_leading_beats = EventList(
+                [WeakBeat(beat) for beat in trimmed_leading_beats], end=self.duration
+            )
+            trimmed_trailing_beats = EventList(
+                [WeakBeat(beat) for beat in trimmed_trailing_beats], end=self.duration
+            )
 
             beats = trimmed_leading_beats + trimmed_beats + trimmed_trailing_beats
 
@@ -129,18 +147,20 @@ class Audio:
         Beat locations
         """
         if trim:
-            tempo, beats = librosa.beat.beat_track(y=self.samples, sr=self.sample_rate, units='time',
-                                                   trim=True)
+            tempo, beats = librosa.beat.beat_track(
+                y=self.samples, sr=self.sample_rate, units="time", trim=True
+            )
         else:
-            tempo, beats = librosa.beat.beat_track(y=self.samples, sr=self.sample_rate, units='time',
-                                                   trim=False)
+            tempo, beats = librosa.beat.beat_track(
+                y=self.samples, sr=self.sample_rate, units="time", trim=False
+            )
 
         return beats
 
     def onsets(self, backtrack: bool = False) -> EventList:
         """
         Gets onset events
-        
+
         Parameters
         ----------
         backtrack
@@ -174,8 +194,12 @@ class Audio:
         Onset locations
         """
         if backtrack:
-            onsets = librosa.beat.onset.onset_detect(y=self.samples, sr=self.sample_rate, units='time', backtrack=True)
+            onsets = librosa.beat.onset.onset_detect(
+                y=self.samples, sr=self.sample_rate, units="time", backtrack=True
+            )
         else:
-            onsets = librosa.beat.onset.onset_detect(y=self.samples, sr=self.sample_rate, units='time', backtrack=False)
+            onsets = librosa.beat.onset.onset_detect(
+                y=self.samples, sr=self.sample_rate, units="time", backtrack=False
+            )
 
         return onsets

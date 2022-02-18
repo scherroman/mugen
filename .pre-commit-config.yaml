@@ -1,0 +1,19 @@
+repos:
+    - repo: https://github.com/psf/black
+      rev: 22.1.0
+      hooks:
+          - id: black
+            args:
+                - mugen
+                - scripts
+                - tests
+    - repo: https://github.com/pycqa/isort
+      rev: 5.10.1
+      hooks:
+          - id: isort
+            args:
+                - .
+    - repo: https://gitlab.com/pycqa/flake8
+      rev: 4.0.1
+      hooks:
+          - id: flake8

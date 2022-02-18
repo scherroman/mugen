@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from moviepy.video.VideoClip import ColorClip
 
@@ -11,10 +11,17 @@ class ColorSegment(Segment, ColorClip):
     """
     A segment with a color
     """
+
     color: str
 
-    @convert_color_to_hex_code(['color'])
-    def __init__(self, color: str, duration: float = 1, size: Optional[Tuple[int, int]] = (300, 300), **kwargs):
+    @convert_color_to_hex_code(["color"])
+    def __init__(
+        self,
+        color: str,
+        duration: float = 1,
+        size: Optional[Tuple[int, int]] = (300, 300),
+        **kwargs
+    ):
         """
         Parameters
         ----------
@@ -22,7 +29,9 @@ class ColorSegment(Segment, ColorClip):
             hex code of the color, i.e. #000000 for black.
             OR the special inputs 'black' and 'white'.
         """
-        super().__init__(size, conversion.hex_to_rgb(color), duration=duration, **kwargs)
+        super().__init__(
+            size, conversion.hex_to_rgb(color), duration=duration, **kwargs
+        )
 
         self.color = color
         self.fps = Segment.DEFAULT_VIDEO_FPS
@@ -31,5 +40,5 @@ class ColorSegment(Segment, ColorClip):
     def name(self):
         return self.color
 
-    def trailing_buffer(self, duration) -> 'ColorSegment':
+    def trailing_buffer(self, duration) -> "ColorSegment":
         return ColorSegment(self.color, duration, self.size)

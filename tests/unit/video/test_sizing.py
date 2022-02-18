@@ -20,30 +20,53 @@ def get_list_of_dimensions():
     return [get_16_9_dimensions(), get_4_3_dimensions(), get_21_9_dimensions()]
 
 
-@pytest.mark.parametrize("dimensions, aspect_ratio, expected_dimensions", [
-    (get_16_9_dimensions(), 16/9, (1920, 1080)),
-    (get_16_9_dimensions(), 4/3, (1440, 1080)),
-    (get_4_3_dimensions(), 16/9, (720, 405))
-])
+@pytest.mark.parametrize(
+    "dimensions, aspect_ratio, expected_dimensions",
+    [
+        (get_16_9_dimensions(), 16 / 9, (1920, 1080)),
+        (get_16_9_dimensions(), 4 / 3, (1440, 1080)),
+        (get_4_3_dimensions(), 16 / 9, (720, 405)),
+    ],
+)
 def test_crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio, expected_dimensions):
-    assert video_sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio) == expected_dimensions
+    assert (
+        video_sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio)
+        == expected_dimensions
+    )
 
 
-@pytest.mark.parametrize("dimensions, desired_aspect_ratio, expected_coordinates", [
-    (get_16_9_dimensions(), 16/9, (0, 0, 1920, 1080)),
-    (get_16_9_dimensions(), 4/3, (240, 0, 1680, 1080)),
-    (get_4_3_dimensions(), 16/9, (0, 67.5, 720, 472.5))
-])
-def test_crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio, expected_coordinates):
-    assert video_sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio) == expected_coordinates
+@pytest.mark.parametrize(
+    "dimensions, desired_aspect_ratio, expected_coordinates",
+    [
+        (get_16_9_dimensions(), 16 / 9, (0, 0, 1920, 1080)),
+        (get_16_9_dimensions(), 4 / 3, (240, 0, 1680, 1080)),
+        (get_4_3_dimensions(), 16 / 9, (0, 67.5, 720, 472.5)),
+    ],
+)
+def test_crop_coordinates_for_aspect_ratio(
+    dimensions, desired_aspect_ratio, expected_coordinates
+):
+    assert (
+        video_sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio)
+        == expected_coordinates
+    )
 
 
-@pytest.mark.parametrize("dimensions_list, desired_aspect_ratio, default, expected_dimensions", [
-    ([], 16/9, "default", "default"),
-    (get_list_of_dimensions(), 4/3, None, (1440, 1080)),
-    (get_list_of_dimensions(), 16/9, None, (1920, 1080)),
-    (get_list_of_dimensions(), 21/9, None, (1920, 822))
-])
-def test_largest_dimensions_for_aspect_ratio(dimensions_list, desired_aspect_ratio, default, expected_dimensions):
-    assert video_sizing.largest_dimensions_for_aspect_ratio(dimensions_list, desired_aspect_ratio,
-                                                        default) == expected_dimensions
+@pytest.mark.parametrize(
+    "dimensions_list, desired_aspect_ratio, default, expected_dimensions",
+    [
+        ([], 16 / 9, "default", "default"),
+        (get_list_of_dimensions(), 4 / 3, None, (1440, 1080)),
+        (get_list_of_dimensions(), 16 / 9, None, (1920, 1080)),
+        (get_list_of_dimensions(), 21 / 9, None, (1920, 822)),
+    ],
+)
+def test_largest_dimensions_for_aspect_ratio(
+    dimensions_list, desired_aspect_ratio, default, expected_dimensions
+):
+    assert (
+        video_sizing.largest_dimensions_for_aspect_ratio(
+            dimensions_list, desired_aspect_ratio, default
+        )
+        == expected_dimensions
+    )

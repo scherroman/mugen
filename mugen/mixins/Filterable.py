@@ -1,18 +1,19 @@
-from typing import List, Callable, Optional, Any, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 
 class Filter:
     """
     A function used to filter an object based its sources
-    
+
     Attributes
     ----------
     name
         Name of the filter function
-        
+
     function
         The function to filter with
     """
+
     name: str
     function: Callable[..., bool]
 
@@ -35,9 +36,10 @@ class ContextFilter(Filter):
     ----------
     memory
         A list of objects to use as memory for the given filter
-        
+
     Requires the filter function to take a 'memory' parameter
     """
+
     memory: List[Any] = None
 
     def __init__(self, function, memory: Optional[List[Any]] = None):
@@ -54,6 +56,7 @@ class Filterable:
     """
     Mixin for running filters against an object and caching the results
     """
+
     passed_filters: List[Filter]
     failed_filters: List[Filter]
 
@@ -63,13 +66,15 @@ class Filterable:
         self.passed_filters = []
         self.failed_filters = []
 
-    def apply_filters(self, filters: List[Filter], short_circuit: bool = True) -> Tuple[List[Filter], List[Filter]]:
+    def apply_filters(
+        self, filters: List[Filter], short_circuit: bool = True
+    ) -> Tuple[List[Filter], List[Filter]]:
         """
         Parameters
         ----------
         filters
             Filters to test
-            
+
         short_circuit
             Whether or not the function should exit early on a filter failure
 

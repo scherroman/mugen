@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 from mugen.mixins.Taggable import Taggable
 from mugen.mixins.Weightable import Weightable, WeightableList
@@ -29,8 +29,13 @@ class SourceList(WeightableList):
     A list of sources
     """
 
-    def __init__(self, sources: Optional[List[Union[Source, 'SourceList']]] = None, *, weights: List[float] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        sources: Optional[List[Union[Source, "SourceList"]]] = None,
+        *,
+        weights: List[float] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -73,9 +78,11 @@ class SourceList(WeightableList):
         flattened_sources = self.flatten()
 
         string = ""
-        for index, (source, weight) in enumerate(zip(flattened_sources, flattened_sources.weight_percentages)):
+        for index, (source, weight) in enumerate(
+            zip(flattened_sources, flattened_sources.weight_percentages)
+        ):
             string += f"{source.name}: {weight:.2f}%"
             if index != len(flattened_sources) - 1:
-                string += ', \n'
+                string += ", \n"
 
         return string
