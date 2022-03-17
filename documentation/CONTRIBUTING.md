@@ -15,7 +15,7 @@ To start developing locally, read through the [development guide](#development-g
 **2) Install development dependencies**
 
 ```
-pip install -e mugen[development]
+pip install -e 'mugen[development]'
 ```
 
 **3) Download [Visual Studio Code](https://code.visualstudio.com/)**
@@ -59,6 +59,14 @@ brew install act
 
 Act enables testing Github Actions workflows locally.
 
+**7) Clone the `mugen-media` repository**
+
+```
+git clone https://github.com/scherroman/mugen-media media
+```
+
+These media samples are needed to run the test suite
+
 ## Linting and Testing
 
 **Autoformat code with black**
@@ -70,7 +78,7 @@ black mugen scripts tests
 **Autosort imports with isort**
 
 ```
-isort
+isort mugen scripts tests
 ```
 
 **Lint code with flake8**
@@ -82,7 +90,7 @@ flake8
 **Run the test suite**
 
 ```
-pytest
+pytest -n auto
 ```
 
 **Run the pre-commit hooks**

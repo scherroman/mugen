@@ -1,6 +1,7 @@
 import glob as globber
 import os
 import random
+import re
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 
@@ -11,6 +12,8 @@ from mugen.utilities import system
 from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.Source import Source, SourceList
+
+GLOB_STAR = "*"
 
 
 class TimeRangeBase(NamedTuple):
@@ -117,7 +120,7 @@ class VideoSourceList(SourceList):
 
     def __init__(
         self,
-        sources=Optional[Union[List[Union[Source, "VideoSourceList"]], str]],
+        sources=Optional[Union[List[Union[str, VideoSource, "VideoSourceList"]], str]],
         **kwargs,
     ):
         """
@@ -125,23 +128,18 @@ class VideoSourceList(SourceList):
         ----------
         sources
             A list of sources.
-            Accepts arbitrarily nested video files, file globs, directories, VideoSources, and VideoSourceLists.
+            Accepts arbitrarily nested video files, directories, globs, VideoSources, and VideoSourceLists.
         """
         self.name = None
+        video_sources = []
 
         if isinstance(sources, str):
             self.name = Path(sources).stem
-
-            # Build list of sources from directory or file glob
-            if os.path.isdir(sources):
-                sources = self._sources_from_files(system.list_directory_files(sources))
-            else:
-                sources = self._sources_from_files(globber.glob(sources))
+            video_sources = self._get_sources_from_path(sources)
         else:
-            # Convert any source files to VideoSources, and any lists, file globs or directories to VideoSourceLists
-            sources = self._fill_in_sources(sources)
+            video_sources = self._get_sources_from_list(sources)
 
-        super().__init__(sources, **kwargs)
+        super().__init__(video_sources, **kwargs)
 
     def list_repr(self):
         """
@@ -153,28 +151,48 @@ class VideoSourceList(SourceList):
         return super().list_repr()
 
     @staticmethod
-    def _sources_from_files(files: List[str]):
+    def _get_sources_from_path(path: str):
         sources = []
 
-        for file in files:
-            try:
-                source = VideoSource(file)
-            except IOError:
-                continue
+        if GLOB_STAR in path:
+            # Collect list of sources from glob
+            # Escape square brackets, which are common in file names and affect glob
+            paths = globber.glob(re.sub(r"([\[\]])", "[\\1]", path))
 
-            sources.append(source)
+            for path in paths:
+                if os.path.isdir(path):
+                    sources.append(VideoSourceList(path))
+                else:
+                    try:
+                        sources.append(VideoSource(path))
+                    except IOError:
+                        continue
+        else:
+            if os.path.isdir(path):
+                # Collect list of sources from directory
+                for file in system.list_directory_files(path):
+                    try:
+                        sources.append(VideoSource(file))
+                    except IOError:
+                        continue
+            else:
+                sources.append(VideoSource(path))
+
+        if len(sources) == 0:
+            raise IOError(f"No file(s) found for {sources}")
 
         return sources
 
     @staticmethod
-    def _fill_in_sources(sources: list):
+    def _get_sources_from_list(sources: list):
+        # Convert source files to VideoSources, and lists, file globs or directories to VideoSourceLists
         for index, source in enumerate(sources):
             if isinstance(source, str):
-                try:
-                    sources[index] = VideoSource(source)
-                except IOError:
+                if os.path.isdir(source) or GLOB_STAR in source:
                     sources[index] = VideoSourceList(source)
-            if isinstance(source, list) and not isinstance(source, VideoSourceList):
+                else:
+                    sources[index] = VideoSource(source)
+            elif isinstance(source, list) and not isinstance(source, VideoSourceList):
                 sources[index] = VideoSourceList(source)
 
         return sources

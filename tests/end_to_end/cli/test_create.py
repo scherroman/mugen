@@ -5,16 +5,35 @@ from subprocess import CalledProcessError
 import pytest
 
 from mugen import Audio, MusicVideo, VideoSegment
-from tests import TRACKING_SHOT_VIDEO_PATH, TWO_BEATS_AUDIO_PATH
+from tests import (
+    NO_BEAT_AUDIO_PATH,
+    SPECIAL_CHARACTERS_VIDEO_PATH,
+    TRACKING_SHOT_VIDEO_PATH,
+    TWO_BEATS_AUDIO_PATH,
+)
 
 
 def test_create__creates_music_video_successfully(tmp_path):
     audio_path = TWO_BEATS_AUDIO_PATH
     try:
         subprocess.run(
-            f"mugen --output-directory {tmp_path} create --audio-source {audio_path} --video-sources {TRACKING_SHOT_VIDEO_PATH} --video-dimensions 1500 600 --video-codec libx265".split(),
+            [
+                "mugen",
+                "--output-directory",
+                tmp_path,
+                "create",
+                "--audio-source",
+                audio_path,
+                "--video-sources",
+                TRACKING_SHOT_VIDEO_PATH,
+                "--video-dimensions",
+                "1500",
+                "600",
+                "--video-codec",
+                "libx265",
+            ],
             check=True,
-            timeout=60,
+            timeout=180,
             capture_output=True,
             text=True,
         )
@@ -65,3 +84,37 @@ def test_create__creates_music_video_successfully(tmp_path):
     assert len(music_video_segment.get_subtitle_stream_content(0)) > 0
     assert len(music_video_segment.get_subtitle_stream_content(1)) > 0
     assert len(music_video_segment.get_subtitle_stream_content(2)) > 0
+
+
+def test_create__works_with_files_with_special_characters(tmp_path):
+    try:
+        subprocess.run(
+            [
+                "mugen",
+                "--output-directory",
+                tmp_path,
+                "create",
+                "--audio-source",
+                NO_BEAT_AUDIO_PATH,
+                "--video-sources",
+                SPECIAL_CHARACTERS_VIDEO_PATH,
+                "--exclude-video-filters",
+                "not_is_repeat",
+            ],
+            check=True,
+            timeout=180,
+            capture_output=True,
+            text=True,
+        )
+    except CalledProcessError as error:
+        print(error.stdout)
+        print(error.stderr)
+        raise error
+
+    music_video_path_base = os.path.join(tmp_path, "music_video_0", "music_video_0")
+    music_video_path = f"{music_video_path_base}.mkv"
+    music_video_save_file_path = f"{music_video_path_base}.pickle"
+
+    # Check that output files exist
+    assert os.path.isfile(music_video_path)
+    assert os.path.isfile(music_video_save_file_path)

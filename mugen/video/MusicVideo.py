@@ -11,7 +11,6 @@ from mugen.events import EventList
 from mugen.mixins.Persistable import Persistable
 from mugen.utilities import location, system
 from mugen.utilities.system import use_temporary_file_fallback
-from mugen.utilities.validation import ensure_json_serializable
 from mugen.video.cuts import Cut
 from mugen.video.io import tracks
 from mugen.video.io.tracks import SubtitleTrack
@@ -49,20 +48,15 @@ class MusicVideo(Persistable):
     ----------
     writer
         Wrapper for writing VideoClips to video files
-
-    meta
-        Json serializable dictionary with extra metadata
     """
 
     audio_file: Optional[str]
     segments: List[Segment]
+    rejected_segments: List[Segment]
     writer: VideoWriter
     _dimensions: Optional[Dimensions]
     aspect_ratio: Optional[float]
 
-    meta: dict
-
-    @ensure_json_serializable("meta")
     def __init__(
         self,
         segments: List[Segment],
@@ -98,9 +92,6 @@ class MusicVideo(Persistable):
         self._dimensions = dimensions
         self.aspect_ratio = aspect_ratio
         self.writer = VideoWriter()
-
-        # Optional Parameters
-        self.meta = {}
 
     """ PROPERTIES """
 
@@ -302,18 +293,54 @@ class MusicVideo(Persistable):
     @requires_video_segments
     def write_video_segments(self, directory: str):
         """
-        Saves video_segments or video_segment_rejects to video files in the specified directory
+        Saves the music video's individual video segments to video files in the specified directory
 
         Parameters
         ----------
         directory
             location to save video segments
         """
-        directory = os.path.join(directory, SEGMENTS_DIRECTORY)
+        self._write_video_segments(
+            self.segments, os.path.join(directory, SEGMENTS_DIRECTORY)
+        )
+
+    def write_rejected_video_segments(self, directory: str):
+        """
+        Saves the music video's rejected video segments to video files in the specified directory
+
+        Parameters
+        ----------
+        directory
+            location to save video segments
+        """
+        rejected_video_segments_by_filter_name = {}
+        for segment in self.rejected_segments:
+            for filter in segment.failed_filters:
+                if rejected_video_segments_by_filter_name.get(filter.name):
+                    rejected_video_segments_by_filter_name[filter.name].append(segment)
+                else:
+                    rejected_video_segments_by_filter_name[filter.name] = [segment]
+
+        for filter_name, segments in rejected_video_segments_by_filter_name.items():
+            filter_directory = os.path.join(
+                directory, REJECTED_SEGMENTS_DIRECTORY, filter_name
+            )
+            self._write_video_segments(segments, filter_directory)
+
+    def _write_video_segments(self, segments: List[Segment], directory: str):
+        """
+        Saves video segments to the specified directory
+
+        Parameters
+        ----------
+        segments
+            video segments to save
+
+        directory
+            location to save video segments
+        """
         system.recreate_directory(directory)
-
-        video_segments = [
-            segment.crop_scale(self.dimensions) for segment in self.segments
-        ]
-
-        self.writer.write_video_clips_to_directory(video_segments, directory)
+        segments = [segment.crop_scale(self.dimensions) for segment in segments]
+        self.writer.write_video_clips_to_directory(
+            segments, directory, file_extension=".mp4"
+        )
