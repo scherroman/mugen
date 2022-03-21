@@ -55,7 +55,7 @@ conda env create --file mugen/environment.yml
 **4. Activate the virtual environment**
 
 ```
-source activate mugen
+conda activate mugen
 ```
 
 ## Usage

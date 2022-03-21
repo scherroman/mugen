@@ -106,6 +106,8 @@ def test_video_source_list__populates_from_nested_sources():
     video_source_list = VideoSourceList(
         [
             TRACKING_SHOT_VIDEO_PATH,
+            VideoSource(MUSIC_VIDEO_PATH),
+            VideoSourceList([TRACKING_SHOT_VIDEO_PATH, MUSIC_VIDEO_PATH]),
             VIDEO_DIRECTORY,
             SIDE_DIRECTORY_GLOB,
             [TRACKING_SHOT_VIDEO_PATH, FACE_VIDEO_GLOB],
@@ -114,18 +116,33 @@ def test_video_source_list__populates_from_nested_sources():
 
     assert type(video_source_list[0]) == VideoSource
 
-    assert type(video_source_list[1]) == VideoSourceList
-    assert type(video_source_list[1][0]) == VideoSource
-    assert type(video_source_list[1][1]) == VideoSource
+    assert type(video_source_list[1]) == VideoSource
 
     assert type(video_source_list[2]) == VideoSourceList
-    assert type(video_source_list[2][0]) == VideoSourceList
-    assert type(video_source_list[2][1]) == VideoSourceList
-    assert type(video_source_list[2][0][0]) == VideoSource
-    assert type(video_source_list[2][1][0]) == VideoSource
+    assert type(video_source_list[2][0]) == VideoSource
+    assert type(video_source_list[2][1]) == VideoSource
 
     assert type(video_source_list[3]) == VideoSourceList
     assert type(video_source_list[3][0]) == VideoSource
-    assert type(video_source_list[3][1]) == VideoSourceList
-    assert type(video_source_list[3][1][0]) == VideoSource
-    assert type(video_source_list[3][1][1]) == VideoSource
+    assert type(video_source_list[3][1]) == VideoSource
+
+    assert type(video_source_list[4]) == VideoSourceList
+    assert type(video_source_list[4][0]) == VideoSourceList
+    assert type(video_source_list[4][1]) == VideoSourceList
+    assert type(video_source_list[4][0][0]) == VideoSource
+    assert type(video_source_list[4][1][0]) == VideoSource
+
+    assert type(video_source_list[5]) == VideoSourceList
+    assert type(video_source_list[5][0]) == VideoSource
+    assert type(video_source_list[5][1]) == VideoSourceList
+    assert type(video_source_list[5][1][0]) == VideoSource
+    assert type(video_source_list[5][1][1]) == VideoSource
+
+
+def test_video_source_list__throws_error_for_nonexistant_files():
+    with pytest.raises(IOError):
+        VideoSourceList("non_existant_file.mkv")
+    with pytest.raises(IOError):
+        VideoSourceList("non_existant_directory")
+    with pytest.raises(IOError):
+        VideoSourceList(["non_existant_file.mkv"])

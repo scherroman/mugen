@@ -1,15 +1,18 @@
 import json
+import re
 from typing import List
 
 import pytesseract
 from moviepy.video.tools.cuts import detect_scenes
 from PIL import Image
 
+from mugen.constants import PLATFORM, Platform
 from mugen.utilities import system
 from mugen.video.segments.VideoSegment import VideoSegment
 
 LOW_CONTRAST_THRESHOLD = 45
 FFPROBE_CUT_DETECTION_THRESHOLD = 0.09
+FILE_NAME_SPECIAL_CHARACTERS_REGEX = r"([:\\,;\'[\]])"
 
 
 def video_segment_is_repeat(
@@ -49,7 +52,19 @@ def check_if_moviepy_detects_cut(video_segment: VideoSegment) -> bool:
 
 
 def check_if_ffprobe_detects_cut(video_segment: VideoSegment) -> bool:
-    escaped_file_name = video_segment.file.replace("'", r"'\\\''")
+    # Three backslash escapes for libav determined through trial and error
+    if PLATFORM == Platform.WINDOWS:
+        # Command does not work with single or double quotes on Windows, so we have to escape special characters manually
+        escaped_file_name = re.sub(
+            FILE_NAME_SPECIAL_CHARACTERS_REGEX,
+            r"\\\\\\\1",
+            video_segment.file,
+        )
+    else:
+        # Escape single quotes manually, and wrap in single quotes to escape all other special characters
+        escaped_file_name = video_segment.file.replace("'", r"'\\\''")
+        escaped_file_name = f"'{escaped_file_name}'"
+
     # It is important to use all of the options seek_point, trim start, and trim end/duration to precisely target the detection area
     # seek_point makes the detection fast by skipping to the approximate start point
     # trim start and end/duration keeps the start point and end points precise
@@ -61,7 +76,7 @@ def check_if_ffprobe_detects_cut(video_segment: VideoSegment) -> bool:
             "-show_frames",
             "-f",
             "lavfi",
-            f"movie='{escaped_file_name}':seek_point={video_segment.source_start_time},trim={video_segment.source_start_time}:duration={video_segment.duration},select=gt(scene\\,{FFPROBE_CUT_DETECTION_THRESHOLD})",
+            f"movie={escaped_file_name}:seek_point={video_segment.source_start_time},trim={video_segment.source_start_time}:duration={video_segment.duration},select=gt(scene\\,{FFPROBE_CUT_DETECTION_THRESHOLD})",
         ]
     )
     frames = json.loads(result.stdout).get("frames", [])

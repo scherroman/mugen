@@ -1,5 +1,8 @@
+import platform
 from enum import Enum
 from typing import Tuple, Union
+
+PLATFORM = platform.system()
 
 """
 SEC.MIL or 'SEC.MIL'
@@ -22,7 +25,7 @@ class Color(str, Enum):
             raise ValueError(f"No Hex code defined for {self}")
 
 
-class FileType(str, Enum):
-    AUDIO = "audio"
-    VIDEO = "video"
-    SPEC = "spec"
+class Platform(str, Enum):
+    LINUX = "Linux"
+    MACOS = "Darwin"
+    WINDOWS = "Windows"

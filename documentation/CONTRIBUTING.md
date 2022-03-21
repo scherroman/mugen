@@ -67,6 +67,15 @@ git clone https://github.com/scherroman/mugen-media media
 
 These media samples are needed to run the test suite
 
+**8) Install Code Climate CLI**
+
+```
+brew tap codeclimate/formulae
+brew install codeclimate
+```
+
+This can be used to analyze code quality and catch maintainability issues before opening a pull request.
+
 ## Linting and Testing
 
 **Autoformat code with black**
@@ -111,4 +120,10 @@ act pull_request
 
 ```
 act -j lint
+```
+
+**Run code climate**
+
+```
+codeclimate analyze mugen
 ```
