@@ -8,12 +8,12 @@ from fractions import Fraction
 from pathlib import Path
 from typing import List
 
-import mugen.video.filters as video_filters
-from mugen import MusicVideoGenerator, VideoFilter
+from mugen import Filter, MusicVideo, MusicVideoGenerator, VideoFilter
 from mugen.events import EventGroupList, EventList
 from mugen.exceptions import ParameterError
 from mugen.mixins import Persistable
 from mugen.utilities import system
+from mugen.video.filters import DEFAULT_VIDEO_FILTERS
 from mugen.video.io.VideoWriter import VideoWriter
 from mugen.video.MusicVideoGenerator import PreviewMode
 from mugen.video.sources.VideoSource import VideoSourceList
@@ -84,9 +84,9 @@ def create_music_video(args):
     audio_codec = args.audio_codec
     audio_bitrate = args.audio_bitrate
     save_segments = args.save_segments
+    save_rejected_segments = args.save_rejected_segments
 
-    video_source_files = files_from_sources(video_sources)
-    video_sources = VideoSourceList(video_source_files, weights=video_source_weights)
+    video_sources = VideoSourceList(video_sources, weights=video_source_weights)
 
     generator = MusicVideoGenerator(
         audio_source,
@@ -117,7 +117,7 @@ def create_music_video(args):
         music_video.segments[-1].effects.add_fadeout(fade_out)
 
     # Print stats for rejected video segments
-    print_rejected_segment_stats(generator)
+    print_rejected_segment_stats(music_video, generator.video_filters)
 
     # Create the directory for the music video
     music_video_name = get_music_video_name(output_directory, video_name)
@@ -158,6 +158,10 @@ def create_music_video(args):
     if save_segments:
         message("Saving video segments...")
         music_video.write_video_segments(music_video_directory)
+
+    if save_rejected_segments:
+        message("Saving rejected video segments...")
+        music_video.write_rejected_video_segments(music_video_directory)
 
 
 def preview_audio(args):
@@ -239,6 +243,8 @@ def prepare_events(generator: MusicVideoGenerator, args) -> EventList:
                 event_groups.unselected_groups.speed_multiply(
                     group_speeds, group_speed_offsets
                 )
+            else:
+                raise ParameterError(f"Unknown target groups value {target_groups}.")
 
             events = event_groups.flatten()
         else:
@@ -302,66 +308,22 @@ def get_preview_path(directory: str, extension: str) -> str:
     return preview_name
 
 
-def files_from_source(source: str) -> List[str]:
-    """
-    Parameters
-    ----------
-    source
-        A file source.
-        Accepts a file or directory
-
-    Returns
-    -------
-    A list of all file paths extracted from source
-    """
-    files = []
-    source_is_directory = os.path.isdir(source)
-
-    # Check if source is file or directory
-    if source_is_directory:
-        files.append(system.list_directory_files(source))
-    else:
-        files.append(source)
-
-    return files
-
-
-def files_from_sources(sources: List[str]) -> List[str]:
-    """
-    Parameters
-    ----------
-    sources
-        A list of file sources.
-        Accepts both files and directories
-
-    Returns
-    -------
-    A list of all file paths extracted from sources
-    """
-    files = []
-
-    for source in sources:
-        files.extend(files_from_source(source))
-
-    return files
-
-
-def print_rejected_segment_stats(generator: MusicVideoGenerator):
+def print_rejected_segment_stats(music_video: MusicVideo, video_filters: List[Filter]):
     message("Filter results:")
-    for video_filter in generator.video_filters:
-        rejected_segments = [
-            segment for segment in generator.meta[generator.Meta.REJECTED_SEGMENT_STATS]
-        ]
+    for video_filter in video_filters:
+        rejected_segments = music_video.rejected_segments
         rejected_segments_failed_filter_names = [
-            [failed_filter.name for failed_filter in segment["failed_filters"]]
+            [failed_filter.name for failed_filter in segment.failed_filters]
             for segment in rejected_segments
         ]
-        num_failing = 0
+        number_of_failing_segments = 0
         for names in rejected_segments_failed_filter_names:
             if video_filter.name in names:
-                num_failing += 1
+                number_of_failing_segments += 1
 
-        print(f"{num_failing} segments failed filter '{video_filter.name}'")
+        print(
+            f"{number_of_failing_segments} segments failed filter {video_filter.name}"
+        )
 
 
 """ COMMAND LINE ARGUMENT PARSING """
@@ -459,7 +421,7 @@ def parse_args(args):
         dest="event_locations",
         type=float,
         nargs="+",
-        help="""Manually enter Event locations for the audio file.
+        help="""Manually enter event locations in seconds for the audio file.
          Usually this corresponds to beats in the music, or any location where one feels
          there should be a cut between clips in the music video.
          If this option is specified alongside --audio-events-mode, both will be combined.
@@ -470,7 +432,8 @@ def parse_args(args):
         "--events-offset",
         dest="events_offset",
         type=float,
-        help="Global offset for event locations",
+        help="Global offset for event locations in seconds."
+        "If using -es/--events-speed and events are not showing up where desired, try using -eso/--events-speed-offset before this option.",
     )
     event_parser.add_argument(
         "-es",
@@ -479,7 +442,9 @@ def parse_args(args):
         type=Fraction,
         help="Global speed up or slow down for events in the music video. "
         "Should be of the form x or 1/x, where x is a natural number. "
-        "(e.g.) 2 for double speed, or 1/2 for half speed",
+        "(e.g.) 2 for double speed, or 1/2 for half speed. "
+        "For slowdown multipliers, events are merged towards the left "
+        "(e.g.) Given beat events 1, 2, 3, 4, a slowdown of 1/2 would result in preserving events 1 and 3",
     )
     event_parser.add_argument(
         "-eso",
@@ -556,7 +521,7 @@ def parse_args(args):
         "--video-filters",
         dest="video_filters",
         nargs="+",
-        default=video_filters.DEFAULT_VIDEO_FILTERS,
+        default=DEFAULT_VIDEO_FILTERS,
         help=f"Video filters that each segment in the music video must pass. Supported values are {[filter.name for filter in VideoFilter]}",
     )
     video_parser.add_argument(
@@ -622,6 +587,15 @@ def parse_args(args):
         action="store_true",
         default=False,
         help="Save all the individual segments that compose the music video.",
+    )
+
+    video_parser.add_argument(
+        "-srs",
+        "--save-rejected-segments",
+        dest="save_rejected_segments",
+        action="store_true",
+        default=False,
+        help="Save all rejected segments that did not pass filters.",
     )
 
     # Audio Common Parameters
@@ -698,6 +672,8 @@ def parse_args(args):
         required=True,
         help="""The video sources for the music video.
          Takes a list of files and folders separated by spaces.
+         Supports passing globs to target one or more files or folders.
+         (e.g.) Miyazaki/* to use a folder containing multiple miyazaki movies or subfolders with miyazaki movies.
          Supports any video format supported by ffmpeg,
          such as .ogv, .mp4, .mpeg, .avi, .mov, etc...""",
     )

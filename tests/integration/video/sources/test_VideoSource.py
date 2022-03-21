@@ -3,10 +3,16 @@ import os
 import pytest
 
 from mugen.video.sources.VideoSource import TimeRange, VideoSource, VideoSourceList
-from tests import DATA_PATH, TRACKING_SHOT_VIDEO_PATH
+from tests import (
+    MEDIA_PATH,
+    MUSIC_VIDEO_PATH,
+    SPECIAL_CHARACTERS_VIDEO_PATH,
+    TRACKING_SHOT_VIDEO_PATH,
+)
 
-TRACKING_SHOT_VIDEO_GLOB = os.path.join(DATA_PATH, "video", "tracking_shot*")
-VIDEO_DIRECTORY = os.path.join(DATA_PATH, "video")
+VIDEO_DIRECTORY = os.path.join(MEDIA_PATH, "videos")
+FACE_VIDEO_GLOB = os.path.join(MEDIA_PATH, "videos", "loading", "face*")
+SIDE_DIRECTORY_GLOB = os.path.join(MEDIA_PATH, "videos", "loading", "side*")
 
 
 def get_tracking_shot_source() -> VideoSource:
@@ -54,8 +60,21 @@ def test_time_boundaries__multiple_boundaries():
     )
 
 
+def test_video_source_list__populates_from_path():
+    video_source_list = VideoSourceList(TRACKING_SHOT_VIDEO_PATH)
+
+    assert type(video_source_list[0]) == VideoSource
+
+
 def test_video_source_list__populates_from_video_files():
-    video_source_list = VideoSourceList([TRACKING_SHOT_VIDEO_PATH])
+    video_source_list = VideoSourceList([TRACKING_SHOT_VIDEO_PATH, MUSIC_VIDEO_PATH])
+
+    assert type(video_source_list[0]) == VideoSource
+    assert type(video_source_list[1]) == VideoSource
+
+
+def test_video_source_list__populates_from_video_file_with_special_characters_in_name():
+    video_source_list = VideoSourceList(SPECIAL_CHARACTERS_VIDEO_PATH)
 
     assert type(video_source_list[0]) == VideoSource
 
@@ -64,21 +83,66 @@ def test_video_source_list__populates_from_directory():
     video_source_list = VideoSourceList(VIDEO_DIRECTORY)
 
     assert type(video_source_list[0]) == VideoSource
+    assert type(video_source_list[1]) == VideoSource
 
 
 def test_video_source_list__populates_from_file_glob():
-    video_source_list = VideoSourceList(TRACKING_SHOT_VIDEO_GLOB)
+    video_source_list = VideoSourceList(FACE_VIDEO_GLOB)
 
     assert type(video_source_list[0]) == VideoSource
+    assert type(video_source_list[1]) == VideoSource
+
+
+def test_video_source_list__populates_from_directory_glob():
+    video_source_list = VideoSourceList(SIDE_DIRECTORY_GLOB)
+
+    assert type(video_source_list[0]) == VideoSourceList
+    assert type(video_source_list[1]) == VideoSourceList
+    assert type(video_source_list[0][0]) == VideoSource
+    assert type(video_source_list[1][0]) == VideoSource
 
 
 def test_video_source_list__populates_from_nested_sources():
     video_source_list = VideoSourceList(
         [
             TRACKING_SHOT_VIDEO_PATH,
+            VideoSource(MUSIC_VIDEO_PATH),
+            VideoSourceList([TRACKING_SHOT_VIDEO_PATH, MUSIC_VIDEO_PATH]),
             VIDEO_DIRECTORY,
-            [TRACKING_SHOT_VIDEO_PATH, TRACKING_SHOT_VIDEO_GLOB],
+            SIDE_DIRECTORY_GLOB,
+            [TRACKING_SHOT_VIDEO_PATH, FACE_VIDEO_GLOB],
         ]
     )
 
     assert type(video_source_list[0]) == VideoSource
+
+    assert type(video_source_list[1]) == VideoSource
+
+    assert type(video_source_list[2]) == VideoSourceList
+    assert type(video_source_list[2][0]) == VideoSource
+    assert type(video_source_list[2][1]) == VideoSource
+
+    assert type(video_source_list[3]) == VideoSourceList
+    assert type(video_source_list[3][0]) == VideoSource
+    assert type(video_source_list[3][1]) == VideoSource
+
+    assert type(video_source_list[4]) == VideoSourceList
+    assert type(video_source_list[4][0]) == VideoSourceList
+    assert type(video_source_list[4][1]) == VideoSourceList
+    assert type(video_source_list[4][0][0]) == VideoSource
+    assert type(video_source_list[4][1][0]) == VideoSource
+
+    assert type(video_source_list[5]) == VideoSourceList
+    assert type(video_source_list[5][0]) == VideoSource
+    assert type(video_source_list[5][1]) == VideoSourceList
+    assert type(video_source_list[5][1][0]) == VideoSource
+    assert type(video_source_list[5][1][1]) == VideoSource
+
+
+def test_video_source_list__throws_error_for_nonexistant_files():
+    with pytest.raises(IOError):
+        VideoSourceList("non_existant_file.mkv")
+    with pytest.raises(IOError):
+        VideoSourceList("non_existant_directory")
+    with pytest.raises(IOError):
+        VideoSourceList(["non_existant_file.mkv"])

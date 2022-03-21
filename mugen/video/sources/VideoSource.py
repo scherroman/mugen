@@ -1,16 +1,20 @@
 import glob as globber
 import os
 import random
+import re
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Tuple, Union
 
 from numpy.random import choice
 
 from mugen.constants import TIME_FORMAT
+from mugen.exceptions import ParameterError
 from mugen.utilities import system
 from mugen.utilities.conversion import convert_time_to_seconds
 from mugen.video.segments.VideoSegment import VideoSegment
 from mugen.video.sources.Source import Source, SourceList
+
+GLOB_STAR = "*"
 
 
 class TimeRangeBase(NamedTuple):
@@ -110,14 +114,14 @@ class VideoSource(Source):
 
 class VideoSourceList(SourceList):
     """
-    A list of VideoSources
+    A list of video sources
     """
 
     name: Optional[str]
 
     def __init__(
         self,
-        sources=Optional[Union[List[Union[Source, "VideoSourceList"]], str]],
+        sources=Optional[Union[List[Union[str, Source, "VideoSourceList"]], str]],
         **kwargs,
     ):
         """
@@ -125,23 +129,18 @@ class VideoSourceList(SourceList):
         ----------
         sources
             A list of sources.
-            Accepts arbitrarily nested video files, file globs, directories, VideoSources, and VideoSourceLists.
+            Accepts arbitrarily nested video files, directories, globs, Sources, VideoSources, and VideoSourceLists.
         """
         self.name = None
+        video_sources = []
 
         if isinstance(sources, str):
             self.name = Path(sources).stem
-
-            # Build list of sources from directory or file glob
-            if os.path.isdir(sources):
-                sources = self._sources_from_files(system.list_directory_files(sources))
-            else:
-                sources = self._sources_from_files(globber.glob(sources))
+            video_sources = self._get_sources_from_path(sources)
         else:
-            # Convert any source files to VideoSources, and any lists, file globs or directories to VideoSourceLists
-            sources = self._fill_in_sources(sources)
+            video_sources = self._get_sources_from_list(sources)
 
-        super().__init__(sources, **kwargs)
+        super().__init__(video_sources, **kwargs)
 
     def list_repr(self):
         """
@@ -153,28 +152,69 @@ class VideoSourceList(SourceList):
         return super().list_repr()
 
     @staticmethod
-    def _sources_from_files(files: List[str]):
+    def _get_sources_from_path(
+        path: str,
+    ) -> List[Union[VideoSource, "VideoSourceList"]]:
         sources = []
 
-        for file in files:
-            try:
-                source = VideoSource(file)
-            except IOError:
-                continue
+        if GLOB_STAR in path:
+            sources = VideoSourceList._get_sources_from_glob_path(path)
+        elif os.path.isdir(path):
+            sources = VideoSourceList._get_sources_from_directory(path)
+        else:
+            sources = [VideoSource(path)]
 
-            sources.append(source)
+        if len(sources) == 0:
+            raise IOError(f"No file(s) found for {path}")
 
         return sources
 
     @staticmethod
-    def _fill_in_sources(sources: list):
-        for index, source in enumerate(sources):
-            if isinstance(source, str):
-                try:
-                    sources[index] = VideoSource(source)
-                except IOError:
-                    sources[index] = VideoSourceList(source)
-            if isinstance(source, list) and not isinstance(source, VideoSourceList):
-                sources[index] = VideoSourceList(source)
+    def _get_sources_from_glob_path(
+        glob_path: str,
+    ) -> List[Union[VideoSource, "VideoSourceList"]]:
+        sources = []
+        # Escape square brackets, which are common in file names and affect glob
+        paths = globber.glob(re.sub(r"([\[\]])", "[\\1]", glob_path))
+        for path in paths:
+            path_sources = VideoSourceList._get_sources_from_path(path)
+            if os.path.isdir(path):
+                sources.append(VideoSourceList(path_sources))
+            else:
+                sources.extend(path_sources)
+
+        return sources
+
+    @staticmethod
+    def _get_sources_from_directory(
+        directory: str,
+    ) -> List[Union[VideoSource, "VideoSourceList"]]:
+        sources = []
+        for file in system.list_directory_files(directory):
+            try:
+                sources.append(VideoSource(file))
+            except IOError:
+                continue
+
+        return sources
+
+    @staticmethod
+    def _get_sources_from_list(
+        sources_list: List[Union[str, Source, "VideoSourceList"]],
+    ) -> List[Union[Source, "VideoSourceList"]]:
+        sources = []
+        for source in sources_list:
+            if isinstance(source, str) and os.path.isfile(source):
+                sources.extend(VideoSourceList._get_sources_from_path(source))
+            elif isinstance(source, str):
+                sources.append(
+                    VideoSourceList(VideoSourceList._get_sources_from_path(source))
+                )
+            elif isinstance(source, Source) or isinstance(source, VideoSourceList):
+                sources.append(source)
+            elif isinstance(source, list):
+                sources.append(VideoSourceList(source))
+            else:
+                raise ParameterError(f"Unknown source type {source}")
 
         return sources
