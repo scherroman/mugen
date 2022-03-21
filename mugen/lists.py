@@ -1,4 +1,4 @@
-import collections
+import collections.abc
 from typing import Any, List, Optional
 
 
@@ -61,7 +61,7 @@ def flatten(list: List[Any]) -> List[Any]:
     list_flattened = []
 
     for element in list:
-        if isinstance(element, collections.Iterable) and not isinstance(
+        if isinstance(element, collections.abc.Iterable) and not isinstance(
             element, (str, bytes)
         ):
             list_flattened.extend(flatten(element))
