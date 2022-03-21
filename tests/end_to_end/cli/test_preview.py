@@ -12,7 +12,14 @@ def test_preview__generates_audiovisual_preview_successfully(tmp_path):
     audio_path = TWO_BEATS_AUDIO_PATH
     try:
         subprocess.run(
-            f"mugen --output-directory {tmp_path} preview --audio-source {audio_path}".split(),
+            [
+                "mugen",
+                "--output-directory",
+                tmp_path,
+                "preview",
+                "--audio-source",
+                audio_path,
+            ],
             check=True,
             timeout=30,
             capture_output=True,
@@ -47,7 +54,16 @@ def test_preview__generates_audio_preview_successfully(tmp_path):
     audio_path = TWO_BEATS_AUDIO_PATH
     try:
         subprocess.run(
-            f"mugen --output-directory {tmp_path} preview --audio-source {audio_path} --preview-mode audio".split(),
+            [
+                "mugen",
+                "--output-directory",
+                tmp_path,
+                "preview",
+                "--audio-source",
+                audio_path,
+                "--preview-mode",
+                "audio",
+            ],
             check=True,
             timeout=30,
             capture_output=True,

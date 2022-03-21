@@ -29,7 +29,7 @@ jobs:
               run: black mugen scripts tests --check
 
             - name: Ensure imports have been sorted with isort
-              run: isort . --check-only
+              run: isort mugen scripts tests --check-only
 
             - name: Run linter
               run: flake8
@@ -49,6 +49,12 @@ jobs:
             - name: Check out repository
               uses: actions/checkout@v2
 
+            - name: Check out media repository
+              uses: actions/checkout@v2
+              with:
+                  repository: scherroman/mugen-media
+                  path: media
+
             - name: Set up Miniconda
               uses: conda-incubator/setup-miniconda@v2
               with:
@@ -61,7 +67,7 @@ jobs:
               run: pip install .[tests]
 
             - name: Run tests
-              run: pytest --cov mugen --cov-report xml
+              run: pytest -n auto --cov mugen --cov-report xml
 
             - name: Upload test coverage to Codecov
               uses: codecov/codecov-action@v2

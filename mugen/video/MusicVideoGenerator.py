@@ -44,20 +44,12 @@ class MusicVideoGenerator:
 
     video_filters
         Video filters that each segment in the music video must pass.
-
-    meta
-        Json serializable dictionary with extra metadata
     """
 
     audio: Audio
     _duration: float
     video_sources: List[Union[VideoSource, List[VideoSourceList]]]
     video_filters: List[Filter]
-
-    meta: dict
-
-    class Meta(str, Enum):
-        REJECTED_SEGMENT_STATS = "rejected_segment_stats"
 
     @convert_time_to_seconds(["duration"])
     def __init__(
@@ -118,7 +110,10 @@ class MusicVideoGenerator:
         )
         if exclude_video_filters:
             for video_filter in exclude_video_filters:
-                video_filter_names.remove(video_filter)
+                try:
+                    video_filter_names.remove(video_filter)
+                except ValueError:
+                    raise ValueError(f"Unknown video filter {video_filter}")
         if include_video_filters:
             video_filter_names.extend(include_video_filters)
         custom_video_filters = custom_video_filters or []
@@ -131,8 +126,6 @@ class MusicVideoGenerator:
             except KeyError as error:
                 raise MugenError(f"Unknown video filter '{filter_name}'") from error
         self.video_filters.extend(custom_video_filters)
-
-        self.meta = {self.Meta.REJECTED_SEGMENT_STATS: []}
 
     @property
     def duration(self):
@@ -159,7 +152,10 @@ class MusicVideoGenerator:
         # Get segment durations from cut locations
         segment_durations = events.segment_durations
 
-        music_video_segments = self._generate_music_video_segments(
+        (
+            music_video_segments,
+            rejected_video_segments,
+        ) = self._generate_music_video_segments(
             segment_durations, show_progress=show_progress
         )
 
@@ -167,6 +163,7 @@ class MusicVideoGenerator:
         music_video = MusicVideo(
             music_video_segments, self.audio.file if self.audio else None
         )
+        music_video.rejected_segments = rejected_video_segments
 
         return music_video
 
@@ -189,6 +186,7 @@ class MusicVideoGenerator:
         Sampled video segments
         """
         video_segments = []
+        rejected_video_segments = []
         video_segment_sampler = SourceSampler(self.video_sources)
 
         # Make deep copies of filters
@@ -201,23 +199,16 @@ class MusicVideoGenerator:
 
         for duration in tqdm(durations, disable=not show_progress):
             video_segment = None
-
             while not video_segment:
                 video_segment = video_segment_sampler.sample(duration)
-
-                (
-                    video_segment.passed_filters,
-                    video_segment.failed_filters,
-                ) = video_segment.apply_filters(video_filters)
+                video_segment.apply_filters(video_filters)
                 if not video_segment.failed_filters:
                     video_segments.append(video_segment)
                 else:
-                    self.meta[self.Meta.REJECTED_SEGMENT_STATS].append(
-                        video_segment.__dict__
-                    )
+                    rejected_video_segments.append(video_segment)
                     video_segment = None
 
-        return video_segments
+        return video_segments, rejected_video_segments
 
     @use_temporary_file_fallback("output_path", ".mkv")
     def preview_events(

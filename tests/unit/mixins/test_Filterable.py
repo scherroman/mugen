@@ -82,14 +82,23 @@ def get_passing_filter_combo():
 def test_apply_filters__returns_proper_number_passed_failed(
     filters, expected_num_passed, expected_num_failed
 ):
-    passed_filters, failed_filters = Filterable().apply_filters(filters)
-    assert len(passed_filters) == expected_num_passed
-    assert len(failed_filters) == expected_num_failed
+    filterable = Filterable()
+    filterable.apply_filters(filters)
+    assert len(filterable.passed_filters) == expected_num_passed
+    assert len(filterable.failed_filters) == expected_num_failed
+
+
+def test_apply_filters___shorts_circuits_properly():
+    filterable = Filterable()
+    filterable.apply_filters(get_failing_filter_combo_short_circuit())
+    assert len(filterable.passed_filters) == 0
+    assert len(filterable.failed_filters) == 1
 
 
 def test_apply_filters___tests_all_filters_when_short_circuit_is_false():
-    passed_filters, failed_filters = Filterable().apply_filters(
+    filterable = Filterable()
+    filterable.apply_filters(
         get_failing_filter_combo_short_circuit(), short_circuit=False
     )
-    assert len(passed_filters) == 2
-    assert len(failed_filters) == 1
+    assert len(filterable.passed_filters) == 2
+    assert len(filterable.failed_filters) == 1

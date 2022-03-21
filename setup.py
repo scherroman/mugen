@@ -4,7 +4,7 @@ version = dict()
 with open("mugen/version.py") as file:
     exec(file.read(), version)
 
-test_requirements = ["pytest==7.0.0", "pytest-cov==3.0.0"]
+test_requirements = ["pytest==7.0.0", "pytest-cov==3.0.0", "pytest-xdist==2.5.0"]
 development_requirements = [
     "black==22.1.0",
     "isort==5.10.1",

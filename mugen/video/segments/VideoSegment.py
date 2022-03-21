@@ -92,7 +92,16 @@ class VideoSegment(Segment, VideoFileClip):
     def streams(self) -> List[dict]:
         if not self._streams:
             result = system.run_command(
-                f"ffprobe -v quiet -print_format json -show_format -show_streams {self.file}".split()
+                [
+                    "ffprobe",
+                    "-v",
+                    "quiet",
+                    "-print_format",
+                    "json",
+                    "-show_format",
+                    "-show_streams",
+                    f"{self.file}",
+                ]
             )
             self._streams = json.loads(result.stdout).get("streams", [])
 
@@ -141,6 +150,10 @@ class VideoSegment(Segment, VideoFileClip):
         """
         subclip = super().subclip(start_time, end_time)
 
+        # Clear filter results which are otherwise copied over to the new subclip
+        subclip.passed_filters = []
+        subclip.failed_filters = []
+
         if start_time < 0:
             # Set relative to end
             start_time = self.duration + start_time
@@ -168,6 +181,17 @@ class VideoSegment(Segment, VideoFileClip):
     def get_subtitle_stream_content(self, stream: int) -> str:
         """Returns the subtitle stream's content"""
         result = system.run_command(
-            f"ffmpeg -v quiet -i {self.file} -map 0:s:{stream} -f srt pipe:1".split()
+            [
+                "ffmpeg",
+                "-v",
+                "quiet",
+                "-i",
+                self.file,
+                "-map",
+                f"0:s:{stream}",
+                "-f",
+                "srt",
+                "pipe:1",
+            ]
         )
         return result.stdout

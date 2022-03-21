@@ -62,7 +62,6 @@ class Filterable:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.passed_filters = []
         self.failed_filters = []
 
@@ -82,15 +81,11 @@ class Filterable:
         -------
         True if all filters passed, false otherwise
         """
-        passed_filters = []
-        failed_filters = []
         for filter in filters:
             if filter(self):
-                passed_filters.append(filter)
+                self.passed_filters.append(filter)
             else:
-                failed_filters.append(filter)
+                self.failed_filters.append(filter)
 
                 if short_circuit:
                     break
-
-        return passed_filters, failed_filters
