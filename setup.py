@@ -6,7 +6,7 @@ with open("mugen/version.py") as file:
 
 test_requirements = ["pytest==7.0.0", "pytest-cov==3.0.0", "pytest-xdist==2.5.0"]
 development_requirements = [
-    "black==22.1.0",
+    "black==22.3.0",
     "isort==5.10.1",
     "flake8==4.0.1",
     "pre-commit==2.17.0",
