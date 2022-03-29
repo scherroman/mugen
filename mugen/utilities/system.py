@@ -30,14 +30,14 @@ def recreate_directory(*directories):
         os.makedirs(directory)
 
 
-def list_directory(path, include_hidden=False):
+def _list_directory(path, include_hidden=False):
     for file in os.listdir(path):
         if not include_hidden and file.startswith("."):
             continue
         yield os.path.join(path, file)
 
 
-def list_directory_files(directory: str, include_hidden=False) -> List[str]:
+def list_directory_files(directory: str) -> List[str]:
     """
     Returns
     -------
@@ -45,7 +45,7 @@ def list_directory_files(directory: str, include_hidden=False) -> List[str]:
     """
     return [
         item
-        for item in list_directory(directory, include_hidden=include_hidden)
+        for item in _list_directory(directory, include_hidden=False)
         if os.path.isfile(item)
     ]
 
@@ -65,7 +65,7 @@ def run_command(command) -> CompletedProcess:
     return result
 
 
-def generate_temp_file_path(extension: str) -> str:
+def _generate_temp_file_path(extension: str) -> str:
     return TEMP_PATH_BASE + next(tempfile._RandomNameSequence()) + extension
 
 
@@ -83,6 +83,6 @@ def use_temporary_file_fallback(path_var: str, extension: str):
     """
 
     def _use_temporary_file_path(path_variable):
-        return path_variable or generate_temp_file_path(extension)
+        return path_variable or _generate_temp_file_path(extension)
 
     return preprocess_args(_use_temporary_file_path, [path_var])

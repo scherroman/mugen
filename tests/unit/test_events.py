@@ -1,6 +1,8 @@
 import pytest
 
-from mugen.events import Event, EventGroupList, EventList
+from mugen.events.Event import Event
+from mugen.events.EventGroupList import EventGroupList
+from mugen.events.EventList import EventList
 
 
 class Beat(Event):
@@ -31,6 +33,22 @@ def get_events_speed_multiplied_2x() -> EventList:
     )
 
 
+def get_events_speed_multiplied_3x() -> EventList:
+    return EventList(
+        [
+            Silence(6),
+            Beat(12),
+            Beat(14),
+            Beat(16),
+            Beat(18),
+            Beat(20),
+            Beat(22),
+            Beat(24),
+            Silence(30),
+        ]
+    )
+
+
 def get_events_speed_multiplied_1_2x() -> EventList:
     return EventList([Silence(6), Beat(12), Beat(24), Silence(30)])
 
@@ -41,6 +59,14 @@ def get_events_speed_multiplied_1_2x_offset_1() -> EventList:
 
 def get_events_speed_multiplied_1_3x() -> EventList:
     return EventList([Silence(6), Beat(12), Silence(30)])
+
+
+def get_events_speed_multiplied_1_3x_offset_1() -> EventList:
+    return EventList([Silence(6), Beat(18), Silence(30)])
+
+
+def get_events_speed_multiplied_1_3x_offset_2() -> EventList:
+    return EventList([Silence(6), Beat(24), Silence(30)])
 
 
 def test_event_list__initializes_non_uniform_inputs_successfully():
@@ -59,7 +85,10 @@ def test_event_list__initializes_non_uniform_inputs_successfully():
         (get_events(), 1 / 2, None, get_events_speed_multiplied_1_2x()),
         (get_events(), 1 / 2, 1, get_events_speed_multiplied_1_2x_offset_1()),
         (get_events(), 1 / 3, None, get_events_speed_multiplied_1_3x()),
+        (get_events(), 1 / 3, 1, get_events_speed_multiplied_1_3x_offset_1()),
+        (get_events(), 1 / 3, 2, get_events_speed_multiplied_1_3x_offset_2()),
         (get_events(), 2, None, get_events_speed_multiplied_2x()),
+        (get_events(), 3, None, get_events_speed_multiplied_3x()),
     ],
 )
 def test_speed_multiply_events(events, speed, offset, expected_events):
@@ -77,21 +106,6 @@ def test_speed_multiply_events(events, speed, offset, expected_events):
 def test_offset_events(events, offset, expected_locations):
     events.offset(offset)
     assert events.lget("location") == expected_locations
-
-
-@pytest.mark.parametrize(
-    "events, events_b, expected_events",
-    [
-        (
-            EventList([10, 20, 30]),
-            EventList([5, 15, 25, 35]),
-            EventList([5, 10, 15, 20, 25, 30, 35]),
-        )
-    ],
-)
-def test_add_events(events, events_b, expected_events):
-    events.add_events(events_b)
-    assert events == expected_events
 
 
 @pytest.mark.parametrize(

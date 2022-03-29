@@ -4,32 +4,51 @@ import librosa
 import numpy
 import soundfile
 
-from mugen.exceptions import ParameterError
 from mugen.utilities.system import use_temporary_file_fallback
 
+DEFAULT_SUBTYPE = "PCM_24"
+DEFAULT_SAMPLE_RATE = 22050
 MARKED_AUDIO_EXTENSION = ".wav"
 
 
 @use_temporary_file_fallback("output_path", MARKED_AUDIO_EXTENSION)
-def create_marked_audio_file(
-    mark_locations: Union[List[float], numpy.ndarray],
+def mark_audio_file(
+    audio_file: str,
+    marks: Union[List[float], numpy.ndarray],
     output_path: Optional[str] = None,
-    *,
-    audio_file: Optional[str] = None,
-    duration: float = None
 ):
-    if audio_file:
-        y, sr = librosa.load(audio_file)
-        marked_audio = librosa.core.clicks(times=mark_locations, sr=sr, length=len(y))
-        marked_audio = y + marked_audio
-    elif duration:
-        sr = 22050
-        marked_audio = librosa.core.clicks(
-            times=mark_locations, sr=sr, length=int(sr * duration)
-        )
-    else:
-        raise ParameterError("Must provide either audio file or duration.")
+    """
+    Creates a new audio file with audible bleeps at event locations
 
-    soundfile.write(output_path, marked_audio, sr, "PCM_24")
+    Parameters
+    ----------
+    audio_file
+        Audio file to mark
+
+    marks
+        Locations to mark the audio file
+
+    output_path
+        Path to save the output file
+    """
+    audio, sample_rate = librosa.load(audio_file)
+    marks = librosa.core.clicks(times=marks, sr=sample_rate, length=len(audio))
+    marked_audio = audio + marks
+    soundfile.write(output_path, marked_audio, sample_rate, DEFAULT_SUBTYPE)
+
+    return output_path
+
+
+@use_temporary_file_fallback("output_path", MARKED_AUDIO_EXTENSION)
+def create_marked_audio_file(
+    marks: Union[List[float], numpy.ndarray],
+    duration: float,
+    output_path: Optional[str] = None,
+):
+    sample_rate = DEFAULT_SAMPLE_RATE
+    marked_audio = librosa.core.clicks(
+        times=marks, sr=sample_rate, length=int(sample_rate * duration)
+    )
+    soundfile.write(output_path, marked_audio, sample_rate, DEFAULT_SUBTYPE)
 
     return output_path

@@ -1,7 +1,8 @@
-from typing import Union
+from typing import List, Union
 
 from numpy.random import choice
 
+from mugen.video.filters import VideoFilter
 from mugen.video.segments import Segment
 from mugen.video.sources.Source import SourceList
 
@@ -45,3 +46,30 @@ class SourceSampler:
         sample = selected_source.sample(duration)
 
         return sample
+
+    def sample_with_filters(self, duration: float, filters: List[VideoFilter]):
+        """
+        Randomly samples a segment with the specified duration which passes the specified filters
+
+        Parameters
+        ----------
+        duration
+            duration of the sample
+        filters
+            duration of the sample
+
+        Returns
+        -------
+        A tuple of a randomly sampled segment with the specified duration, and any rejected segments
+        """
+        video_segment = None
+        rejected_video_segments = []
+        while not video_segment:
+            sampled_segment = self.sample(duration)
+            sampled_segment.apply_filters(filters)
+            if not sampled_segment.failed_filters:
+                video_segment = sampled_segment
+            else:
+                rejected_video_segments.append(sampled_segment)
+
+        return video_segment, rejected_video_segments

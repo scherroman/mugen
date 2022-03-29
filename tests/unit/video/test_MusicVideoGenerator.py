@@ -11,9 +11,8 @@ def test_music_video_generator__requires_audio_file_or_duration():
 
 
 def test_music_video_generator__creates_music_video_with_duration():
-    generator = MusicVideoGenerator(
-        video_sources=[get_orange_source()], duration=0.1, video_filters=[]
-    )
+    generator = MusicVideoGenerator(video_sources=[get_orange_source()], duration=0.1)
+    generator.video_filters = []
 
     music_video = generator.generate_from_events([0.02, 0.04], show_progress=False)
 

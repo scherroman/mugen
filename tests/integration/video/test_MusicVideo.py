@@ -22,7 +22,7 @@ def get_basic_music_video() -> MusicVideo:
 
 
 def test_music_video__writes_to_file():
-    music_video_path = get_basic_music_video().write_to_video_file()
+    music_video_path = get_basic_music_video().write_to_video_file(show_progress=False)
     assert os.path.isfile(music_video_path)
 
 

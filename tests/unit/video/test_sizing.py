@@ -1,6 +1,6 @@
 import pytest
 
-import mugen.video.sizing as video_sizing
+from mugen.video import sizing
 from mugen.video.sizing import Dimensions
 
 
@@ -30,7 +30,7 @@ def get_list_of_dimensions():
 )
 def test_crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio, expected_dimensions):
     assert (
-        video_sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio)
+        sizing.crop_dimensions_to_aspect_ratio(dimensions, aspect_ratio)
         == expected_dimensions
     )
 
@@ -47,26 +47,30 @@ def test_crop_coordinates_for_aspect_ratio(
     dimensions, desired_aspect_ratio, expected_coordinates
 ):
     assert (
-        video_sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio)
+        sizing.crop_coordinates_for_aspect_ratio(dimensions, desired_aspect_ratio)
         == expected_coordinates
     )
 
 
 @pytest.mark.parametrize(
-    "dimensions_list, desired_aspect_ratio, default, expected_dimensions",
+    "dimensions_list, desired_aspect_ratio, expected_dimensions",
     [
-        ([], 16 / 9, "default", "default"),
-        (get_list_of_dimensions(), 4 / 3, None, (1440, 1080)),
-        (get_list_of_dimensions(), 16 / 9, None, (1920, 1080)),
-        (get_list_of_dimensions(), 21 / 9, None, (1920, 822)),
+        (get_list_of_dimensions(), 4 / 3, (1440, 1080)),
+        (get_list_of_dimensions(), 16 / 9, (1920, 1080)),
+        (get_list_of_dimensions(), 21 / 9, (1920, 822)),
     ],
 )
-def test_largest_dimensions_for_aspect_ratio(
-    dimensions_list, desired_aspect_ratio, default, expected_dimensions
+def test_largest_dimensions_for_aspect_ratio__returns_correct_dimensions(
+    dimensions_list, desired_aspect_ratio, expected_dimensions
 ):
     assert (
-        video_sizing.largest_dimensions_for_aspect_ratio(
-            dimensions_list, desired_aspect_ratio, default
+        sizing.largest_dimensions_for_aspect_ratio(
+            dimensions_list, desired_aspect_ratio
         )
         == expected_dimensions
     )
+
+
+def test_largest_dimensions_for_aspect_ratio__throws_an_error_when_given_an_empty_list():
+    with pytest.raises(ValueError):
+        sizing.largest_dimensions_for_aspect_ratio([], 16 / 9)

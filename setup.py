@@ -47,5 +47,5 @@ setup(
         "tests": test_requirements,
         "development": test_requirements + development_requirements,
     },
-    entry_points={"console_scripts": ["mugen=scripts.cli:main"]},
+    entry_points={"console_scripts": ["mugen=scripts.cli.cli:main"]},
 )

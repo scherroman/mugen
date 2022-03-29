@@ -1,8 +1,6 @@
 from enum import Enum
 from typing import Any, List, NamedTuple, Tuple, Union
 
-_sentinel = object()
-
 
 class AspectRatio(float, Enum):
     FULLSCREEN = 4 / 3
@@ -84,19 +82,15 @@ def crop_coordinates_for_aspect_ratio(
 
 
 def largest_dimensions_for_aspect_ratio(
-    dimensions_list: List[Dimensions],
-    desired_aspect_ratio: float,
-    default: Any = _sentinel,
+    dimensions_list: List[Dimensions], desired_aspect_ratio: float
 ) -> Union[Dimensions, Any]:
     """
     Returns
     -------
     The largest dimensions after cropping each dimensions to reach desired aspect ratio
     """
-    if not dimensions_list:
-        if default is not _sentinel:
-            return default
-        raise ValueError(f"{dimensions_list} must not be empty.")
+    if len(dimensions_list) == 0:
+        raise ValueError(f"Dimensions list {dimensions_list} must not be empty.")
 
     largest_dimensions = crop_dimensions_to_aspect_ratio(
         dimensions_list[0], desired_aspect_ratio

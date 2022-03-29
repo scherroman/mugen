@@ -1,4 +1,3 @@
-import collections.abc
 from typing import Any, List, Optional
 
 
@@ -29,11 +28,10 @@ class MugenList(list):
 
         repr_str = ""
         for index, element_repr in enumerate(item_reprs):
-            if index != 0:
-                repr_str += " "
             repr_str += element_repr
             if index != len(self) - 1:
-                repr_str += ", \n"
+                repr_str += ",\n"
+
         return f"[{repr_str}]"
 
     def lget(self, attr) -> List[Any]:
@@ -54,16 +52,14 @@ class MugenList(list):
         return type(self)(flatten(self))
 
 
-def flatten(list: List[Any]) -> List[Any]:
+def flatten(list_to_flatten: List[Any]) -> List[Any]:
     """
     Flattens an arbitrarily nested irregular list of objects
     """
     list_flattened = []
 
-    for element in list:
-        if isinstance(element, collections.abc.Iterable) and not isinstance(
-            element, (str, bytes)
-        ):
+    for element in list_to_flatten:
+        if isinstance(element, list):
             list_flattened.extend(flatten(element))
         else:
             list_flattened.append(element)
