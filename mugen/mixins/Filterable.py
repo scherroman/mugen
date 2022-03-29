@@ -65,17 +65,14 @@ class Filterable:
         self.passed_filters = []
         self.failed_filters = []
 
-    def apply_filters(
-        self, filters: List[Filter], short_circuit: bool = True
-    ) -> Tuple[List[Filter], List[Filter]]:
+    def apply_filters(self, filters: List[Filter]) -> Tuple[List[Filter], List[Filter]]:
         """
+        Tests this object against a set of filters, short circuiting if any of the filters fail
+
         Parameters
         ----------
         filters
             Filters to test
-
-        short_circuit
-            Whether or not the function should exit early on a filter failure
 
         Returns
         -------
@@ -86,6 +83,4 @@ class Filterable:
                 self.passed_filters.append(filter)
             else:
                 self.failed_filters.append(filter)
-
-                if short_circuit:
-                    break
+                break

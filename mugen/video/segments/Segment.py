@@ -1,16 +1,14 @@
 import copy
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List
 
 from moviepy.editor import VideoClip
 
-import mugen.video.effects as video_effects
-import mugen.video.sizing as video_sizing
 from mugen.mixins.Filterable import Filterable
 from mugen.mixins.Persistable import Persistable
 from mugen.utilities import conversion
 from mugen.video.constants import LIST_3D
-from mugen.video.effects import VideoEffectList
+from mugen.video.effects import VideoEffect
 from mugen.video.sizing import Dimensions
 
 
@@ -25,14 +23,14 @@ class Segment(Filterable, Persistable, ABC):
         A list of effects to apply to the segment when composed
     """
 
-    effects: VideoEffectList
+    effects: List[VideoEffect]
 
     DEFAULT_VIDEO_FPS = 24
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.effects = VideoEffectList()
+        self.effects = []
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: {self.name}>, duration: {self.duration}>"
@@ -57,15 +55,6 @@ class Segment(Filterable, Persistable, ABC):
         new_segment.effects = copy.deepcopy(self.effects)
 
         return new_segment
-
-    def ipython_display(self, *args, **kwargs):
-        """
-        Fixes inheritance naming issue with moviepy's ipython_display
-        """
-        seg_copy = self.copy()
-        # Class should also always be set to VideoClip for expected video display
-        seg_copy.__class__ = VideoClip().__class__
-        return seg_copy.ipython_display(*args, **kwargs)
 
     @property
     def dimensions(self) -> Dimensions:
@@ -103,64 +92,6 @@ class Segment(Filterable, Persistable, ABC):
     def first_middle_last_frames(self) -> List[LIST_3D]:
         return [self.first_frame, self.middle_frame, self.last_frame]
 
-    def crop_to_aspect_ratio(self, aspect_ratio: float) -> "Segment":
-        """
-        Returns
-        -------
-        A new Segment, cropped as necessary to reach specified aspect ratio
-        """
-        segment = self.copy()
-
-        if segment.aspect_ratio != aspect_ratio:
-            # Crop video to match desired aspect ratio
-            x1, y1, x2, y2 = video_sizing.crop_coordinates_for_aspect_ratio(
-                segment.dimensions, aspect_ratio
-            )
-            segment = segment.crop(x1=x1, y1=y1, x2=x2, y2=y2)
-
-        return segment
-
-    def crop_scale(self, dimensions: Tuple[int, int]) -> "Segment":
-        """
-        Returns
-        -------
-        A new Segment, cropped and/or scaled as necessary to reach specified dimensions
-        """
-        segment = self.copy()
-        dimensions = Dimensions(*dimensions)
-
-        if segment.aspect_ratio != dimensions.aspect_ratio:
-            # Crop segment to match aspect ratio
-            segment = segment.crop_to_aspect_ratio(dimensions.aspect_ratio)
-
-        if segment.dimensions != dimensions:
-            # Resize segment to reach final dimensions
-            segment = segment.resize(dimensions)
-
-        return segment
-
-    def apply_effects(self) -> "Segment":
-        """
-        Composes the segment, applying all effects
-
-        Returns
-        -------
-        A new segment with all effects applied
-        """
-        segment = self.copy()
-
-        for effect in self.effects:
-            if isinstance(effect, video_effects.FadeIn):
-                segment = segment.fadein(effect.duration, effect.rgb_color)
-                if segment.audio:
-                    segment.audio = segment.audio.audio_fadein(effect.duration)
-            elif isinstance(effect, video_effects.FadeOut):
-                segment = segment.fadeout(effect.duration, effect.rgb_color)
-                if segment.audio:
-                    segment.audio = segment.audio.audio_fadeout(effect.duration)
-
-        return segment
-
     @property
     @abstractmethod
     def name(self) -> str:
@@ -179,6 +110,15 @@ class Segment(Filterable, Persistable, ABC):
 
         Returns
         -------
-        A new segment picking up where this one left off, for use in crossfades
+        A new segment spanning from the end of this segment until the specified duration
         """
         pass
+
+    def ipython_display(self, *args, **kwargs):
+        """
+        Fixes inheritance naming issue with moviepy's ipython_display
+        """
+        seg_copy = self.copy()
+        # Class should also always be set to VideoClip for expected video display
+        seg_copy.__class__ = VideoClip().__class__
+        return seg_copy.ipython_display(*args, **kwargs)

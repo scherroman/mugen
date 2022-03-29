@@ -5,7 +5,8 @@ from typing import List
 import librosa
 import numpy
 
-from mugen.events import Event, EventList
+from mugen.events.Event import Event
+from mugen.events.EventList import EventList
 
 
 class AudioEvent(Event):

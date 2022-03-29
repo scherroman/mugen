@@ -32,74 +32,56 @@ class VideoWriter:
     audio_bitrate
         Audio bitrate (kbps) to use if no audio_file is provided.
 
-    ffmpeg_params
+    ffmpeg_parameters
         Any additional ffmpeg parameters you would like to pass as a list of terms,
         like ['-option1', 'value1', '-option2', 'value2']
     """
 
-    preset: str
     codec: str
     crf: int
+    preset: str
     audio_codec: str
     audio_bitrate: int
-    ffmpeg_params: list
+    ffmpeg_parameters: list
 
-    AUDIO_BITRATE = 320
-    AUDIO_CODEC = "libmp3lame"
-    VIDEO_PRESET = "medium"
-    VIDEO_CODEC = "libx264"
-    VIDEO_CRF = 18
-    VIDEO_EXTENSION = ".mkv"
+    DEFAULT_VIDEO_CODEC = "libx264"
+    DEFAULT_VIDEO_CRF = 18
+    DEFAULT_VIDEO_PRESET = "medium"
+    DEFAULT_VIDEO_EXTENSION = ".mkv"
+    DEFAULT_AUDIO_CODEC = "libmp3lame"
+    DEFAULT_AUDIO_BITRATE = 320
 
-    def __init__(
-        self,
-        preset: str = VIDEO_PRESET,
-        codec: str = VIDEO_CODEC,
-        crf: int = VIDEO_CRF,
-        audio_codec: str = AUDIO_CODEC,
-        audio_bitrate: int = AUDIO_BITRATE,
-        ffmpeg_params: Optional[List[str]] = None,
-    ):
-        self.preset = preset
-        self.codec = codec
-        self.crf = crf
-        self.audio_codec = audio_codec
-        self.audio_bitrate = audio_bitrate
-        self.ffmpeg_params = ffmpeg_params or []
+    def __init__(self):
+        self.codec = self.DEFAULT_VIDEO_CODEC
+        self.crf = self.DEFAULT_VIDEO_CRF
+        self.preset = self.DEFAULT_VIDEO_PRESET
+        self.audio_codec = self.DEFAULT_AUDIO_CODEC
+        self.audio_bitrate = self.DEFAULT_AUDIO_BITRATE
+        self.ffmpeg_parameters = []
 
     def write_video_clips_to_directory(
         self,
         video_clips: List[VideoClip],
         directory: str,
         *,
-        file_extension: str = VIDEO_EXTENSION,
-        audio: Union[str, bool] = True,
-        **kwargs
+        file_extension: str = DEFAULT_VIDEO_EXTENSION,
+        show_progress: bool = True
     ):
         """
         Writes a list of video segments to files in the specified directory
         """
-        for index, segment in enumerate(tqdm(video_clips)):
+        for index, segment in enumerate(tqdm(video_clips, disable=not show_progress)):
             output_path = os.path.join(directory, str(index) + file_extension)
-            self.write_video_clip_to_file(
-                segment,
-                output_path,
-                audio=audio,
-                verbose=False,
-                show_progress=False,
-                **kwargs
-            )
+            self.write_video_clip_to_file(segment, output_path, show_progress=False)
 
-    @use_temporary_file_fallback("output_path", VIDEO_EXTENSION)
+    @use_temporary_file_fallback("output_path", DEFAULT_VIDEO_EXTENSION)
     def write_video_clip_to_file(
         self,
         video_clip: VideoClip,
         output_path: Optional[str] = None,
         *,
         audio: Union[str, bool] = True,
-        verbose: bool = False,
-        show_progress: bool = True,
-        **kwargs
+        show_progress: bool = True
     ):
         """
         Writes a video clip to file in the specified directory
@@ -113,17 +95,10 @@ class VideoWriter:
         audio
             Audio for the video clip. Can be True to enable, False to disable, or an external audio file.
 
-        verbose
-            Whether output to stdout should include extra information during writing
-
         show_progress
             Whether to output progress information to stdout
-
-        kwargs
-            List of other keyword arguments to pass to moviepy's write_videofile
         """
-        # Prepend crf to ffmpeg_params
-        ffmpeg_params = ["-crf", str(self.crf)] + self.ffmpeg_params
+        ffmpeg_parameters = ["-crf", str(self.crf)] + self.ffmpeg_parameters
         audio_bitrate = str(self.audio_bitrate) + "k"
 
         video_clip.write_videofile(
@@ -133,10 +108,9 @@ class VideoWriter:
             codec=self.codec,
             audio_codec=self.audio_codec,
             audio_bitrate=audio_bitrate,
-            ffmpeg_params=ffmpeg_params,
-            **kwargs,
-            verbose=verbose,
-            logger=logger if show_progress else None
+            ffmpeg_params=ffmpeg_parameters,
+            verbose=False,
+            logger=logger if show_progress else None,
         )
 
         return output_path

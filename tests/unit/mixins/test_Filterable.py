@@ -93,12 +93,3 @@ def test_apply_filters___shorts_circuits_properly():
     filterable.apply_filters(get_failing_filter_combo_short_circuit())
     assert len(filterable.passed_filters) == 0
     assert len(filterable.failed_filters) == 1
-
-
-def test_apply_filters___tests_all_filters_when_short_circuit_is_false():
-    filterable = Filterable()
-    filterable.apply_filters(
-        get_failing_filter_combo_short_circuit(), short_circuit=False
-    )
-    assert len(filterable.passed_filters) == 2
-    assert len(filterable.failed_filters) == 1

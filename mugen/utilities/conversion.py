@@ -15,28 +15,38 @@ def time_to_seconds(time: TIME_FORMAT) -> float:
     """
     Convert any time into seconds.
     """
-
     if isinstance(time, str):
-        expr = r"(?:(?:(\d+):)?(?:(\d+):))?(\d+)?(?:[,|.](\d+))?"
-        finds = re.findall(expr, time)[0]
-        finds = [find if find else "0" for find in finds]
-
-        seconds = (
-            3600 * int(finds[0])
-            + 60 * int(finds[1])
-            + int(finds[2])
-            + int(finds[3]) / (10 ** len(finds[3]))
-        )
+        seconds = _time_string_to_seconds(time)
     elif isinstance(time, tuple):
-        if len(time) == 3:
-            hr, mn, sec = time
-        elif len(time) == 2:
-            hr, mn, sec = 0, time[0], time[1]
-        else:
-            raise ParameterError(f"Unsupported number of elements in tuple {time}")
-        seconds = (3600 * hr) + (60 * mn) + sec
+        seconds = _time_tuple_to_seconds(time)
     else:
         seconds = time
+
+    return seconds
+
+
+def _time_string_to_seconds(time: str):
+    expr = r"(?:(?:(\d+):)?(?:(\d+):))?(\d+)?(?:[,|.](\d+))?"
+    finds = re.findall(expr, time)[0]
+    finds = [find if find else "0" for find in finds]
+    seconds = (
+        3600 * int(finds[0])
+        + 60 * int(finds[1])
+        + int(finds[2])
+        + int(finds[3]) / (10 ** len(finds[3]))
+    )
+
+    return seconds
+
+
+def _time_tuple_to_seconds(time: str):
+    if len(time) == 3:
+        hr, mn, sec = time
+    elif len(time) == 2:
+        hr, mn, sec = 0, time[0], time[1]
+    else:
+        raise ParameterError(f"Unsupported number of elements in tuple {time}")
+    seconds = (3600 * hr) + (60 * mn) + sec
 
     return seconds
 

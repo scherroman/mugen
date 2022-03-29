@@ -1,5 +1,6 @@
 import pytest
 
+from mugen.video import transformation
 from tests.unit.video.segments.test_ColorSegment import get_orange_segment
 
 
@@ -12,7 +13,10 @@ from tests.unit.video.segments.test_ColorSegment import get_orange_segment
     ],
 )
 def test_crop_to_aspect_ratio(segment, aspect_ratio, expected_dimensions):
-    assert segment.crop_to_aspect_ratio(aspect_ratio).dimensions == expected_dimensions
+    assert (
+        transformation.crop_to_aspect_ratio(segment, aspect_ratio).dimensions
+        == expected_dimensions
+    )
 
 
 @pytest.mark.parametrize(
@@ -24,4 +28,6 @@ def test_crop_to_aspect_ratio(segment, aspect_ratio, expected_dimensions):
     ],
 )
 def test_crop_scale(segment, dimensions, expected_dimensions):
-    assert segment.crop_scale(dimensions).dimensions == expected_dimensions
+    assert (
+        transformation.crop_scale(segment, dimensions).dimensions == expected_dimensions
+    )

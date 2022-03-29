@@ -1,25 +1,25 @@
 from enum import Enum
 from typing import Any
 
-import mugen.video.detect as video_detect
+import mugen.video.detection as detection
 from mugen.mixins.Filterable import ContextFilter, Filter
 from mugen.video.segments import Segment
 
 
 def is_repeat(segment: Segment, memory: Any) -> bool:
-    return video_detect.video_segment_is_repeat(segment, video_segments_used=memory)
+    return detection.video_segment_is_repeat(segment, video_segments_used=memory)
 
 
 def has_text(segment: Segment) -> bool:
-    return video_detect.video_segment_has_text(segment)
+    return detection.video_segment_has_text(segment)
 
 
 def has_cut(segment: Segment) -> bool:
-    return video_detect.video_segment_has_cut(segment)
+    return detection.video_segment_has_cut(segment)
 
 
 def has_low_contrast(segment: Segment) -> bool:
-    return video_detect.video_segment_has_low_contrast(segment)
+    return detection.video_segment_has_low_contrast(segment)
 
 
 def not_is_repeat(*args, **kwargs):
