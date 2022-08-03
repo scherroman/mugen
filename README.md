@@ -26,7 +26,7 @@ Built with [moviepy](https://github.com/Zulko/moviepy) programmatic video editin
 
 2. Perform rhythm analysis to identify beat locations
 
-3. Generate a set of random video segments syced to the beat
+3. Generate a set of random video segments synced to the beat
 
 4. Discard segments with scene changes, detectable text (e.g. credits), or low contrast (i.e. solid colors, very dark scenes)
 
