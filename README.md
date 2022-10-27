@@ -14,7 +14,7 @@
 [![license](https://img.shields.io/github/license/scherroman/mugen?color=blue)](https://github.com/scherroman/mugen/blob/master/LICENSE)
 [![Ko-Fi](https://img.shields.io/badge/buy%20me%20a%20coffee-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/scherroman)
 
-A music video generator based on rhythm
+A command-line music video generator based on rhythm
 
 Use it to brainstorm AMVs, montages, and more! [Check it out](https://youtu.be/ZlTR6XULe5M).
 
