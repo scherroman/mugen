@@ -7,7 +7,7 @@
                   |___/
 ```
 
-[![tests](https://img.shields.io/github/workflow/status/scherroman/mugen/Test?label=tests&logo=github)](https://github.com/scherroman/mugen/actions/workflows/test.yml)
+[![tests](https://img.shields.io/github/actions/workflow/status/scherroman/mugen/test.yml?branch=master&label=tests&logo=github)](https://github.com/scherroman/mugen/actions/workflows/test.yml)
 [![coverage](https://img.shields.io/codecov/c/github/scherroman/mugen?label=coverage&logo=codecov)](https://codecov.io/gh/scherroman/mugen)
 [![Maintainability](https://api.codeclimate.com/v1/badges/76b9fd9b7ca0250ad526/maintainability)](https://codeclimate.com/github/scherroman/mugen/maintainability)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
